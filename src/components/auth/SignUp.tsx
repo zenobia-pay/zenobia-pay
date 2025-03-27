@@ -11,7 +11,7 @@ export function SignUp() {
     try {
       const user = await authService.getCurrentUser()
       if (user) {
-        navigate("/admin", { replace: true })
+        navigate("/", { replace: true })
       }
     } catch (err) {
       // User is not logged in, continue showing signup form

@@ -1,7 +1,5 @@
-import { lazy } from "solid-js"
 import type { RouteDefinition } from "@solidjs/router"
 
-import LandingPage from "./pages/LandingPage"
 import Login from "./components/auth/Login"
 import { SignUp } from "./components/auth/SignUp"
 import { Dashboard } from "./components/Dashboard"
@@ -40,14 +38,26 @@ const ProtectedAdminDevelopers = () => {
   return ProtectedRoute({ children: Developers })
 }
 
-const ProtectedAdmin404 = () => {
+const ProtectedTerms = () => {
+  return ProtectedRoute({ children: Terms })
+}
+
+const ProtectedPrivacy = () => {
+  return ProtectedRoute({ children: Privacy })
+}
+
+const ProtectedDocs = () => {
+  return ProtectedRoute({ children: Docs })
+}
+
+const ProtectedNotFound = () => {
   return ProtectedRoute({ children: Admin404 })
 }
 
 export const routes: RouteDefinition[] = [
   {
     path: "/",
-    component: LandingPage,
+    component: ProtectedDashboard,
   },
   {
     path: "/login",
@@ -58,47 +68,39 @@ export const routes: RouteDefinition[] = [
     component: SignUp,
   },
   {
-    path: "/admin",
-    component: ProtectedDashboard,
-  },
-  {
-    path: "/admin/merchants",
+    path: "/merchants",
     component: ProtectedAdminMerchants,
   },
   {
-    path: "/admin/accounts",
+    path: "/accounts",
     component: ProtectedAdminCards,
   },
   {
-    path: "/admin/transactions",
+    path: "/transactions",
     component: ProtectedAdminPayments,
   },
   {
-    path: "/admin/developers",
+    path: "/developers",
     component: ProtectedAdminDevelopers,
   },
   {
-    path: "/admin/settings",
+    path: "/settings",
     component: ProtectedAdminSettings,
   },
   {
     path: "/terms",
-    component: Terms,
+    component: ProtectedTerms,
   },
   {
     path: "/privacy",
-    component: Privacy,
+    component: ProtectedPrivacy,
   },
   {
     path: "/docs",
-    component: Docs,
+    component: ProtectedDocs,
   },
   {
-    path: "/admin/*",
-    component: ProtectedAdmin404,
-  },
-  {
-    path: "**",
-    component: lazy(() => import("./pages/errors/404")),
+    path: "/*",
+    component: ProtectedNotFound,
   },
 ]

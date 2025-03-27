@@ -11,9 +11,9 @@ export const AdminNavigation: Component = () => {
 
   // Create a memo to check if a path is active
   const isActive = createMemo(() => (path: string) => {
-    if (path === "/admin") {
+    if (path === "/") {
       // Exact match for dashboard
-      return location.pathname === "/admin"
+      return location.pathname === "/"
     }
     // For other pages, check if the pathname starts with the path
     return location.pathname.startsWith(path)
@@ -31,10 +31,7 @@ export const AdminNavigation: Component = () => {
     <div class="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo Section */}
       <div class="py-6 px-5 border-b border-gray-200">
-        <A
-          href="/"
-          class="text-lg font-medium text-gray-900 flex items-center"
-        >
+        <A href="/" class="text-lg font-medium text-gray-900 flex items-center">
           <span>Zenobia Pay</span>
         </A>
       </div>
@@ -47,20 +44,20 @@ export const AdminNavigation: Component = () => {
           </div>
 
           <A
-            href="/admin"
+            href="/"
             class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/admin")
+              isActive()("/")
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
             onClick={(e) => {
               e.preventDefault()
-              handleNavigation("/admin")
+              handleNavigation("/")
             }}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/admin")
+                isActive()("/")
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -80,20 +77,20 @@ export const AdminNavigation: Component = () => {
           </A>
 
           <A
-            href="/admin/transactions"
+            href="/transactions"
             class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/admin/transactions")
+              isActive()("/transactions")
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
             onClick={(e) => {
               e.preventDefault()
-              handleNavigation("/admin/transactions")
+              handleNavigation("/transactions")
             }}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/admin/transactions")
+                isActive()("/transactions")
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -113,20 +110,20 @@ export const AdminNavigation: Component = () => {
           </A>
 
           <A
-            href="/admin/merchants"
+            href="/merchants"
             class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/admin/merchants")
+              isActive()("/merchants")
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
             onClick={(e) => {
               e.preventDefault()
-              handleNavigation("/admin/merchants")
+              handleNavigation("/merchants")
             }}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/admin/merchants")
+                isActive()("/merchants")
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -146,20 +143,20 @@ export const AdminNavigation: Component = () => {
           </A>
 
           <A
-            href="/admin/accounts"
+            href="/accounts"
             class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/admin/accounts")
+              isActive()("/accounts")
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
             onClick={(e) => {
               e.preventDefault()
-              handleNavigation("/admin/accounts")
+              handleNavigation("/accounts")
             }}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/admin/accounts")
+                isActive()("/accounts")
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -185,20 +182,20 @@ export const AdminNavigation: Component = () => {
           </div>
 
           <A
-            href="/admin/developers"
+            href="/developers"
             class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/admin/developers")
+              isActive()("/developers")
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
             onClick={(e) => {
               e.preventDefault()
-              handleNavigation("/admin/developers")
+              handleNavigation("/developers")
             }}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/admin/developers")
+                isActive()("/developers")
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -218,20 +215,20 @@ export const AdminNavigation: Component = () => {
           </A>
 
           <A
-            href="/admin/settings"
+            href="/settings"
             class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/admin/settings")
+              isActive()("/settings")
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
             onClick={(e) => {
               e.preventDefault()
-              handleNavigation("/admin/settings")
+              handleNavigation("/settings")
             }}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/admin/settings")
+                isActive()("/settings")
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -268,9 +265,7 @@ export const AdminNavigation: Component = () => {
             <div class="absolute bottom-0 right-0 rounded-full w-2.5 h-2.5 bg-green-400 border border-white"></div>
           </div>
           <div class="ml-3 min-w-0 flex-1">
-            <p class="text-sm font-medium text-gray-900 truncate">
-              Admin User
-            </p>
+            <p class="text-sm font-medium text-gray-900 truncate">Admin User</p>
             <Show
               when={!loggingOut()}
               fallback={<p class="text-xs text-gray-500">Signing out...</p>}

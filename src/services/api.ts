@@ -1,4 +1,3 @@
-import { authService } from "./auth"
 import { auth0Config } from "../config/auth0"
 import type {
   CustomerTransferResponse,

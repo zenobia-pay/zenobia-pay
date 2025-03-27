@@ -146,13 +146,13 @@ export const GlobalSearch: Component = () => {
     let path = ""
 
     if (result.name.includes("Payment")) {
-      path = "/admin/transactions"
+      path = "/transactions"
     } else if (result.name.includes("Merchant")) {
-      path = "/admin/merchants"
+      path = "/merchants"
     } else if (result.name.includes("API")) {
-      path = "/admin/settings"
+      path = "/settings"
     } else {
-      path = "/admin"
+      path = "/"
     }
 
     setIsSearchOpen(false)

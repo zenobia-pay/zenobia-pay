@@ -2,15 +2,6 @@
 import { render } from "solid-js/web"
 import "./index.css"
 import App from "./App.tsx"
-import AOS from "aos"
-import "aos/dist/aos.css"
-
-// Initialize AOS
-AOS.init({
-  duration: 1000,
-  once: true,
-  easing: "ease-in-out",
-})
 
 const root = document.getElementById("root")
 

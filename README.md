@@ -1,1 +1,1 @@
-Static landing page for zenobiapay.com
+Merchant Dashboard for Zenobia Pay

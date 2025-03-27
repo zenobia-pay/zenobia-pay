@@ -32,4 +32,4 @@ export default {
     rtl: false,
     prefix: "",
   },
-};
+}

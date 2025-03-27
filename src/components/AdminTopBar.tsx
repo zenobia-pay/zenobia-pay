@@ -27,7 +27,9 @@ export const AdminTopBar: Component = () => {
           <div class="lg:hidden">
             <button
               class="p-2 rounded-md text-gray-500 hover:text-gray-900 hover:bg-gray-100 focus:outline-none"
-              onClick={() => adminLayout.setDrawerOpen(!adminLayout.drawerOpen())}
+              onClick={() =>
+                adminLayout.setDrawerOpen(!adminLayout.drawerOpen())
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -201,7 +203,7 @@ export const AdminTopBar: Component = () => {
                     </div>
                     <div class="px-4 py-2 border-t border-gray-200">
                       <a
-                        href="/admin/notifications"
+                        href="/notifications"
                         class="text-xs font-medium text-indigo-600 hover:text-indigo-900"
                       >
                         View all notifications
@@ -249,7 +251,7 @@ export const AdminTopBar: Component = () => {
                 <div class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
                   <div class="py-1">
                     <A
-                      href="/admin/profile"
+                      href="/profile"
                       class="flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Profile
@@ -258,7 +260,7 @@ export const AdminTopBar: Component = () => {
                       </span>
                     </A>
                     <A
-                      href="/admin/settings"
+                      href="/settings"
                       class="px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 block"
                     >
                       Settings

@@ -19,7 +19,7 @@ export default function Login() {
         sessionStorage.removeItem("redirectPath")
         navigate(redirectPath, { replace: true })
       } else {
-        navigate("/admin", { replace: true })
+        navigate("/", { replace: true })
       }
     }
   })

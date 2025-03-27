@@ -9,10 +9,10 @@ const Admin404: Component = () => {
   // Automatic redirect to dashboard after 5 seconds
   const startCountdown = () => {
     const timer = setInterval(() => {
-      setCountdown(prev => {
+      setCountdown((prev: number) => {
         if (prev <= 1) {
           clearInterval(timer)
-          navigate("/admin")
+          navigate("/")
           return 0
         }
         return prev - 1
@@ -32,14 +32,14 @@ const Admin404: Component = () => {
           <div class="text-indigo-600 text-9xl font-bold">404</div>
           <h1 class="mt-4 text-3xl font-bold text-gray-900">Page not found</h1>
           <div class="mt-6 text-base text-gray-600">
-            <p>Sorry, we couldn't find the admin page you're looking for.</p>
+            <p>Sorry, we couldn't find the page you're looking for.</p>
             <p class="mt-2">
-              You'll be redirected to the admin dashboard in {countdown()} seconds.
+              You'll be redirected to the dashboard in {countdown()} seconds.
             </p>
           </div>
           <div class="mt-10 flex gap-4">
             <A
-              href="/admin"
+              href="/"
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
             >
               Go to Dashboard
@@ -55,11 +55,11 @@ const Admin404: Component = () => {
 
         {/* Suggestions */}
         <div class="mt-16">
-          <h2 class="text-lg font-medium text-gray-900">Popular admin pages</h2>
+          <h2 class="text-lg font-medium text-gray-900">Popular pages</h2>
           <ul class="mt-4 flex flex-col items-center gap-3">
             <li>
               <A
-                href="/admin/merchants"
+                href="/merchants"
                 class="text-indigo-600 hover:text-indigo-800 transition-colors"
               >
                 Merchants
@@ -67,7 +67,7 @@ const Admin404: Component = () => {
             </li>
             <li>
               <A
-                href="/admin/transactions"
+                href="/transactions"
                 class="text-indigo-600 hover:text-indigo-800 transition-colors"
               >
                 Transactions
@@ -75,7 +75,7 @@ const Admin404: Component = () => {
             </li>
             <li>
               <A
-                href="/admin/accounts"
+                href="/accounts"
                 class="text-indigo-600 hover:text-indigo-800 transition-colors"
               >
                 Accounts
@@ -83,7 +83,7 @@ const Admin404: Component = () => {
             </li>
             <li>
               <A
-                href="/admin/settings"
+                href="/settings"
                 class="text-indigo-600 hover:text-indigo-800 transition-colors"
               >
                 Settings

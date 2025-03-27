@@ -15,7 +15,7 @@ export const TopNavigation: Component = () => {
             profile.
           </div>
           <A
-            href="/admin/settings/business-profile"
+            href="/settings/business-profile"
             class="text-white font-medium hover:text-white/90 flex items-center"
           >
             Complete profile
@@ -151,13 +151,13 @@ export const TopNavigation: Component = () => {
             {showProfileMenu() && (
               <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                 <A
-                  href="/admin/settings/profile"
+                  href="/settings/profile"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Your profile
                 </A>
                 <A
-                  href="/admin/settings"
+                  href="/settings"
                   class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                 >
                   Settings
