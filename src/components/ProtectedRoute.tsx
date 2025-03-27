@@ -1,13 +1,12 @@
-import { Component, createSignal, onMount } from "solid-js"
-import { useNavigate, useLocation } from "@solidjs/router"
+import { Component, createSignal, onMount, JSX } from "solid-js"
+import { useLocation } from "@solidjs/router"
 import { authService } from "../services/auth"
 
 interface ProtectedRouteProps {
-  children: any
+  children: JSX.Element | Component
 }
 
 const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
-  const navigate = useNavigate()
   const location = useLocation()
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
   const [isLoading, setIsLoading] = createSignal(true)
@@ -19,7 +18,8 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
         window.location.search.includes("code=") ||
         window.location.search.includes("error=")
       ) {
-        navigate("/login", { replace: true })
+        // Redirect to the login route to handle callback
+        window.location.href = "/login" + window.location.search
         return
       }
 
@@ -29,11 +29,22 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
       } else {
         // Store the current path so we can redirect back after login
         sessionStorage.setItem("redirectPath", location.pathname)
-        navigate("/login", { replace: true })
+
+        // Redirect directly to Auth0 for authentication
+        await authService.signIn()
+        // The page will redirect to Auth0's login page
       }
     } catch (error) {
       console.error("Auth error in protected route:", error)
-      navigate("/login", { replace: true })
+      // Store the current path and redirect to Auth0
+      sessionStorage.setItem("redirectPath", location.pathname)
+      try {
+        await authService.signIn()
+      } catch (err) {
+        console.error("Failed to redirect to Auth0:", err)
+        // As a fallback, redirect to login page
+        window.location.href = "/login"
+      }
     } finally {
       setIsLoading(false)
     }
@@ -46,7 +57,10 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
         </div>
       ) : (
-        isAuthenticated() && props.children
+        isAuthenticated() &&
+        (typeof props.children === "function"
+          ? props.children({})
+          : props.children)
       )}
     </>
   )

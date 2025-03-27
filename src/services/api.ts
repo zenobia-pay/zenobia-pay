@@ -17,6 +17,8 @@ import type {
 const API_BASE_URL =
   "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod/"
 
+// const API_BASE_URL = "https://api.zenobiapay.com/Prod"
+
 // Helper to get the Auth0 token
 const getAuthToken = async (): Promise<string> => {
   const auth0Client = await import("@auth0/auth0-spa-js").then((module) =>

@@ -73,11 +73,23 @@ export const authService = {
       resetAuth0Client()
       const auth0 = await getAuth0Client()
 
+      // Get the current path from sessionStorage if available
+      const redirectPath = sessionStorage.getItem("redirectPath")
+
+      // Construct appState to pass through the login flow
+      const appState = redirectPath ? { returnTo: redirectPath } : undefined
+
       console.log(
         "Starting Auth0 login with redirect to:",
-        auth0Config.redirectUri
+        auth0Config.redirectUri,
+        "and appState:",
+        appState
       )
-      await auth0.loginWithRedirect()
+
+      await auth0.loginWithRedirect({
+        appState,
+      })
+
       // This won't actually execute due to the redirect
       return null
     } catch (error) {
@@ -98,7 +110,6 @@ export const authService = {
       await auth0.logout({
         logoutParams: {
           returnTo: window.location.origin,
-          // Setting clientId explicitly can help with complete logout
           clientId: auth0Config.clientId,
         },
       })
@@ -156,12 +167,13 @@ export const authService = {
         throw new Error("Invalid callback URL: missing code or state parameter")
       }
 
+      let redirectResult
       try {
         console.log("Attempting to handle redirect callback...")
 
         // Process the authentication callback
-        const result = await auth0.handleRedirectCallback()
-        console.log("Redirect callback processed successfully:", result)
+        redirectResult = await auth0.handleRedirectCallback()
+        console.log("Redirect callback processed successfully:", redirectResult)
 
         // Verify authentication worked after callback
         const isAuthenticated = await auth0.isAuthenticated()
@@ -169,6 +181,16 @@ export const authService = {
 
         if (!isAuthenticated) {
           throw new Error("Authentication failed after processing callback")
+        }
+
+        // Check if we have a returnTo path from appState
+        if (redirectResult?.appState?.returnTo) {
+          console.log("Found returnTo path:", redirectResult.appState.returnTo)
+          // Set redirectPath in sessionStorage to be used after login completes
+          sessionStorage.setItem(
+            "redirectPath",
+            redirectResult.appState.returnTo
+          )
         }
       } catch (callbackError) {
         console.error("Error in handleRedirectCallback:", callbackError)

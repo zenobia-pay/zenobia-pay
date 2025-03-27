@@ -1,7 +1,6 @@
 import type { RouteDefinition } from "@solidjs/router"
 
 import Login from "./components/auth/Login"
-import { SignUp } from "./components/auth/SignUp"
 import { Dashboard } from "./components/Dashboard"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Cards from "./components/admin/Cards"
@@ -14,45 +13,17 @@ import Privacy from "./pages/Privacy"
 import Docs from "./pages/Docs"
 import Admin404 from "./pages/errors/Admin404"
 
-const ProtectedDashboard = () => {
-  return ProtectedRoute({ children: Dashboard })
-}
-
-const ProtectedAdminCards = () => {
-  return ProtectedRoute({ children: Cards })
-}
-
-const ProtectedAdminPayments = () => {
-  return ProtectedRoute({ children: Payments })
-}
-
-const ProtectedAdminSettings = () => {
-  return ProtectedRoute({ children: Settings })
-}
-
-const ProtectedAdminMerchants = () => {
-  return ProtectedRoute({ children: Merchants })
-}
-
-const ProtectedAdminDevelopers = () => {
-  return ProtectedRoute({ children: Developers })
-}
-
-const ProtectedTerms = () => {
-  return ProtectedRoute({ children: Terms })
-}
-
-const ProtectedPrivacy = () => {
-  return ProtectedRoute({ children: Privacy })
-}
-
-const ProtectedDocs = () => {
-  return ProtectedRoute({ children: Docs })
-}
-
-const ProtectedNotFound = () => {
-  return ProtectedRoute({ children: Admin404 })
-}
+// Helper functions to wrap components with ProtectedRoute
+const ProtectedDashboard = () => ProtectedRoute({ children: Dashboard })
+const ProtectedAdminCards = () => ProtectedRoute({ children: Cards })
+const ProtectedAdminPayments = () => ProtectedRoute({ children: Payments })
+const ProtectedAdminSettings = () => ProtectedRoute({ children: Settings })
+const ProtectedAdminMerchants = () => ProtectedRoute({ children: Merchants })
+const ProtectedAdminDevelopers = () => ProtectedRoute({ children: Developers })
+const ProtectedTerms = () => ProtectedRoute({ children: Terms })
+const ProtectedPrivacy = () => ProtectedRoute({ children: Privacy })
+const ProtectedDocs = () => ProtectedRoute({ children: Docs })
+const ProtectedNotFound = () => ProtectedRoute({ children: Admin404 })
 
 export const routes: RouteDefinition[] = [
   {
@@ -62,10 +33,6 @@ export const routes: RouteDefinition[] = [
   {
     path: "/login",
     component: Login,
-  },
-  {
-    path: "/signup",
-    component: SignUp,
   },
   {
     path: "/merchants",
