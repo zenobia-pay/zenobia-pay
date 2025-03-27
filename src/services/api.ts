@@ -15,7 +15,7 @@ import type {
 } from "../types/plaid"
 
 const API_BASE_URL =
-  "https://4sdynx1kod.execute-api.us-east-1.amazonaws.com/Prod"
+  "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod/"
 
 // Helper to get the Auth0 token
 const getAuthToken = async (): Promise<string> => {
