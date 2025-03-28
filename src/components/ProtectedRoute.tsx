@@ -1,7 +1,8 @@
 import { Component, createSignal, onMount, JSX } from "solid-js"
-import { useLocation } from "@solidjs/router"
+import { useLocation, useNavigate } from "@solidjs/router"
 import { authService } from "../services/auth"
 import { useAuth } from "../context/AuthContext"
+import { api } from "../services/api"
 
 interface ProtectedRouteProps {
   children: JSX.Element | Component
@@ -9,6 +10,7 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
   const location = useLocation()
+  const navigate = useNavigate()
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
   const [isLoading, setIsLoading] = createSignal(true)
   const auth = useAuth()
@@ -25,11 +27,32 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
         return
       }
 
+      // Don't redirect to onboarding if we're already on the onboarding page
+      const isOnboardingRoute = location.pathname === "/onboarding"
+
       // Use the checkAuthStatus function from AuthContext
       const isAuthValid = await auth.checkAuthStatus()
 
       if (isAuthValid) {
         setIsAuthenticated(true)
+
+        // Non-blocking call to get user profile
+        api
+          .getUserProfile()
+          .then((userProfile) => {
+            console.log("User profile fetched:", userProfile)
+
+            // If user hasn't onboarded and isn't already on the onboarding page, redirect to onboarding
+            if (!userProfile.hasOnboarded && !isOnboardingRoute) {
+              console.log(
+                "User has not completed onboarding, redirecting to onboarding form"
+              )
+              navigate("/onboarding")
+            }
+          })
+          .catch((error) => {
+            console.error("Failed to fetch user profile:", error)
+          })
       } else {
         // Store the current path so we can redirect back after login
         sessionStorage.setItem("redirectPath", location.pathname)

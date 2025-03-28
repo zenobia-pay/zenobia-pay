@@ -8,6 +8,8 @@ import type {
   GetMerchantTransferResponse,
   GetMerchantConfigResponse,
   StatementItem,
+  GetUserProfileResponse,
+  SubmitOnboardingRequest,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -135,16 +137,7 @@ const callApi = async <T>(
 
           // Handle auth-related errors
           if (status === 401 || status === 403) {
-            console.log("API call returned auth error, redirecting to login")
-
-            // Reset the client to clear cached tokens
-            resetAuth0Client()
-
-            // Save current path for redirect
-            sessionStorage.setItem("redirectPath", window.location.pathname)
-
-            // Redirect to login page
-            window.location.href = "/login"
+            console.log("API call returned auth error (status: " + status + ")")
           }
         }
       }
@@ -400,6 +393,48 @@ export const api = {
       const json = await response.json()
       console.log("update merchant config response", json)
       return json
+    })
+  },
+
+  submitOnboarding: async (
+    onboardingData: SubmitOnboardingRequest
+  ): Promise<Record<string, never>> => {
+    return callApi(async (token) => {
+      const response = await fetch(`${API_BASE_URL}/submit-onboarding`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(onboardingData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("submit onboarding response", json)
+      return json
+    })
+  },
+
+  getUserProfile: async (): Promise<GetUserProfileResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(`${API_BASE_URL}/get-user-profile`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("get user profile response", json)
+      return json as GetUserProfileResponse
     })
   },
 }

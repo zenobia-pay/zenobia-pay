@@ -116,3 +116,22 @@ export type ListWaitlistEntriesQuery = {
     items: WaitlistEntry[]
   }
 }
+
+// User-related types
+export enum UserType {
+  MERCHANT = "MERCHANT",
+  CUSTOMER = "CUSTOMER",
+}
+
+export interface SubmitOnboardingRequest {
+  firstName: string
+  lastName: string
+  userType: UserType
+  merchantDisplayName?: string
+}
+
+export interface GetUserProfileResponse {
+  hasOnboarded: boolean
+  userType: UserType
+  isApproved: boolean
+}
