@@ -1,5 +1,5 @@
-import { createAuth0Client, Auth0Client } from "@auth0/auth0-spa-js"
 import { auth0Config } from "../config/auth0"
+import { auth0Utils } from "./api"
 
 export interface SignUpParams {
   email: string
@@ -13,45 +13,23 @@ export interface SignInParams {
   password: string
 }
 
-let auth0Client: Auth0Client | null = null
-
-const getAuth0Client = async (): Promise<Auth0Client> => {
-  if (auth0Client === null) {
-    auth0Client = await createAuth0Client({
-      domain: auth0Config.domain,
-      clientId: auth0Config.clientId,
-      authorizationParams: {
-        redirect_uri: auth0Config.redirectUri,
-        audience: auth0Config.audience,
-        scope: auth0Config.scope,
-      },
-      cacheLocation: "localstorage",
-      useRefreshTokens: true,
-    })
-  }
-  return auth0Client
+// Define a type for Auth0 user profile
+export interface UserProfile {
+  email: string
+  email_verified: boolean
+  name: string
+  nickname: string
+  picture: string
+  sub: string
+  updated_at: string
+  [key: string]: unknown // Allow for other properties that may exist
 }
 
-// Reset the auth0 client to force a new instance
-const resetAuth0Client = () => {
-  auth0Client = null
-
-  // Clear specific Auth0 items when resetting client
-  // This ensures a completely fresh state before attempting new auth actions
-  const keysToRemove = []
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i)
-    if (key && (key.startsWith("auth0") || key.includes("@@auth0spajs@@"))) {
-      keysToRemove.push(key)
-    }
-  }
-
-  // Remove keys in a separate loop to avoid index issues
-  keysToRemove.forEach((key) => localStorage.removeItem(key))
-}
+// Use the shared Auth0 client and utilities from the API service
+const { getAuth0Client, resetAuth0Client } = auth0Utils
 
 export const authService = {
-  async signUp(): Promise<any> {
+  async signUp(): Promise<void> {
     const auth0 = await getAuth0Client()
     await auth0.loginWithRedirect({
       authorizationParams: {
@@ -60,14 +38,14 @@ export const authService = {
     })
 
     // This won't actually execute due to the redirect
-    return null
+    return
   },
 
   async confirmSignUp(): Promise<void> {
     console.log("Email verification is handled by Auth0")
   },
 
-  async signIn(): Promise<any> {
+  async signIn(): Promise<void> {
     try {
       // Reset client to ensure a fresh authentication attempt
       resetAuth0Client()
@@ -91,7 +69,7 @@ export const authService = {
       })
 
       // This won't actually execute due to the redirect
-      return null
+      return
     } catch (error) {
       console.error("Error signing in:", error)
       throw error
@@ -121,7 +99,7 @@ export const authService = {
     }
   },
 
-  async getCurrentUser(): Promise<any> {
+  async getCurrentUser(): Promise<UserProfile | null> {
     try {
       const auth0 = await getAuth0Client()
       const isAuthenticated = await auth0.isAuthenticated()
@@ -130,7 +108,8 @@ export const authService = {
         return null
       }
 
-      return await auth0.getUser()
+      const user = await auth0.getUser<UserProfile>()
+      return user || null
     } catch (error) {
       console.error("Error getting current user:", error)
       return null

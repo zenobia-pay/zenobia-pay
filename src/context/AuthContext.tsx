@@ -4,29 +4,76 @@ import {
   createSignal,
   onMount,
   ParentComponent,
+  createEffect,
+  onCleanup,
 } from "solid-js"
-import { authService } from "../services/auth"
+import { authService, UserProfile } from "../services/auth"
 
 interface AuthContextType {
-  user: () => any | null
+  user: () => UserProfile | null
   isLoading: () => boolean
   signOut: () => Promise<void>
   signIn: () => Promise<void>
-  setUser: (user: any) => void
+  setUser: (user: UserProfile | null) => void
+  checkAuthStatus: () => Promise<boolean>
 }
 
 const AuthContext = createContext<AuthContextType>()
 
 export const AuthProvider: ParentComponent = (props) => {
-  const [user, setUser] = createSignal<any | null>(null)
+  const [user, setUser] = createSignal<UserProfile | null>(null)
   const [isLoading, setIsLoading] = createSignal(true)
+
+  // Function to check auth status - returns true if authenticated
+  const checkAuthStatus = async (): Promise<boolean> => {
+    try {
+      const currentUser = await authService.getCurrentUser()
+      if (currentUser) {
+        setUser(currentUser)
+        return true
+      } else {
+        setUser(null)
+        return false
+      }
+    } catch (error) {
+      console.error("Error checking auth status:", error)
+      setUser(null)
+      return false
+    }
+  }
+
+  // Set up periodic auth check (every 5 minutes)
+  createEffect(() => {
+    const interval = setInterval(
+      async () => {
+        // Only check if we think we're authenticated to avoid unnecessary calls
+        if (user()) {
+          try {
+            const isStillAuthenticated = await checkAuthStatus()
+            if (
+              !isStillAuthenticated &&
+              window.location.pathname !== "/login"
+            ) {
+              console.log("Auth check failed, redirecting to login")
+              // Save the current path
+              sessionStorage.setItem("redirectPath", window.location.pathname)
+              // Redirect to login
+              window.location.href = "/login"
+            }
+          } catch (error) {
+            console.error("Error in auth check interval:", error)
+          }
+        }
+      },
+      5 * 60 * 1000
+    ) // 5 minutes
+
+    onCleanup(() => clearInterval(interval))
+  })
 
   onMount(async () => {
     try {
-      const currentUser = await authService.getCurrentUser()
-      setUser(currentUser)
-    } catch (error) {
-      setUser(null)
+      await checkAuthStatus()
     } finally {
       setIsLoading(false)
     }
@@ -36,7 +83,8 @@ export const AuthProvider: ParentComponent = (props) => {
     setIsLoading(true)
     try {
       await authService.signIn()
-    } catch (error: any) {
+    } catch (error) {
+      console.error("Error during sign in:", error)
       throw error
     } finally {
       setIsLoading(false)
@@ -61,6 +109,7 @@ export const AuthProvider: ParentComponent = (props) => {
     signOut,
     signIn,
     setUser,
+    checkAuthStatus,
   }
 
   return (

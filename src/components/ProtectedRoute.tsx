@@ -1,6 +1,7 @@
 import { Component, createSignal, onMount, JSX } from "solid-js"
 import { useLocation } from "@solidjs/router"
 import { authService } from "../services/auth"
+import { useAuth } from "../context/AuthContext"
 
 interface ProtectedRouteProps {
   children: JSX.Element | Component
@@ -10,6 +11,7 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
   const location = useLocation()
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
   const [isLoading, setIsLoading] = createSignal(true)
+  const auth = useAuth()
 
   onMount(async () => {
     try {
@@ -23,8 +25,10 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
         return
       }
 
-      const user = await authService.getCurrentUser()
-      if (user) {
+      // Use the checkAuthStatus function from AuthContext
+      const isAuthValid = await auth.checkAuthStatus()
+
+      if (isAuthValid) {
         setIsAuthenticated(true)
       } else {
         // Store the current path so we can redirect back after login
