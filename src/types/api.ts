@@ -98,6 +98,11 @@ export interface GetMerchantTransferResponse {
   statusMessage?: string
 }
 
+export interface CreateM2mCredentialsResponse {
+  clientId: string
+  clientSecret: string
+}
+
 export interface GetMerchantConfigResponse {
   bankAccountId?: string
   merchantDisplayName?: string

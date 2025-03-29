@@ -10,6 +10,7 @@ import type {
   StatementItem,
   GetUserProfileResponse,
   SubmitOnboardingRequest,
+  CreateM2mCredentialsResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -17,6 +18,14 @@ import type {
 } from "../types/plaid"
 import { createAuth0Client } from "@auth0/auth0-spa-js"
 import type { Auth0Client } from "@auth0/auth0-spa-js"
+
+// Define Auth0Error interface
+interface Auth0Error extends Error {
+  error: string
+  error_description: string
+  audience?: string
+  scope?: string
+}
 
 const API_BASE_URL =
   "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
@@ -90,11 +99,15 @@ const getAuthToken = async (): Promise<string> => {
       console.error("Token error:", tokenError)
 
       // Check if this is a refresh token error
+      const authError = tokenError as Auth0Error
       if (
-        tokenError instanceof Error &&
-        (tokenError.message.includes("missing refresh token") ||
-          tokenError.message.includes("invalid_grant") ||
-          tokenError.message.includes("expired"))
+        authError.error === "missing_refresh_token" ||
+        authError.error === "invalid_grant" ||
+        authError.error === "expired" ||
+        (tokenError instanceof Error &&
+          (tokenError.message.includes("missing refresh token") ||
+            tokenError.message.includes("invalid_grant") ||
+            tokenError.message.includes("expired")))
       ) {
         console.log(
           "Auth token expired or refresh token missing, redirecting to login"
@@ -142,13 +155,29 @@ const callApi = async <T>(
         }
       }
 
-      // Check for token-related errors
+      // Check for Auth0 token error object
+      const authError = error as Auth0Error
       if (
+        authError.error === "missing_refresh_token" ||
+        authError.error === "invalid_grant" ||
+        authError.error === "expired"
+      ) {
+        console.log(
+          "Auth token error detected from error object, redirecting to login"
+        )
+        resetAuth0Client()
+        sessionStorage.setItem("redirectPath", window.location.pathname)
+        window.location.href = "/login"
+      }
+      // Also check for token-related errors in the message for backward compatibility
+      else if (
         error.message.includes("missing refresh token") ||
         error.message.includes("invalid_grant") ||
         error.message.includes("expired")
       ) {
-        console.log("Auth token error detected, redirecting to login")
+        console.log(
+          "Auth token error detected from message, redirecting to login"
+        )
 
         // Reset the client to clear cached tokens
         resetAuth0Client()
@@ -435,6 +464,25 @@ export const api = {
       const json = await response.json()
       console.log("get user profile response", json)
       return json as GetUserProfileResponse
+    })
+  },
+
+  createM2mCredentials: async (): Promise<CreateM2mCredentialsResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(`${API_BASE_URL}/create-m2m-credentials`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("create m2m credentials response", json)
+      return json as CreateM2mCredentialsResponse
     })
   },
 }
