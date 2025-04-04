@@ -11,6 +11,8 @@ import type {
   GetUserProfileResponse,
   SubmitOnboardingRequest,
   CreateM2mCredentialsResponse,
+  ListM2mCredentialsResponse,
+  DeleteM2mCredentialsResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -27,10 +29,10 @@ interface Auth0Error extends Error {
   scope?: string
 }
 
-const API_BASE_URL =
-  "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
+// const API_BASE_URL =
+//   "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
 
-// const API_BASE_URL = "https://api.zenobiapay.com/Prod"
+const API_BASE_URL = "https://api.zenobiapay.com"
 
 // Shared Auth0 client instance
 let auth0ClientInstance: Auth0Client | null = null
@@ -245,10 +247,12 @@ export const api = {
   listBankAccounts: async (): Promise<ListBankAccountsResponse> => {
     return callApi(async (token) => {
       const response = await fetch(`${API_BASE_URL}/list-bank-accounts`, {
-        method: "GET",
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}),
       })
 
       if (!response.ok) {
@@ -338,11 +342,12 @@ export const api = {
   listCustomerTransfers: async (): Promise<CustomerTransferResponse> => {
     return callApi(async (token) => {
       const response = await fetch(`${API_BASE_URL}/list-customer-transfers`, {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}),
       })
 
       if (!response.ok) {
@@ -365,11 +370,12 @@ export const api = {
       }
 
       const response = await fetch(url.toString(), {
-        method: "GET",
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({}),
       })
 
       if (!response.ok) {
@@ -483,6 +489,50 @@ export const api = {
       const json = await response.json()
       console.log("create m2m credentials response", json)
       return json as CreateM2mCredentialsResponse
+    })
+  },
+
+  listM2mCredentials: async (): Promise<ListM2mCredentialsResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(`${API_BASE_URL}/list-m2m-credentials`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({}),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("list m2m credentials response", json)
+      return json as ListM2mCredentialsResponse
+    })
+  },
+
+  deleteM2mCredentials: async (
+    clientId: string
+  ): Promise<DeleteM2mCredentialsResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(`${API_BASE_URL}/delete-m2m-credentials`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ clientId }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("delete m2m credentials response", json)
+      return json as DeleteM2mCredentialsResponse
     })
   },
 }

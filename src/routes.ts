@@ -53,7 +53,7 @@ export const routes: RouteDefinition[] = [
     component: ProtectedAdminPayments,
   },
   {
-    path: "/developers",
+    path: ["/developers", "/developers/*"],
     component: ProtectedAdminDevelopers,
   },
   {

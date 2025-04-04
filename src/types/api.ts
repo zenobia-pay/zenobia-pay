@@ -103,6 +103,21 @@ export interface CreateM2mCredentialsResponse {
   clientSecret: string
 }
 
+export interface ListM2mCredentialsResponse {
+  credentials: {
+    clientId: string
+    createdAt?: string // Optional since it's not explicitly in API spec but useful to have
+  }[]
+}
+
+export interface DeleteM2mCredentialsRequest {
+  clientId: string
+}
+
+export interface DeleteM2mCredentialsResponse {
+  clientId: string
+}
+
 export interface GetMerchantConfigResponse {
   bankAccountId?: string
   merchantDisplayName?: string

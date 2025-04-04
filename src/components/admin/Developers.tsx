@@ -1,7 +1,8 @@
-import { Component, createSignal, For, Show } from "solid-js"
+import { Component, createSignal, For, Show, createEffect } from "solid-js"
 import { AdminLayout } from "../AdminLayout"
 import { api } from "../../services/api"
 import { toast } from "solid-toast"
+import { useLocation, useNavigate } from "@solidjs/router"
 
 interface ApiKey {
   id: string
@@ -21,14 +22,105 @@ interface Webhook {
   lastFailed: string | null
 }
 
+// Add interface for M2M credentials
+interface M2mCredential {
+  clientId: string
+  createdAt?: string
+}
+
 const Developers: Component = () => {
-  const [activeTab, setActiveTab] = createSignal("api-keys")
+  const location = useLocation()
+  const navigate = useNavigate()
+
+  const activeTab = () => {
+    const path = location.pathname
+    if (path.includes("/developers/m2m-credentials")) return "m2m-credentials"
+    if (path.includes("/developers/webhooks")) return "webhooks"
+    if (path.includes("/developers/logs")) return "logs"
+    if (path.includes("/developers/docs")) return "docs"
+    return "api-keys" // Default or explicit api-keys path
+  }
+
   const [isGeneratingCredentials, setIsGeneratingCredentials] =
     createSignal(false)
   const [generatedCredentials, setGeneratedCredentials] = createSignal<{
     clientId: string
     clientSecret: string
   } | null>(null)
+  const [m2mCredentials, setM2mCredentials] = createSignal<M2mCredential[]>([])
+  const [isLoadingCredentials, setIsLoadingCredentials] = createSignal(false)
+  const [isDeletingCredential, setIsDeletingCredential] = createSignal(false)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] =
+    createSignal(false)
+  const [confirmCredentialId, setConfirmCredentialId] = createSignal<
+    string | null
+  >(null)
+
+  // Load M2M credentials when the component mounts or tab changes
+  createEffect(() => {
+    if (activeTab() === "m2m-credentials") {
+      loadM2mCredentials()
+    }
+  })
+
+  const loadM2mCredentials = async () => {
+    try {
+      setIsLoadingCredentials(true)
+      const response = await api.listM2mCredentials()
+      setM2mCredentials(response.credentials)
+    } catch (error) {
+      console.error("Error loading M2M credentials:", error)
+      toast.error("Failed to load M2M credentials")
+    } finally {
+      setIsLoadingCredentials(false)
+    }
+  }
+
+  const generateM2mCredentials = async () => {
+    try {
+      setIsGeneratingCredentials(true)
+      const credentials = await api.createM2mCredentials()
+      setGeneratedCredentials(credentials)
+      toast.success("M2M credentials generated successfully")
+      // Refresh the list of credentials
+      loadM2mCredentials()
+    } catch (error) {
+      console.error("Error generating M2M credentials:", error)
+      toast.error("Failed to generate M2M credentials")
+    } finally {
+      setIsGeneratingCredentials(false)
+    }
+  }
+
+  const confirmDeleteCredential = (clientId: string) => {
+    setConfirmCredentialId(clientId)
+    setShowDeleteConfirmation(true)
+  }
+
+  const cancelDeleteCredential = () => {
+    setShowDeleteConfirmation(false)
+    setConfirmCredentialId(null)
+  }
+
+  const proceedWithDelete = async () => {
+    const clientId = confirmCredentialId()
+    if (!clientId) return
+
+    try {
+      setIsDeletingCredential(true)
+      await api.deleteM2mCredentials(clientId)
+      toast.success("M2M credentials deleted successfully")
+      // Refresh the list of credentials
+      loadM2mCredentials()
+    } catch (error) {
+      console.error("Error deleting M2M credentials:", error)
+      toast.error("Failed to delete M2M credentials")
+    } finally {
+      setIsDeletingCredential(false)
+      setShowDeleteConfirmation(false)
+      setConfirmCredentialId(null)
+    }
+  }
 
   // Mock data
   const [apiKeys] = createSignal<ApiKey[]>([
@@ -61,20 +153,6 @@ const Developers: Component = () => {
     },
   ])
 
-  const generateM2mCredentials = async () => {
-    try {
-      setIsGeneratingCredentials(true)
-      const credentials = await api.createM2mCredentials()
-      setGeneratedCredentials(credentials)
-      toast.success("M2M credentials generated successfully")
-    } catch (error) {
-      console.error("Error generating M2M credentials:", error)
-      toast.error("Failed to generate M2M credentials")
-    } finally {
-      setIsGeneratingCredentials(false)
-    }
-  }
-
   return (
     <AdminLayout>
       <div class="space-y-6">
@@ -89,7 +167,7 @@ const Developers: Component = () => {
         <div class="border-b border-gray-200">
           <nav class="-mb-px flex space-x-8" aria-label="Tabs">
             <button
-              onClick={() => setActiveTab("api-keys")}
+              onClick={() => navigate("/developers/api-keys")}
               class={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab() === "api-keys"
                   ? "border-indigo-500 text-indigo-600"
@@ -99,7 +177,7 @@ const Developers: Component = () => {
               API Keys
             </button>
             <button
-              onClick={() => setActiveTab("m2m-credentials")}
+              onClick={() => navigate("/developers/m2m-credentials")}
               class={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab() === "m2m-credentials"
                   ? "border-indigo-500 text-indigo-600"
@@ -109,7 +187,7 @@ const Developers: Component = () => {
               M2M Credentials
             </button>
             <button
-              onClick={() => setActiveTab("webhooks")}
+              onClick={() => navigate("/developers/webhooks")}
               class={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab() === "webhooks"
                   ? "border-indigo-500 text-indigo-600"
@@ -119,7 +197,7 @@ const Developers: Component = () => {
               Webhooks
             </button>
             <button
-              onClick={() => setActiveTab("logs")}
+              onClick={() => navigate("/developers/logs")}
               class={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab() === "logs"
                   ? "border-indigo-500 text-indigo-600"
@@ -129,7 +207,7 @@ const Developers: Component = () => {
               Event Logs
             </button>
             <button
-              onClick={() => setActiveTab("docs")}
+              onClick={() => navigate("/developers/docs")}
               class={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab() === "docs"
                   ? "border-indigo-500 text-indigo-600"
@@ -289,6 +367,75 @@ const Developers: Component = () => {
           </div>
         </Show>
 
+        {/* Delete Confirmation Modal */}
+        <Show when={showDeleteConfirmation()}>
+          <div class="fixed z-10 inset-0 overflow-y-auto">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+              <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+              </div>
+
+              <span
+                class="hidden sm:inline-block sm:align-middle sm:h-screen"
+                aria-hidden="true"
+              >
+                &#8203;
+              </span>
+
+              <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div>
+                  <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg
+                      class="h-6 w-6 text-red-600"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="mt-3 text-center sm:mt-5">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900">
+                      Delete M2M Credential
+                    </h3>
+                    <div class="mt-2">
+                      <p class="text-sm text-gray-500">
+                        Are you sure you want to delete this credential? Any
+                        applications using it will no longer be able to
+                        authenticate.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                  <button
+                    type="button"
+                    onClick={proceedWithDelete}
+                    disabled={isDeletingCredential()}
+                    class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:col-start-2 sm:text-sm disabled:bg-red-400"
+                  >
+                    {isDeletingCredential() ? "Deleting..." : "Delete"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelDeleteCredential}
+                    class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:col-start-1 sm:text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </Show>
+
         {/* M2M Credentials Tab */}
         <Show when={activeTab() === "m2m-credentials"}>
           <div class="space-y-6">
@@ -305,6 +452,111 @@ const Developers: Component = () => {
                   ? "Generating..."
                   : "Generate New Credentials"}
               </button>
+            </div>
+
+            {/* List of existing credentials */}
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+              <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                <h3 class="text-md font-medium text-gray-900">
+                  Your Credentials
+                </h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">
+                  These credentials can be used for server-to-server API
+                  authentication.
+                </p>
+              </div>
+              <Show when={isLoadingCredentials()}>
+                <div class="p-6 text-center">
+                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                  <p class="mt-2 text-sm text-gray-500">
+                    Loading credentials...
+                  </p>
+                </div>
+              </Show>
+              <Show
+                when={!isLoadingCredentials() && m2mCredentials().length === 0}
+              >
+                <div class="p-6 text-center">
+                  <p class="text-sm text-gray-500">
+                    You haven't created any M2M credentials yet. Use the button
+                    above to generate credentials.
+                  </p>
+                </div>
+              </Show>
+              <Show
+                when={!isLoadingCredentials() && m2mCredentials().length > 0}
+              >
+                <ul class="divide-y divide-gray-200">
+                  <For each={m2mCredentials()}>
+                    {(credential) => (
+                      <li class="px-4 py-4 sm:px-6">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                              <div class="h-8 w-8 rounded-full flex items-center justify-center bg-indigo-100 text-indigo-800">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                                  />
+                                </svg>
+                              </div>
+                            </div>
+                            <div class="ml-4">
+                              <div class="font-medium text-gray-900">
+                                Client ID
+                              </div>
+                              <div class="text-sm text-gray-500">
+                                {credential.clientId}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="flex items-center">
+                            {credential.createdAt && (
+                              <span class="text-sm text-gray-500 mr-4">
+                                Created:{" "}
+                                {new Date(
+                                  credential.createdAt
+                                ).toLocaleDateString()}
+                              </span>
+                            )}
+                            <button
+                              onClick={() =>
+                                confirmDeleteCredential(credential.clientId)
+                              }
+                              class="text-red-400 hover:text-red-500"
+                              title="Delete credential"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </Show>
             </div>
 
             <Show when={generatedCredentials()}>
