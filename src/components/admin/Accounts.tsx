@@ -1,9 +1,8 @@
 import { Component, createResource, For, Show } from "solid-js"
 import { api } from "../../services/api"
 import type { ListBankAccountsResponse } from "../../types/plaid"
-import { AdminLayout } from "../AdminLayout"
 
-const Cards: Component = () => {
+const Accounts: Component = () => {
   const [banks, { refetch: refetchBanks }] =
     createResource<ListBankAccountsResponse>(api.listBankAccounts)
 
@@ -36,7 +35,7 @@ const Cards: Component = () => {
     }
   }
 
-  const CardsContent = () => (
+  const AccountsContent = () => (
     <div class="space-y-6">
       <div class="flex justify-between items-center">
         <h1 class="text-2xl font-semibold">Your Accounts</h1>
@@ -163,11 +162,7 @@ const Cards: Component = () => {
     </div>
   )
 
-  return (
-    <AdminLayout>
-      <CardsContent />
-    </AdminLayout>
-  )
+  return <AccountsContent />
 }
 
-export default Cards
+export default Accounts

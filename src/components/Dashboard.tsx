@@ -6,37 +6,108 @@ import {
   Show,
 } from "solid-js"
 import { AdminLayout } from "./AdminLayout"
+import { useSearchParams } from "@solidjs/router"
 import { api } from "../services/api"
-import { TransferStatus } from "../types/api"
-import type { MerchantTransferResponse } from "../types/api"
+import { Transfer, TransferStatus } from "../types/api"
+import Accounts from "./admin/Accounts"
+import Payments from "./admin/Payments"
+import Settings from "./admin/Settings"
+import Merchants from "./admin/Merchants"
+import Developers from "./admin/Developers"
+
+// Tab definitions
+const TABS = {
+  OVERVIEW: "overview",
+  MERCHANTS: "merchants",
+  ACCOUNTS: "accounts",
+  PAYMENTS: "payments",
+  DEVELOPERS: "developers",
+  SETTINGS: "settings",
+}
 
 export const Dashboard: Component = () => {
-  const [period, setPeriod] = createSignal("Last 7 days")
-  const [periodOptions] = createSignal([
-    "Last 7 days",
-    "Last 30 days",
-    "Last 3 months",
-    "Last 12 months",
-  ])
+  // Use search params to handle tab navigation
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  // Get current active tab from URL or default to overview
+  const currentTab = () => searchParams.tab || TABS.OVERVIEW
+
+  // Set active tab and update URL
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab })
+  }
+
+  // Create data resources used in the overview tab
+  const [period, setPeriod] = createSignal("Last 30 days")
+  const [timeframe, setTimeframe] = createSignal("This month")
   const [showPeriodDropdown, setShowPeriodDropdown] = createSignal(false)
-
-  const [timeframe, setTimeframe] = createSignal("Daily")
-  const [timeframeOptions] = createSignal(["Daily", "Weekly", "Monthly"])
   const [showTimeframeDropdown, setShowTimeframeDropdown] = createSignal(false)
+  const periodOptions = createMemo(() => [
+    "Last 30 days",
+    "Last 7 days",
+    "Last 90 days",
+    "Year to date",
+    "All time",
+  ])
+  const timeframeOptions = createMemo(() => [
+    "This month",
+    "This week",
+    "This quarter",
+    "This year",
+  ])
 
-  // Fetch merchant transfers
-  const [merchantTransfers] = createResource<MerchantTransferResponse>(
-    async () => {
-      try {
-        return await api.listMerchantTransfers()
-      } catch (error) {
-        console.error("Error fetching merchant transfers:", error)
-        return { items: [] }
-      }
+  // Fetch merchant transfers for overview tab
+  const [merchantTransfers] = createResource(async () => {
+    try {
+      const response = await api.listMerchantTransfers()
+      return response
+    } catch (error) {
+      console.error("Error fetching merchant transfers:", error)
+      return { items: [] }
     }
-  )
+  })
 
-  // Calculate metrics based on period
+  // Filter transfers based on period for overview tab
+  const filteredTransfers = createMemo(() => {
+    if (!merchantTransfers() || !merchantTransfers()?.items) {
+      return []
+    }
+
+    const transfers = merchantTransfers()?.items ?? []
+
+    // Filter based on the selected period
+    const today = new Date()
+    let startDate: Date
+
+    switch (period()) {
+      case "Last 7 days":
+        startDate = new Date(today.setDate(today.getDate() - 7))
+        break
+      case "Last 90 days":
+        startDate = new Date(today.setDate(today.getDate() - 90))
+        break
+      case "Year to date":
+        startDate = new Date(today.getFullYear(), 0, 1) // January 1st of current year
+        break
+      case "All time":
+        return transfers
+      case "Last 30 days":
+      default:
+        startDate = new Date(today.setDate(today.getDate() - 30))
+        break
+    }
+
+    return transfers.filter((transfer) => {
+      return transfer
+      // const transferObject = await api.getMerchantTransfer(
+      //   transfer.transferRequestId
+      // )
+      // const transferDate = new Date(transferObject.)
+      // return transferDate >= startDate
+    })
+  })
+
+  // Metrics calculations for overview tab
   const metrics = createMemo(() => {
     if (merchantTransfers.loading || !merchantTransfers()) {
       return {
@@ -51,57 +122,36 @@ export const Dashboard: Component = () => {
       }
     }
 
-    const merchantItems = merchantTransfers()?.items || []
+    const transfers = filteredTransfers()
 
-    // Filter based on selected period
-    const now = new Date()
-    const startDate = new Date()
-
-    switch (period()) {
-      case "Last 7 days":
-        startDate.setDate(now.getDate() - 7)
-        break
-      case "Last 30 days":
-        startDate.setDate(now.getDate() - 30)
-        break
-      case "Last 3 months":
-        startDate.setMonth(now.getMonth() - 3)
-        break
-      case "Last 12 months":
-        startDate.setMonth(now.getMonth() - 12)
-        break
-    }
-
-    // Filter transfers by date (using a made-up date for now since MerchantTransfer doesn't have creationTime)
-    // In a real implementation, you would use a proper date field from the MerchantTransfer type
-    const filteredTransfers = merchantItems
-
-    // Calculate processing volume (all transactions)
-    const processingVolume = filteredTransfers.reduce(
-      (sum, transfer) => sum + transfer.amount,
+    // Calculate total revenue (just a simplified example)
+    // In a real app, you'd calculate based on fee structure
+    const totalRevenue = transfers.reduce(
+      (sum: number, transfer) => sum + transfer.amount * 0.01, // 1% of transaction amount as revenue
       0
     )
 
-    // Calculate revenue (estimated at 2.5% of processing volume)
-    const feePercentage = 0.025 // 2.5%
-    const totalRevenue = processingVolume * feePercentage
+    // Calculate processing volume
+    const processingVolume = transfers.reduce(
+      (sum: number, transfer) => sum + transfer.amount,
+      0
+    )
 
-    // Count successful and failed transactions
-    const successfulTransactions = filteredTransfers.filter(
+    // Calculate transaction counts
+    const successfulTransactions = transfers.filter(
       (transfer) => transfer.status === TransferStatus.COMPLETED
     ).length
-
-    const failedTransactions = filteredTransfers.filter(
+    const failedTransactions = transfers.filter(
       (transfer) => transfer.status === TransferStatus.FAILED
     ).length
 
-    // Get top transactions by amount
-    const topTransactions = [...filteredTransfers]
+    // Get top 5 largest transactions
+    const topTransactions = [...transfers]
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 5)
 
     // Get failed payments
-    const failedPayments = filteredTransfers.filter(
+    const failedPayments = transfers.filter(
       (transfer) => transfer.status === TransferStatus.FAILED
     )
 
@@ -142,8 +192,81 @@ export const Dashboard: Component = () => {
     return now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
   }
 
-  // Dashboard content that will be wrapped in AdminLayout
-  const DashboardContent = () => (
+  // Tab navigation component
+  const TabNavigation = () => (
+    <div class="mb-6">
+      <div class="border-b border-gray-200">
+        <nav
+          class="-mb-px flex space-x-6 overflow-x-auto pb-1"
+          aria-label="Tabs"
+        >
+          <button
+            onClick={() => setActiveTab(TABS.OVERVIEW)}
+            class={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
+              currentTab() === TABS.OVERVIEW
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.MERCHANTS)}
+            class={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
+              currentTab() === TABS.MERCHANTS
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Merchants
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.ACCOUNTS)}
+            class={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
+              currentTab() === TABS.ACCOUNTS
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Accounts
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.PAYMENTS)}
+            class={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
+              currentTab() === TABS.PAYMENTS
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Payments
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.DEVELOPERS)}
+            class={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
+              currentTab() === TABS.DEVELOPERS
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Developers
+          </button>
+          <button
+            onClick={() => setActiveTab(TABS.SETTINGS)}
+            class={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${
+              currentTab() === TABS.SETTINGS
+                ? "border-indigo-500 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            Settings
+          </button>
+        </nav>
+      </div>
+    </div>
+  )
+
+  // Overview tab content
+  const Home = () => (
     <div class="space-y-8">
       {/* Page Header */}
       <div>
@@ -640,9 +763,24 @@ export const Dashboard: Component = () => {
     </div>
   )
 
-  return (
-    <AdminLayout>
-      <DashboardContent />
-    </AdminLayout>
-  )
+  // Render the active tab content based on current tab
+  const renderTabContent = () => {
+    switch (currentTab()) {
+      case TABS.MERCHANTS:
+        return <Merchants />
+      case TABS.ACCOUNTS:
+        return <Accounts />
+      case TABS.PAYMENTS:
+        return <Payments />
+      case TABS.DEVELOPERS:
+        return <Developers />
+      case TABS.SETTINGS:
+        return <Settings />
+      case TABS.OVERVIEW:
+      default:
+        return <Home />
+    }
+  }
+
+  return <AdminLayout>{renderTabContent()}</AdminLayout>
 }

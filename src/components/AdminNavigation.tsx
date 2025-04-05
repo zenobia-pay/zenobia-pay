@@ -1,30 +1,30 @@
-import { Component, createSignal, Show, createMemo } from "solid-js"
-import { A, useNavigate, useLocation } from "@solidjs/router"
+import { Component, createSignal } from "solid-js"
+import { A, useNavigate, useLocation, useSearchParams } from "@solidjs/router"
 import { authService } from "../services/auth"
 import { useAdminLayout } from "./AdminLayout"
 
 export const AdminNavigation: Component = () => {
   const navigate = useNavigate()
   const location = useLocation()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [loggingOut, setLoggingOut] = createSignal(false)
   const adminLayout = useAdminLayout()
 
-  // Create a memo to check if a path is active
-  const isActive = createMemo(() => (path: string) => {
-    if (path === "/") {
-      // Exact match for dashboard
-      return location.pathname === "/"
-    }
-    // For other pages, check if the pathname starts with the path
-    return location.pathname.startsWith(path)
-  })
+  // Get current active tab from URL
+  const currentTab = () => searchParams.tab || "overview"
 
-  // Close drawer after navigation on mobile
-  const handleNavigation = (path: string) => {
+  // Function to navigate with the tab parameter
+  const navigateToTab = (tabName: string) => {
+    if (location.pathname !== "/") {
+      navigate("/?tab=" + tabName)
+    } else {
+      setSearchParams({ tab: tabName })
+    }
+
+    // Close drawer after navigation on mobile
     if (window.innerWidth < 1024) {
       adminLayout.setDrawerOpen(false)
     }
-    navigate(path)
   }
 
   return (
@@ -43,21 +43,17 @@ export const AdminNavigation: Component = () => {
             Core
           </div>
 
-          <A
-            href="/"
-            class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/")
+          <button
+            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
+              currentTab() === "overview"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={(e) => {
-              e.preventDefault()
-              handleNavigation("/")
-            }}
+            onClick={() => navigateToTab("overview")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/")
+                currentTab() === "overview"
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -74,23 +70,19 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Home
-          </A>
+          </button>
 
-          <A
-            href="/transactions"
-            class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/transactions")
+          <button
+            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
+              currentTab() === "payments"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={(e) => {
-              e.preventDefault()
-              handleNavigation("/transactions")
-            }}
+            onClick={() => navigateToTab("payments")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/transactions")
+                currentTab() === "payments"
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -107,23 +99,19 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Payments
-          </A>
+          </button>
 
-          <A
-            href="/merchants"
-            class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/merchants")
+          <button
+            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
+              currentTab() === "merchants"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={(e) => {
-              e.preventDefault()
-              handleNavigation("/merchants")
-            }}
+            onClick={() => navigateToTab("merchants")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/merchants")
+                currentTab() === "merchants"
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -140,23 +128,19 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Merchants
-          </A>
+          </button>
 
-          <A
-            href="/accounts"
-            class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/accounts")
+          <button
+            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
+              currentTab() === "accounts"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={(e) => {
-              e.preventDefault()
-              handleNavigation("/accounts")
-            }}
+            onClick={() => navigateToTab("accounts")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/accounts")
+                currentTab() === "accounts"
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -173,7 +157,7 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Accounts
-          </A>
+          </button>
         </div>
 
         <div class="pt-6 space-y-2">
@@ -181,21 +165,17 @@ export const AdminNavigation: Component = () => {
             More
           </div>
 
-          <A
-            href="/developers"
-            class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/developers")
+          <button
+            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
+              currentTab() === "developers"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={(e) => {
-              e.preventDefault()
-              handleNavigation("/developers")
-            }}
+            onClick={() => navigateToTab("developers")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/developers")
+                currentTab() === "developers"
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -212,23 +192,19 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Developers
-          </A>
+          </button>
 
-          <A
-            href="/settings"
-            class={`flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              isActive()("/settings")
+          <button
+            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
+              currentTab() === "settings"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={(e) => {
-              e.preventDefault()
-              handleNavigation("/settings")
-            }}
+            onClick={() => navigateToTab("settings")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
-                isActive()("/settings")
+                currentTab() === "settings"
                   ? "text-indigo-500"
                   : "text-gray-400 group-hover:text-indigo-500"
               }`}
@@ -251,40 +227,57 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Settings
+          </button>
+
+          {/* Other links can remain the same (Docs, Terms, etc.) */}
+          <A
+            href="/docs"
+            class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-indigo-700 hover:bg-gray-50"
+            onClick={() => {
+              if (window.innerWidth < 1024) {
+                adminLayout.setDrawerOpen(false)
+              }
+            }}
+          >
+            <svg
+              class="mr-3 h-5 w-5 text-gray-400 group-hover:text-indigo-500"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+            Documentation
           </A>
         </div>
       </nav>
 
-      {/* User Section */}
-      <div class="border-t border-gray-200 p-4">
-        <div class="flex items-center">
-          <div class="relative flex-shrink-0">
-            <div class="h-9 w-9 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-medium">
-              AU
-            </div>
-            <div class="absolute bottom-0 right-0 rounded-full w-2.5 h-2.5 bg-green-400 border border-white"></div>
-          </div>
-          <div class="ml-3 min-w-0 flex-1">
-            <p class="text-sm font-medium text-gray-900 truncate">Admin User</p>
-            <Show
-              when={!loggingOut()}
-              fallback={<p class="text-xs text-gray-500">Signing out...</p>}
-            >
-              <button
-                onClick={async () => {
-                  setLoggingOut(true)
-                  await authService.signOut()
-                  navigate("/")
-                  setLoggingOut(false)
-                }}
-                class="text-xs text-gray-500 hover:text-gray-900 transition-colors"
-                disabled={loggingOut()}
-              >
-                Sign out
-              </button>
-            </Show>
-          </div>
-        </div>
+      {/* User Menu Section */}
+      <div class="p-4 border-t border-gray-200">
+        <button
+          onClick={async () => {
+            if (!loggingOut()) {
+              setLoggingOut(true)
+              try {
+                await authService.signOut()
+                window.location.href = "/login"
+              } catch (error) {
+                console.error("Error signing out:", error)
+                setLoggingOut(false)
+              }
+            }
+          }}
+          class="w-full px-4 py-2 text-center text-sm font-medium text-white bg-indigo-600 rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          disabled={loggingOut()}
+        >
+          {loggingOut() ? "Signing out..." : "Sign out"}
+        </button>
       </div>
     </div>
   )
