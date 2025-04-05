@@ -143,15 +143,45 @@ export enum UserType {
   CUSTOMER = "CUSTOMER",
 }
 
-export interface SubmitOnboardingRequest {
-  firstName: string
-  lastName: string
-  userType: UserType
-  merchantDisplayName?: string
-}
-
 export interface GetUserProfileResponse {
   hasOnboarded: boolean
   userType: UserType
   isApproved: boolean
+}
+
+export interface Address {
+  address1: string
+  address2?: string
+  city: string
+  state: string
+  country: string
+  zip5: string
+}
+
+export enum EntityType {
+  SOLE_PROPRIETORSHIP = "SOLE_PROPRIETORSHIP",
+  PARTNERSHIP = "PARTNERSHIP",
+  LLP = "LLP",
+  LLC = "LLC",
+  C_CORP = "C_CORP",
+  S_CORP = "S_CORP",
+  B_CORP = "B_CORP",
+  NON_PROFIT = "NON_PROFIT",
+}
+
+export enum TaxIdType {
+  TIN = "TIN",
+  EIN = "EIN",
+}
+
+export interface SubmitMerchantOnboardingRequest {
+  firstName: string
+  lastName: string
+  merchantDisplayName: string
+  legalBusinessName: string
+  entityType: EntityType
+  taxId: string
+  taxIdType: TaxIdType
+  incorporationDate: string
+  address: Address
 }

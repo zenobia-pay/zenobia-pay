@@ -9,10 +9,10 @@ import type {
   GetMerchantConfigResponse,
   StatementItem,
   GetUserProfileResponse,
-  SubmitOnboardingRequest,
   CreateM2mCredentialsResponse,
   ListM2mCredentialsResponse,
   DeleteM2mCredentialsResponse,
+  SubmitMerchantOnboardingRequest,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -431,25 +431,28 @@ export const api = {
     })
   },
 
-  submitOnboarding: async (
-    onboardingData: SubmitOnboardingRequest
+  submitMerchantOnboarding: async (
+    onboardingData: SubmitMerchantOnboardingRequest
   ): Promise<Record<string, never>> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/submit-onboarding`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(onboardingData),
-      })
+      const response = await fetch(
+        `${API_BASE_URL}/submit-merchant-onboarding`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(onboardingData),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
       const json = await response.json()
-      console.log("submit onboarding response", json)
+      console.log("submit merchant onboarding response", json)
       return json
     })
   },
