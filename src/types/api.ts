@@ -59,11 +59,6 @@ export interface MerchantTransfer {
   transferRequestId: string
 }
 
-export interface CustomerTransferResponse {
-  continuationToken?: string
-  items: Transfer[]
-}
-
 export interface MerchantTransferResponse {
   continuationToken?: string
   items: MerchantTransfer[]

@@ -4,9 +4,12 @@ import {
   createContext,
   useContext,
   createSignal,
+  createResource,
+  Show,
 } from "solid-js"
 import { AdminNavigation } from "./AdminNavigation"
 import { AdminTopBar } from "./AdminTopBar"
+import { api } from "../services/api"
 
 interface AdminLayoutProps {
   children: JSX.Element
@@ -16,13 +19,13 @@ interface AdminLayoutProps {
 type AdminLayoutContextValue = {
   drawerOpen: () => boolean
   setDrawerOpen: (open: boolean) => void
-  isTestMode: () => boolean
+  isApproved: () => boolean
 }
 
 const AdminLayoutContext = createContext<AdminLayoutContextValue>({
   drawerOpen: () => false,
   setDrawerOpen: () => {},
-  isTestMode: () => true,
+  isApproved: () => false,
 })
 
 export const useAdminLayout = () => useContext(AdminLayoutContext)
@@ -35,8 +38,20 @@ export const useAdminLayout = () => useContext(AdminLayoutContext)
 export const AdminLayout: Component<AdminLayoutProps> = (props) => {
   // State for the mobile drawer
   const [drawerOpen, setDrawerOpen] = createSignal(false)
-  // State for test mode (default to true)
-  const [isTestMode] = createSignal(true)
+
+  // Fetch user profile to determine approval status
+  const [userProfile] = createResource(async () => {
+    try {
+      const response = await api.getUserProfile()
+      return response
+    } catch (error) {
+      console.error("Error fetching user profile:", error)
+      return { isApproved: false }
+    }
+  })
+
+  // Derived state for approval status
+  const isApproved = () => userProfile()?.isApproved ?? false
 
   // Close drawer when screen size changes to desktop
   const handleResize = () => {
@@ -52,10 +67,12 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
   }
 
   return (
-    <AdminLayoutContext.Provider value={{ drawerOpen, setDrawerOpen, isTestMode }}>
+    <AdminLayoutContext.Provider
+      value={{ drawerOpen, setDrawerOpen, isApproved }}
+    >
       <div class="h-screen flex flex-col overflow-hidden">
-        {/* Test Mode Banner - Always at the very top */}
-        {isTestMode() && (
+        {/* Test Mode Banner - Show when not approved */}
+        <Show when={!isApproved()}>
           <div class="bg-amber-500 text-white px-4 py-1 z-50">
             <div class="max-w-screen-2xl mx-auto flex justify-between items-center">
               <div class="flex items-center gap-2">
@@ -74,15 +91,17 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
                   />
                 </svg>
                 <span class="text-xs font-medium">
-                  You're using test data. To accept payments, complete your
-                  business profile.
+                  Your account is under review. Please allow up to 24 hours for
+                  approval. For issues, please contact support@zenobiapay.com.
                 </span>
               </div>
               <a
-                href="/admin/settings"
+                href="mailto:support@zenobiapay.com"
                 class="text-xs font-medium text-white hover:underline flex items-center"
+                target="_blank"
+                rel="noopener noreferrer"
               >
-                Complete profile
+                Contact support
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   class="h-3 w-3 ml-1"
@@ -98,7 +117,7 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
               </a>
             </div>
           </div>
-        )}
+        </Show>
 
         <div class="flex flex-1 overflow-hidden">
           {/* Left Sidebar - Fixed height, always visible on desktop */}
@@ -111,7 +130,7 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
 
           {/* Mobile drawer - Only shown on mobile when open */}
           <div
-            class={`lg:hidden fixed inset-0 z-40 flex ${drawerOpen() ? 'translate-x-0' : '-translate-x-full'} transition-transform duration-300 ease-in-out`}
+            class={`lg:hidden fixed inset-0 z-40 flex ${drawerOpen() ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out`}
           >
             <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none">
               <AdminNavigation />
@@ -140,9 +159,24 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
               <div class="text-xs text-center text-gray-500 py-4 border-t border-gray-200 mt-6">
                 <p>© 2023 Zenobia Pay, Inc. All rights reserved.</p>
                 <div class="mt-2 flex justify-center space-x-4">
-                  <a href="/terms" class="text-gray-400 hover:text-gray-600 transition-colors">Terms</a>
-                  <a href="/privacy" class="text-gray-400 hover:text-gray-600 transition-colors">Privacy</a>
-                  <a href="/docs" class="text-gray-400 hover:text-gray-600 transition-colors">Documentation</a>
+                  <a
+                    href="/terms"
+                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    Terms
+                  </a>
+                  <a
+                    href="/privacy"
+                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    Privacy
+                  </a>
+                  <a
+                    href="/docs"
+                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    Documentation
+                  </a>
                 </div>
               </div>
             </main>

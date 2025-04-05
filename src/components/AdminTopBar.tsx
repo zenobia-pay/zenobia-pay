@@ -54,20 +54,6 @@ export const AdminTopBar: Component = () => {
 
           {/* Right side - Actions */}
           <div class="flex items-center space-x-4">
-            {/* Test Mode Toggle */}
-            <div class="hidden md:flex items-center gap-2">
-              <span class="text-xs font-medium text-gray-600">Test mode</span>
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  class="sr-only peer"
-                  checked={adminLayout.isTestMode()}
-                  readOnly
-                />
-                <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
-              </label>
-            </div>
-
             {/* Notifications */}
             <div class="relative">
               <button

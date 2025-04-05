@@ -1,6 +1,5 @@
 import { auth0Config } from "../config/auth0"
 import type {
-  CustomerTransferResponse,
   MerchantTransferResponse,
   UpdateMerchantRequest,
   CreateTransferRequestResponse,
@@ -20,6 +19,7 @@ import type {
 } from "../types/plaid"
 import { createAuth0Client } from "@auth0/auth0-spa-js"
 import type { Auth0Client } from "@auth0/auth0-spa-js"
+import { authService } from "./auth"
 
 // Define Auth0Error interface
 interface Auth0Error extends Error {
@@ -83,11 +83,9 @@ const getAuthToken = async (): Promise<string> => {
       console.log(
         "User is not authenticated in getAuthToken, redirecting to login"
       )
-      // Reset client before redirecting
-      resetAuth0Client()
-      // Save current path for redirect after login
-      sessionStorage.setItem("redirectPath", window.location.pathname)
-      window.location.href = "/login"
+      await authService.signOut()
+
+      // This won't actually execute due to the redirect
       throw new Error("User is not authenticated")
     }
 
@@ -114,14 +112,8 @@ const getAuthToken = async (): Promise<string> => {
         console.log(
           "Auth token expired or refresh token missing, redirecting to login"
         )
-        // Reset the client to clear cached tokens
-        resetAuth0Client()
 
-        // Save current path for redirect after login
-        sessionStorage.setItem("redirectPath", window.location.pathname)
-
-        // Redirect to login
-        window.location.href = "/login"
+        await authService.signOut()
       }
 
       throw tokenError
@@ -167,9 +159,7 @@ const callApi = async <T>(
         console.log(
           "Auth token error detected from error object, redirecting to login"
         )
-        resetAuth0Client()
-        sessionStorage.setItem("redirectPath", window.location.pathname)
-        window.location.href = "/login"
+        await authService.signOut()
       }
       // Also check for token-related errors in the message for backward compatibility
       else if (
@@ -181,14 +171,7 @@ const callApi = async <T>(
           "Auth token error detected from message, redirecting to login"
         )
 
-        // Reset the client to clear cached tokens
-        resetAuth0Client()
-
-        // Save current path for redirect
-        sessionStorage.setItem("redirectPath", window.location.pathname)
-
-        // Redirect to login page
-        window.location.href = "/login"
+        await authService.signOut()
       }
     }
 
@@ -336,27 +319,6 @@ export const api = {
       const json = await response.json()
       console.log("get merchant transfer response", json)
       return json as GetMerchantTransferResponse
-    })
-  },
-
-  listCustomerTransfers: async (): Promise<CustomerTransferResponse> => {
-    return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/list-customer-transfers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      })
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const json = await response.json()
-      console.log("customer transfers response", json)
-      return json
     })
   },
 
