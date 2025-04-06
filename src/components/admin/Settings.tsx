@@ -4,21 +4,16 @@ import type {
   GetMerchantConfigResponse,
   UpdateMerchantRequest,
   Location,
+  BankAccount,
 } from "../../types/api"
-
-// Define BankAccount interface to match API response
-interface BankAccount {
-  id: string
-  bankName: string
-  lastFour: string
-  accountType: string
-  isDefault: boolean
-}
+import { useAdminLayout } from "../AdminLayout"
 
 const Settings: Component = () => {
   const [error, setError] = createSignal<string | null>(null)
   const [success, setSuccess] = createSignal<string | null>(null)
   const [isLoading, setIsLoading] = createSignal(false)
+
+  const adminLayout = useAdminLayout()
 
   // Form state for merchant config
   const [merchantDisplayName, setMerchantDisplayName] = createSignal("")
@@ -34,9 +29,9 @@ const Settings: Component = () => {
   const [bankAccounts] = createResource<BankAccount[]>(async () => {
     try {
       // Return type is cast to match our BankAccount interface
-      const accounts =
-        (await api.listBankAccounts()) as unknown as BankAccount[]
-      return accounts
+      const accounts = await api.listBankAccounts()
+      console.log(accounts)
+      return accounts.items
     } catch (err) {
       console.error("Error fetching bank accounts:", err)
       setError("Failed to load bank accounts")
@@ -278,24 +273,10 @@ const Settings: Component = () => {
                 Payment Methods
               </h2>
               <a
-                href="/accounts"
+                onClick={() => adminLayout.navigateToTab("payouts")}
                 class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm leading-5 font-medium rounded-md text-blue-700 bg-white hover:text-blue-500 hover:bg-blue-50 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-blue-50 transition ease-in-out duration-150"
               >
-                <svg
-                  class="mr-2 h-4 w-4"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                Add New
+                Manage Payouts
               </a>
             </div>
 
@@ -368,42 +349,34 @@ const Settings: Component = () => {
                           {(account) => (
                             <div
                               class={`flex items-center p-3 border rounded-md cursor-pointer transition-all ${
-                                bankAccountId() === account.id
+                                bankAccountId() === account.bankAccountId
                                   ? "border-blue-500 bg-blue-50"
                                   : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
                               }`}
-                              onClick={() => setBankAccountId(account.id)}
+                              onClick={() =>
+                                setBankAccountId(account.bankAccountId)
+                              }
                             >
                               <div
                                 class={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 ${
-                                  bankAccountId() === account.id
+                                  bankAccountId() === account.bankAccountId
                                     ? "border-blue-500"
                                     : "border-gray-300"
                                 }`}
                               >
-                                {bankAccountId() === account.id && (
+                                {bankAccountId() === account.bankAccountId && (
                                   <div class="w-3 h-3 rounded-full bg-blue-500"></div>
                                 )}
                               </div>
                               <div>
                                 <div class="font-medium text-gray-800">
-                                  {account.bankName}
+                                  {account.bankAccountName}
+                                  <span class="ml-2 text-sm text-gray-500">
+                                    (****
+                                    {account.bankAccountId?.slice(-4) || "0000"}
+                                    )
+                                  </span>
                                 </div>
-                                <div class="text-xs text-gray-500">
-                                  •••• {account.lastFour} -{" "}
-                                  {account.accountType}
-                                </div>
-                              </div>
-                              <div class="ml-auto">
-                                <span
-                                  class={`px-2 py-1 text-xs rounded-full ${
-                                    account.isDefault
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-gray-100 text-gray-600"
-                                  }`}
-                                >
-                                  {account.isDefault ? "Default" : "Secondary"}
-                                </span>
                               </div>
                             </div>
                           )}

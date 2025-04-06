@@ -1,8 +1,8 @@
 import { Component } from "solid-js"
 import { AdminLayout } from "./AdminLayout"
 import { useSearchParams } from "@solidjs/router"
-import Accounts from "./admin/Accounts"
-import Payments from "./admin/Payments"
+import Payouts from "./admin/Payouts"
+import Transactions from "./admin/Transactions"
 import Settings from "./admin/Settings"
 import Developers from "./admin/Developers"
 import { Home } from "./admin/Home"
@@ -10,8 +10,8 @@ import { Home } from "./admin/Home"
 // Tab definitions
 const TABS = {
   OVERVIEW: "overview",
-  ACCOUNTS: "accounts",
-  PAYMENTS: "payments",
+  PAYOUTS: "payouts",
+  TRANSACTIONS: "transactions",
   DEVELOPERS: "developers",
   SETTINGS: "settings",
 }
@@ -26,10 +26,10 @@ export const Dashboard: Component = () => {
   // Render the active tab content based on current tab
   const renderTabContent = () => {
     switch (currentTab()) {
-      case TABS.ACCOUNTS:
-        return <Accounts />
-      case TABS.PAYMENTS:
-        return <Payments />
+      case TABS.PAYOUTS:
+        return <Payouts />
+      case TABS.TRANSACTIONS:
+        return <Transactions />
       case TABS.DEVELOPERS:
         return <Developers />
       case TABS.SETTINGS:

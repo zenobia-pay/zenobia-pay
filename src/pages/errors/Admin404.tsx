@@ -52,45 +52,6 @@ const Admin404: Component = () => {
             </button>
           </div>
         </div>
-
-        {/* Suggestions */}
-        <div class="mt-16">
-          <h2 class="text-lg font-medium text-gray-900">Popular pages</h2>
-          <ul class="mt-4 flex flex-col items-center gap-3">
-            <li>
-              <A
-                href="/merchants"
-                class="text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Merchants
-              </A>
-            </li>
-            <li>
-              <A
-                href="/transactions"
-                class="text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Transactions
-              </A>
-            </li>
-            <li>
-              <A
-                href="/accounts"
-                class="text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Accounts
-              </A>
-            </li>
-            <li>
-              <A
-                href="/settings"
-                class="text-indigo-600 hover:text-indigo-800 transition-colors"
-              >
-                Settings
-              </A>
-            </li>
-          </ul>
-        </div>
       </div>
     </AdminLayout>
   )

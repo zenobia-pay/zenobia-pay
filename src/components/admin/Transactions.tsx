@@ -10,7 +10,7 @@ import { api } from "../../services/api"
 import type { MerchantTransferResponse } from "../../types/api"
 import { TransferStatus } from "../../types/api"
 
-const Payments: Component = () => {
+const Transactions: Component = () => {
   const [error, setError] = createSignal<string | null>(null)
 
   // Convert cents to dollars
@@ -352,4 +352,4 @@ const Payments: Component = () => {
   )
 }
 
-export default Payments
+export default Transactions

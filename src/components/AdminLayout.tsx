@@ -43,11 +43,16 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
 
   // Function to navigate between tabs
   const navigateToTab = (tabName: string) => {
+    const params = new URLSearchParams()
+    params.set("tab", tabName)
+
     if (location.pathname !== "/") {
-      navigate("/?tab=" + tabName)
+      navigate(`/?${params.toString()}`)
     } else {
-      setSearchParams({ tab: tabName })
+      // Convert to object for setSearchParams to avoid type error
+      setSearchParams({ tab: tabName, subtab: "" })
     }
+
     // Close drawer after navigation on mobile
     if (window.innerWidth < 1024) {
       setDrawerOpen(false)
