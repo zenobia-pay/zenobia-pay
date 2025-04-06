@@ -12,6 +12,7 @@ import type {
   ListM2mCredentialsResponse,
   DeleteM2mCredentialsResponse,
   SubmitMerchantOnboardingRequest,
+  PlaidProduct,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -182,13 +183,17 @@ export const auth0Utils = {
 }
 
 export const api = {
-  createLinkToken: async (): Promise<CreateLinkTokenResponse> => {
+  createLinkToken: async (
+    product?: PlaidProduct
+  ): Promise<CreateLinkTokenResponse> => {
     return callApi(async (token) => {
       const response = await fetch(`${API_BASE_URL}/create-link-token`, {
-        method: "GET",
+        method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify(product ? { product } : {}),
       })
 
       if (!response.ok) {

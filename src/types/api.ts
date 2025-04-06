@@ -180,3 +180,8 @@ export interface SubmitMerchantOnboardingRequest {
   incorporationDate: string
   address: Address
 }
+
+export enum PlaidProduct {
+  AUTH = "AUTH",
+  IDENTITY_VERIFICATION = "IDENTITY_VERIFICATION",
+}
