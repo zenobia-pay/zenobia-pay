@@ -55,7 +55,9 @@ export const authService = {
       const redirectPath = sessionStorage.getItem("redirectPath")
 
       // Construct appState to pass through the login flow
-      const appState = redirectPath ? { returnTo: redirectPath } : undefined
+      const appState = redirectPath
+        ? { returnTo: redirectPath, prompt: "login" }
+        : { prompt: "login" }
 
       console.log(
         "Starting Auth0 login with redirect to:",
@@ -192,6 +194,49 @@ export const authService = {
     } catch (error) {
       console.error("Error handling auth callback:", error)
       throw error
+    }
+  },
+
+  async resendVerificationEmail(email: string): Promise<boolean> {
+    try {
+      // Auth0 doesn't provide a direct method in the SPA SDK to resend verification emails
+      // We need to make a direct request to the Auth0 Management API
+      const auth0 = await getAuth0Client()
+
+      // Get the token with proper scopes to call Auth0 Management API
+      const token = await auth0.getTokenSilently({
+        authorizationParams: {
+          audience: `https://${auth0Config.domain}/api/v2/`,
+          scope: "read:users update:users",
+        },
+      })
+
+      // Make request to the Auth0 Management API to resend verification email
+      const response = await fetch(
+        `https://${auth0Config.domain}/api/v2/jobs/verification-email`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            user_id: email,
+            client_id: auth0Config.clientId,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error("Error resending verification email:", errorData)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error("Error resending verification email:", error)
+      return false
     }
   },
 }

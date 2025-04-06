@@ -29,9 +29,6 @@ interface Auth0Error extends Error {
   scope?: string
 }
 
-// const API_BASE_URL =
-//   "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
-
 const API_BASE_URL = "https://api.zenobiapay.com"
 
 // Shared Auth0 client instance
@@ -83,7 +80,6 @@ const getAuthToken = async (): Promise<string> => {
       console.log(
         "User is not authenticated in getAuthToken, redirecting to login"
       )
-      await authService.signOut()
 
       // This won't actually execute due to the redirect
       throw new Error("User is not authenticated")

@@ -13,6 +13,11 @@ import { TransferStatus } from "../../types/api"
 const Payments: Component = () => {
   const [error, setError] = createSignal<string | null>(null)
 
+  // Convert cents to dollars
+  const centsToDollars = (cents: number) => {
+    return cents / 100
+  }
+
   // Create resource for merchant transactions
   const [merchantTransactions] = createResource<MerchantTransferResponse>(
     async () => {
@@ -44,8 +49,6 @@ const Payments: Component = () => {
     }
 
     const transfers = merchantTransactions()!.items
-    const now = new Date()
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
     // Calculate total amounts
     let totalAmount = 0
@@ -55,7 +58,7 @@ const Payments: Component = () => {
     let completedCount = 0
 
     transfers.forEach((transfer) => {
-      const amount = transfer.amount || 0
+      const amount = centsToDollars(transfer.amount || 0)
       totalAmount += amount
 
       if (transfer.status === TransferStatus.IN_FLIGHT) {
@@ -99,7 +102,7 @@ const Payments: Component = () => {
         <div class="bg-white rounded-lg shadow overflow-hidden">
           <div class="p-5">
             <h3 class="text-sm font-medium text-gray-500 mb-2">
-              Total Transfers
+              Total Amount Requested
             </h3>
             <Show
               when={!merchantTransactions.loading}
@@ -237,7 +240,7 @@ const Payments: Component = () => {
                       {transaction.transferRequestId || "N/A"}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${transaction.amount.toFixed(2)}
+                      {formatCurrency(centsToDollars(transaction.amount))}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       N/A

@@ -1,36 +1,20 @@
 import { Component, createSignal } from "solid-js"
-import { A, useNavigate, useLocation, useSearchParams } from "@solidjs/router"
+import { A, useSearchParams } from "@solidjs/router"
 import { authService } from "../services/auth"
 import { useAdminLayout } from "./AdminLayout"
 
 export const AdminNavigation: Component = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const [searchParams] = useSearchParams()
   const [loggingOut, setLoggingOut] = createSignal(false)
   const adminLayout = useAdminLayout()
 
   // Get current active tab from URL
   const currentTab = () => searchParams.tab || "overview"
 
-  // Function to navigate with the tab parameter
-  const navigateToTab = (tabName: string) => {
-    if (location.pathname !== "/") {
-      navigate("/?tab=" + tabName)
-    } else {
-      setSearchParams({ tab: tabName })
-    }
-
-    // Close drawer after navigation on mobile
-    if (window.innerWidth < 1024) {
-      adminLayout.setDrawerOpen(false)
-    }
-  }
-
   return (
     <div class="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo Section */}
-      <div class="py-6 px-5 border-b border-gray-200">
+      <div class="py-4 px-5 border-b border-gray-200">
         <A href="/" class="text-lg font-medium text-gray-900 flex items-center">
           <span>Zenobia Pay</span>
         </A>
@@ -49,7 +33,7 @@ export const AdminNavigation: Component = () => {
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={() => navigateToTab("overview")}
+            onClick={() => adminLayout.navigateToTab("overview")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
@@ -78,7 +62,7 @@ export const AdminNavigation: Component = () => {
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={() => navigateToTab("payments")}
+            onClick={() => adminLayout.navigateToTab("payments")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
@@ -103,40 +87,11 @@ export const AdminNavigation: Component = () => {
 
           <button
             class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              currentTab() === "merchants"
-                ? "text-indigo-700 bg-indigo-50"
-                : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
-            }`}
-            onClick={() => navigateToTab("merchants")}
-          >
-            <svg
-              class={`mr-3 h-5 w-5 transition-colors ${
-                currentTab() === "merchants"
-                  ? "text-indigo-500"
-                  : "text-gray-400 group-hover:text-indigo-500"
-              }`}
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-              />
-            </svg>
-            Merchants
-          </button>
-
-          <button
-            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
               currentTab() === "accounts"
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={() => navigateToTab("accounts")}
+            onClick={() => adminLayout.navigateToTab("accounts")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
@@ -171,7 +126,7 @@ export const AdminNavigation: Component = () => {
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={() => navigateToTab("developers")}
+            onClick={() => adminLayout.navigateToTab("developers")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
@@ -200,7 +155,7 @@ export const AdminNavigation: Component = () => {
                 ? "text-indigo-700 bg-indigo-50"
                 : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
             }`}
-            onClick={() => navigateToTab("settings")}
+            onClick={() => adminLayout.navigateToTab("settings")}
           >
             <svg
               class={`mr-3 h-5 w-5 transition-colors ${
@@ -228,33 +183,6 @@ export const AdminNavigation: Component = () => {
             </svg>
             Settings
           </button>
-
-          {/* Other links can remain the same (Docs, Terms, etc.) */}
-          <A
-            href="/docs"
-            class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-md hover:text-indigo-700 hover:bg-gray-50"
-            onClick={() => {
-              if (window.innerWidth < 1024) {
-                adminLayout.setDrawerOpen(false)
-              }
-            }}
-          >
-            <svg
-              class="mr-3 h-5 w-5 text-gray-400 group-hover:text-indigo-500"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            Documentation
-          </A>
         </div>
       </nav>
 

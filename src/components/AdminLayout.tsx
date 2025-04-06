@@ -10,6 +10,7 @@ import {
 import { AdminNavigation } from "./AdminNavigation"
 import { AdminTopBar } from "./AdminTopBar"
 import { api } from "../services/api"
+import { useNavigate, useSearchParams } from "@solidjs/router"
 
 interface AdminLayoutProps {
   children: JSX.Element
@@ -20,13 +21,12 @@ type AdminLayoutContextValue = {
   drawerOpen: () => boolean
   setDrawerOpen: (open: boolean) => void
   isApproved: () => boolean
+  navigateToTab: (tabName: string) => void
 }
 
-const AdminLayoutContext = createContext<AdminLayoutContextValue>({
-  drawerOpen: () => false,
-  setDrawerOpen: () => {},
-  isApproved: () => false,
-})
+const AdminLayoutContext = createContext<AdminLayoutContextValue>(
+  {} as AdminLayoutContextValue
+)
 
 export const useAdminLayout = () => useContext(AdminLayoutContext)
 
@@ -38,6 +38,21 @@ export const useAdminLayout = () => useContext(AdminLayoutContext)
 export const AdminLayout: Component<AdminLayoutProps> = (props) => {
   // State for the mobile drawer
   const [drawerOpen, setDrawerOpen] = createSignal(false)
+  const [, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+
+  // Function to navigate between tabs
+  const navigateToTab = (tabName: string) => {
+    if (location.pathname !== "/") {
+      navigate("/?tab=" + tabName)
+    } else {
+      setSearchParams({ tab: tabName })
+    }
+    // Close drawer after navigation on mobile
+    if (window.innerWidth < 1024) {
+      setDrawerOpen(false)
+    }
+  }
 
   // Fetch user profile to determine approval status
   const [userProfile] = createResource(async () => {
@@ -68,7 +83,7 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
 
   return (
     <AdminLayoutContext.Provider
-      value={{ drawerOpen, setDrawerOpen, isApproved }}
+      value={{ drawerOpen, setDrawerOpen, isApproved, navigateToTab }}
     >
       <div class="h-screen flex flex-col overflow-hidden">
         {/* Test Mode Banner - Show when not approved */}
@@ -157,25 +172,19 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
 
               {/* Copyright notice at bottom of content */}
               <div class="text-xs text-center text-gray-500 py-4 border-t border-gray-200 mt-6">
-                <p>© 2023 Zenobia Pay, Inc. All rights reserved.</p>
+                <p>© 2025 Zenobia Pay, Inc. All rights reserved.</p>
                 <div class="mt-2 flex justify-center space-x-4">
                   <a
-                    href="/terms"
+                    href="https://zenobiapay.com/terms"
                     class="text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     Terms
                   </a>
                   <a
-                    href="/privacy"
+                    href="https://zenobiapay.com/privacy"
                     class="text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     Privacy
-                  </a>
-                  <a
-                    href="/docs"
-                    class="text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    Documentation
                   </a>
                 </div>
               </div>

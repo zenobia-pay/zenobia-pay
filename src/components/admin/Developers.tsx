@@ -1,18 +1,21 @@
-import { Component, createSignal, For, Show, createEffect } from "solid-js"
+import {
+  Component,
+  createSignal,
+  For,
+  Show,
+  createEffect,
+  createResource,
+} from "solid-js"
 import { api } from "../../services/api"
 import { toast } from "solid-toast"
 import { useLocation, useNavigate } from "@solidjs/router"
+import type {
+  GetMerchantConfigResponse,
+  UpdateMerchantRequest,
+} from "../../types/api"
 
-interface ApiKey {
-  id: string
-  name: string
-  prefix: string
-  created: string
-  lastUsed: string | null
-  type: "test" | "live"
-}
-
-interface Webhook {
+// This defines the structure for webhooks in the UI
+interface WebhookDisplay {
   id: string
   url: string
   events: string[]
@@ -60,10 +63,42 @@ const Developers: Component = () => {
     string | null
   >(null)
 
-  // Load M2M credentials when the component mounts or tab changes
+  // Added state for webhook management
+  const [webhookUrl, setWebhookUrl] = createSignal("")
+  const [isEditingWebhook, setIsEditingWebhook] = createSignal(false)
+  const [isSavingWebhook, setIsSavingWebhook] = createSignal(false)
+  const [webhookEvents] = createSignal([
+    "payment.completed",
+    "payment.failed",
+    "transfer.created",
+    "transfer.completed",
+  ])
+
+  // Fetch merchant config for webhook data
+  const [merchantConfig, { refetch: refetchMerchantConfig }] =
+    createResource<GetMerchantConfigResponse>(async () => {
+      try {
+        const result = await api.getMerchantConfig()
+
+        // Update webhook URL from merchant config
+        if (result.webhookUrl) {
+          setWebhookUrl(result.webhookUrl)
+        }
+
+        return result
+      } catch (err) {
+        console.error("Error fetching merchant config:", err)
+        toast.error("Failed to load webhook configuration")
+        return {} as GetMerchantConfigResponse
+      }
+    })
+
+  // Load required data based on active subtab
   createEffect(() => {
     if (activeSubtab() === "m2m-credentials") {
       loadM2mCredentials()
+    } else if (activeSubtab() === "webhooks") {
+      refetchMerchantConfig()
     }
   })
 
@@ -126,43 +161,64 @@ const Developers: Component = () => {
     }
   }
 
-  // Mock data
-  const [apiKeys] = createSignal<ApiKey[]>([
-    {
-      id: "key_1",
-      name: "Production Key",
-      prefix: "pk_live_51H",
-      created: "2023-05-15",
-      lastUsed: "2023-06-10",
-      type: "live",
-    },
-    {
-      id: "key_2",
-      name: "Test Key",
-      prefix: "pk_test_51H",
-      created: "2023-05-15",
-      lastUsed: "2023-06-12",
-      type: "test",
-    },
-  ])
+  // New function to save webhook URL
+  const saveWebhookUrl = async () => {
+    try {
+      setIsSavingWebhook(true)
 
-  const [webhooks] = createSignal<Webhook[]>([
-    {
-      id: "wh_1",
-      url: "https://example.com/webhooks/zenobia",
-      events: ["payment.completed", "payment.failed"],
-      active: true,
-      created: "2023-05-20",
-      lastFailed: null,
-    },
-  ])
+      const updateRequest: UpdateMerchantRequest = {
+        webhookUrl: webhookUrl(),
+      }
+
+      await api.updateMerchantConfig(updateRequest)
+      toast.success("Webhook URL updated successfully")
+      setIsEditingWebhook(false)
+
+      // Refetch to ensure we have the latest data
+      refetchMerchantConfig()
+    } catch (error) {
+      console.error("Error updating webhook URL:", error)
+      toast.error("Failed to update webhook URL")
+    } finally {
+      setIsSavingWebhook(false)
+    }
+  }
+
+  const cancelWebhookEdit = () => {
+    // Reset to original value from merchant config
+    const configWebhookUrl = merchantConfig()?.webhookUrl
+    if (configWebhookUrl) {
+      setWebhookUrl(configWebhookUrl)
+    } else {
+      setWebhookUrl("")
+    }
+    setIsEditingWebhook(false)
+  }
+
+  // Webhook data derived from merchant config
+  const webhooks = () => {
+    if (!webhookUrl()) return [] as WebhookDisplay[]
+
+    return [
+      {
+        id: "wh_main",
+        url: webhookUrl(),
+        events: webhookEvents(),
+        active: true,
+        created: merchantConfig()?.webhookUrl
+          ? "Already configured"
+          : "Just now",
+        lastFailed: null,
+      },
+    ] as WebhookDisplay[]
+  }
 
   return (
     <div class="space-y-6">
       <header>
         <h1 class="text-2xl font-semibold text-gray-900">Developer Tools</h1>
         <p class="mt-1 text-sm text-gray-500">
-          Manage your API keys, webhooks, and access developer resources
+          Manage your M2M credentials, webhooks, and access developer resources
         </p>
       </header>
 
@@ -287,6 +343,24 @@ const Developers: Component = () => {
                 ? "Generating..."
                 : "Generate New Credentials"}
             </button>
+          </div>
+          <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
+            <h3 class="text-md font-medium text-gray-900">
+              About M2M Credentials
+            </h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Machine-to-Machine (M2M) credentials allow your server
+              applications to authenticate directly with our API without
+              involving a user. These credentials are ideal for server-side
+              applications, scheduled jobs, or any backend service that needs to
+              call our API.
+            </p>
+            <p class="mt-2 text-sm text-gray-500">
+              Important: Keep your credentials secure. Do not expose them in
+              client-side code or public repositories. If credentials are
+              compromised, generate new ones immediately and update your
+              applications.
+            </p>
           </div>
 
           {/* List of existing credentials */}
@@ -509,25 +583,6 @@ const Developers: Component = () => {
               </div>
             </div>
           </Show>
-
-          <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
-            <h3 class="text-md font-medium text-gray-900">
-              About M2M Credentials
-            </h3>
-            <p class="mt-2 text-sm text-gray-500">
-              Machine-to-Machine (M2M) credentials allow your server
-              applications to authenticate directly with our API without
-              involving a user. These credentials are ideal for server-side
-              applications, scheduled jobs, or any backend service that needs to
-              call our API.
-            </p>
-            <p class="mt-2 text-sm text-gray-500">
-              Important: Keep your credentials secure. Do not expose them in
-              client-side code or public repositories. If credentials are
-              compromised, generate new ones immediately and update your
-              applications.
-            </p>
-          </div>
         </div>
       </Show>
 
@@ -536,147 +591,14 @@ const Developers: Component = () => {
         <div class="space-y-6">
           <div class="flex justify-between items-center">
             <h2 class="text-lg font-medium text-gray-900">Webhooks</h2>
-            <button class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none">
-              Add Webhook
-            </button>
-          </div>
-
-          <div class="bg-white shadow overflow-hidden sm:rounded-md">
-            <ul class="divide-y divide-gray-200">
-              <For each={webhooks()}>
-                {(webhook) => (
-                  <li>
-                    <div class="px-4 py-4 sm:px-6">
-                      <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                          <div class="flex-shrink-0">
-                            <div
-                              class={`h-8 w-8 rounded-full flex items-center justify-center ${webhook.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-4 w-4"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                              >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                />
-                              </svg>
-                            </div>
-                          </div>
-                          <div class="ml-4">
-                            <div class="font-medium text-gray-900 break-all">
-                              {webhook.url}
-                            </div>
-                            <div class="text-sm text-gray-500">
-                              Events: {webhook.events.join(", ")}
-                            </div>
-                          </div>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                          <span
-                            class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${webhook.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
-                          >
-                            {webhook.active ? "Active" : "Inactive"}
-                          </span>
-                          <button class="text-indigo-400 hover:text-indigo-500">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"
-                              />
-                            </svg>
-                          </button>
-                          <button class="text-gray-400 hover:text-gray-500">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                              />
-                            </svg>
-                          </button>
-                          <button class="text-red-400 hover:text-red-500">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                      <div class="mt-2 sm:flex sm:justify-between">
-                        <div class="sm:flex">
-                          <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                            Created: {webhook.created}
-                          </div>
-                        </div>
-                        <div class="mt-2 flex items-center text-sm text-gray-500 sm:mt-0">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          Last failed: {webhook.lastFailed || "Never"}
-                        </div>
-                      </div>
-                    </div>
-                  </li>
-                )}
-              </For>
-            </ul>
+            <Show when={!isEditingWebhook() && webhooks().length === 0}>
+              <button
+                onClick={() => setIsEditingWebhook(true)}
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+              >
+                Add Webhook
+              </button>
+            </Show>
           </div>
 
           <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
@@ -691,6 +613,169 @@ const Developers: Component = () => {
               whenever these events occur.
             </p>
           </div>
+
+          <Show when={merchantConfig.loading}>
+            <div class="bg-white shadow overflow-hidden sm:rounded-md p-6 text-center">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+              <p class="mt-2 text-sm text-gray-500">
+                Loading webhook configuration...
+              </p>
+            </div>
+          </Show>
+
+          <Show when={!merchantConfig.loading && isEditingWebhook()}>
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
+              <h3 class="text-md font-medium text-gray-900 mb-4">
+                {webhooks().length === 0 ? "Add Webhook" : "Edit Webhook"}
+              </h3>
+              <div class="space-y-4">
+                <div>
+                  <label
+                    for="webhook-url"
+                    class="block text-sm font-medium text-gray-700"
+                  >
+                    Webhook URL
+                  </label>
+                  <div class="mt-1">
+                    <input
+                      type="url"
+                      id="webhook-url"
+                      value={webhookUrl()}
+                      onInput={(e) => setWebhookUrl(e.currentTarget.value)}
+                      class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                      placeholder="https://your-server.com/webhooks/zenobia"
+                    />
+                  </div>
+                  <p class="mt-1 text-sm text-gray-500">
+                    Enter the URL where Zenobia Pay should send webhook events
+                  </p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">
+                    Events
+                  </label>
+                  <div class="mt-2 space-y-2">
+                    <p class="text-sm text-gray-500">
+                      Your webhook will receive all of the following events:
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                      <For each={webhookEvents()}>
+                        {(event) => (
+                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                            {event}
+                          </span>
+                        )}
+                      </For>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={saveWebhookUrl}
+                    disabled={isSavingWebhook()}
+                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none disabled:bg-indigo-300"
+                  >
+                    {isSavingWebhook() ? "Saving..." : "Save Webhook"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelWebhookEdit}
+                    disabled={isSavingWebhook()}
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </Show>
+
+          <Show when={!merchantConfig.loading && !isEditingWebhook()}>
+            <Show when={webhooks().length === 0}>
+              <div class="bg-white shadow overflow-hidden sm:rounded-md p-6 text-center">
+                <p class="text-sm text-gray-500">
+                  No webhook URL has been configured yet. Click "Add Webhook" to
+                  set one up.
+                </p>
+              </div>
+            </Show>
+
+            <Show when={webhooks().length > 0}>
+              <div class="bg-white shadow overflow-hidden sm:rounded-md">
+                <ul class="divide-y divide-gray-200">
+                  <For each={webhooks()}>
+                    {(webhook) => (
+                      <li>
+                        <div class="px-4 py-4 sm:px-6">
+                          <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                              <div class="flex-shrink-0">
+                                <div
+                                  class={`h-8 w-8 rounded-full flex items-center justify-center ${webhook.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    class="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                    />
+                                  </svg>
+                                </div>
+                              </div>
+                              <div class="ml-4">
+                                <div class="font-medium text-gray-900 break-all">
+                                  {webhook.url}
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                  Events: {webhook.events.join(", ")}
+                                </div>
+                              </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                              <span
+                                class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${webhook.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
+                              >
+                                {webhook.active ? "Active" : "Inactive"}
+                              </span>
+                              <button
+                                class="text-gray-400 hover:text-gray-500"
+                                onClick={() => setIsEditingWebhook(true)}
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  class="h-5 w-5"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </div>
+            </Show>
+          </Show>
         </div>
       </Show>
       {/* Documentation Tab */}
@@ -710,7 +795,7 @@ const Developers: Component = () => {
                 </p>
                 <div class="mt-4">
                   <a
-                    href="/docs"
+                    href="https://docs.zenobiapay.com"
                     target="_blank"
                     class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                   >
@@ -745,28 +830,20 @@ const Developers: Component = () => {
                 </p>
                 <div class="mt-4 space-y-2">
                   <a
-                    href="#"
+                    href="https://github.com/zenobia-pay/client"
                     class="block text-sm text-indigo-600 hover:text-indigo-900"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    Node.js SDK
+                    JavaScript Client
                   </a>
                   <a
-                    href="#"
+                    href="https://github.com/zenobia-pay/ui-solid"
                     class="block text-sm text-indigo-600 hover:text-indigo-900"
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
-                    Python SDK
-                  </a>
-                  <a
-                    href="#"
-                    class="block text-sm text-indigo-600 hover:text-indigo-900"
-                  >
-                    Ruby SDK
-                  </a>
-                  <a
-                    href="#"
-                    class="block text-sm text-indigo-600 hover:text-indigo-900"
-                  >
-                    PHP SDK
+                    SolidJS Pay with Zenobia
                   </a>
                 </div>
               </div>
@@ -779,109 +856,8 @@ const Developers: Component = () => {
               <div class="px-4 py-5 sm:p-6">
                 <p class="text-sm text-gray-500">
                   Step-by-step guides to help you implement common payment flows
-                  and integrations.
+                  and integrations. Tutorials coming soon!
                 </p>
-                <div class="mt-4 space-y-2">
-                  <a
-                    href="#"
-                    class="block text-sm text-indigo-600 hover:text-indigo-900"
-                  >
-                    Accept your first payment
-                  </a>
-                  <a
-                    href="#"
-                    class="block text-sm text-indigo-600 hover:text-indigo-900"
-                  >
-                    Set up webhooks
-                  </a>
-                  <a
-                    href="#"
-                    class="block text-sm text-indigo-600 hover:text-indigo-900"
-                  >
-                    Handle failed payments
-                  </a>
-                  <a
-                    href="#"
-                    class="block text-sm text-indigo-600 hover:text-indigo-900"
-                  >
-                    Implement recurring billing
-                  </a>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200">
-            <div class="px-4 py-5 sm:px-6">
-              <h3 class="text-lg font-medium text-gray-900">
-                Sample Applications
-              </h3>
-            </div>
-            <div class="px-4 py-5 sm:p-6">
-              <p class="text-sm text-gray-500">
-                Example projects that demonstrate how to integrate Zenobia Pay
-                into various application types.
-              </p>
-              <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                <div class="border border-gray-200 rounded-md p-4 hover:shadow-sm">
-                  <h4 class="text-md font-medium text-gray-900">
-                    E-commerce Checkout
-                  </h4>
-                  <p class="mt-2 text-sm text-gray-500 mb-4">
-                    A sample online store with Zenobia Pay integration.
-                  </p>
-                  <div class="flex justify-between items-center">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                      React
-                    </span>
-                    <a
-                      href="#"
-                      class="text-xs text-indigo-600 hover:text-indigo-900"
-                    >
-                      View on GitHub
-                    </a>
-                  </div>
-                </div>
-
-                <div class="border border-gray-200 rounded-md p-4 hover:shadow-sm">
-                  <h4 class="text-md font-medium text-gray-900">
-                    Subscription Portal
-                  </h4>
-                  <p class="mt-2 text-sm text-gray-500 mb-4">
-                    A SaaS subscription management dashboard.
-                  </p>
-                  <div class="flex justify-between items-center">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                      Node.js
-                    </span>
-                    <a
-                      href="#"
-                      class="text-xs text-indigo-600 hover:text-indigo-900"
-                    >
-                      View on GitHub
-                    </a>
-                  </div>
-                </div>
-
-                <div class="border border-gray-200 rounded-md p-4 hover:shadow-sm">
-                  <h4 class="text-md font-medium text-gray-900">
-                    Mobile Payment SDK
-                  </h4>
-                  <p class="mt-2 text-sm text-gray-500 mb-4">
-                    Example mobile app with Zenobia Pay integration.
-                  </p>
-                  <div class="flex justify-between items-center">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                      Flutter
-                    </span>
-                    <a
-                      href="#"
-                      class="text-xs text-indigo-600 hover:text-indigo-900"
-                    >
-                      View on GitHub
-                    </a>
-                  </div>
-                </div>
               </div>
             </div>
           </div>

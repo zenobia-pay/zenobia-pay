@@ -112,53 +112,6 @@ const Accounts: Component = () => {
           </div>
         </div>
       </div>
-
-      {/* Recent Transactions */}
-      <div class="card bg-base-100 shadow-lg mt-8">
-        <div class="card-body">
-          <h2 class="card-title flex justify-between">
-            <span>Recent Account Activity</span>
-            <div class="badge badge-primary">New</div>
-          </h2>
-
-          <div class="overflow-x-auto">
-            <table class="table table-zebra">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Description</th>
-                  <th>Account</th>
-                  <th>Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>May 15, 2023</td>
-                  <td>Account Verification</td>
-                  <td>****1234</td>
-                  <td class="text-success">+$0.01</td>
-                </tr>
-                <tr>
-                  <td>May 15, 2023</td>
-                  <td>Account Verification</td>
-                  <td>****1234</td>
-                  <td class="text-success">+$0.01</td>
-                </tr>
-                <tr>
-                  <td>May 14, 2023</td>
-                  <td>Account Link</td>
-                  <td>****1234</td>
-                  <td class="text-info">$0.00</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-
-          <div class="card-actions justify-end mt-4">
-            <button class="btn btn-sm btn-ghost">View All Activity</button>
-          </div>
-        </div>
-      </div>
     </div>
   )
 

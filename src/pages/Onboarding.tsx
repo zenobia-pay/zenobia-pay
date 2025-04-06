@@ -1,9 +1,10 @@
-import { Component, createSignal, Show } from "solid-js"
+import { Component, createEffect, createSignal, Show } from "solid-js"
 import { useNavigate } from "@solidjs/router"
 import { api } from "../services/api"
 import { EntityType, TaxIdType } from "../types/api"
 import { auth0Utils } from "../services/api"
 import { auth0Config } from "../config/auth0"
+import { useAuth } from "../context/AuthContext"
 
 const Onboarding: Component = () => {
   const navigate = useNavigate()
@@ -25,6 +26,15 @@ const Onboarding: Component = () => {
   const [error, setError] = createSignal<string | null>(null)
   const [success, setSuccess] = createSignal(false)
   const [successMessage, setSuccessMessage] = createSignal("")
+
+  const auth = useAuth()
+  const userProfile = auth.userProfile()
+
+  createEffect(() => {
+    if (userProfile?.hasOnboarded) {
+      navigate("/")
+    }
+  })
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault()
