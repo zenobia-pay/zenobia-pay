@@ -243,7 +243,7 @@ const CheckoutPage: Component = () => {
             >
               <ZenobiaPaymentButton
                 amount={total()}
-                url="http://localhost:8788/create-transfer"
+                url={`${window.location.origin}/create-transfer`}
                 statementItems={cartItems().map((item) => ({
                   name: item.product.name,
                   amount: item.product.price * item.quantity,
@@ -253,7 +253,6 @@ const CheckoutPage: Component = () => {
                 onSuccess={handlePaymentSuccess}
                 onError={handlePaymentError}
               />
-
               {error() && <p class="text-red-600 text-sm mt-2">{error()}</p>}
             </Show>
           </div>
