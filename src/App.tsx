@@ -1,13 +1,9 @@
 import type { Component } from "solid-js";
-import ApiTest from "./pages/ApiTest";
+import { Router } from "@solidjs/router";
+import { routes } from "./routes";
 
 const App: Component = () => {
-  return (
-    <div>
-      <p class="text-4xl text-green-700 text-center py-10">Hello tailwind!</p>
-      <ApiTest />
-    </div>
-  );
+  return <Router>{routes}</Router>;
 };
 
 export default App;
