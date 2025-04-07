@@ -14,7 +14,7 @@ export interface SignInParams {
 }
 
 // Define a type for Auth0 user profile
-export interface UserProfile {
+export interface UserData {
   email: string
   email_verified: boolean
   name: string
@@ -103,7 +103,7 @@ export const authService = {
     }
   },
 
-  async getCurrentUser(): Promise<UserProfile | null> {
+  async getCurrentUser(): Promise<UserData | null> {
     try {
       const auth0 = await getAuth0Client()
       const isAuthenticated = await auth0.isAuthenticated()
@@ -112,10 +112,48 @@ export const authService = {
         return null
       }
 
-      const user = await auth0.getUser<UserProfile>()
+      const user = await auth0.getUser<UserData>()
       return user || null
     } catch (error) {
       console.error("Error getting current user:", error)
+      return null
+    }
+  },
+
+  async silentlyRefreshToken(): Promise<void> {
+    const auth0 = await getAuth0Client()
+    try {
+      await auth0.getTokenSilently()
+      console.log("Token refreshed")
+    } catch (error) {
+      console.error("Error refreshing token:", error)
+    }
+  },
+
+  async silentLogin(): Promise<UserData | null> {
+    try {
+      // Reset client to ensure we're not using cached data
+      resetAuth0Client()
+
+      const auth0 = await getAuth0Client()
+
+      // Use checkSession or getTokenSilently with prompt=none
+      await auth0.loginWithRedirect({
+        authorizationParams: {
+          prompt: "none",
+        },
+      })
+
+      // Get the fresh user data
+      const user = await auth0.getUser<UserData>()
+
+      console.log(
+        "Silent login successful, user verified status:",
+        user?.email_verified
+      )
+      return user || null
+    } catch (error) {
+      console.error("Silent login failed:", error)
       return null
     }
   },

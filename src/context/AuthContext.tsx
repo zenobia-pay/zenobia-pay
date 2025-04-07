@@ -7,25 +7,26 @@ import {
   createEffect,
   onCleanup,
 } from "solid-js"
-import { authService, UserProfile } from "../services/auth"
+import { authService, UserData } from "../services/auth"
 import { api } from "../services/api"
 import { GetUserProfileResponse } from "../types/api"
 
 interface AuthContextType {
-  user: () => UserProfile | null
+  user: () => UserData | null
   isLoading: () => boolean
   isLoadingUserProfile: () => boolean
   signOut: () => Promise<void>
   signIn: () => Promise<void>
-  setUser: (user: UserProfile | null) => void
+  setUser: (user: UserData | null) => void
   checkAuthStatus: () => Promise<boolean>
   userProfile: () => GetUserProfileResponse | null
+  fetchUserProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>()
 
 export const AuthProvider: ParentComponent = (props) => {
-  const [user, setUser] = createSignal<UserProfile | null>(null)
+  const [user, setUser] = createSignal<UserData | null>(null)
   const [userProfile, setUserProfile] =
     createSignal<GetUserProfileResponse | null>(null)
   const [isLoading, setIsLoading] = createSignal(true)
@@ -52,9 +53,24 @@ export const AuthProvider: ParentComponent = (props) => {
     }
   }
 
-  const getUserProfile = async (): Promise<GetUserProfileResponse | null> => {
-    const userProfile = await api.getUserProfile()
-    return userProfile
+  const fetchUserProfile = async (): Promise<void> => {
+    if (!user()) {
+      // Don't fetch profile if not authenticated
+      setIsLoadingUserProfile(false)
+      return
+    }
+
+    setIsLoadingUserProfile(true)
+    try {
+      const profile = await api.getUserProfile()
+      if (profile) {
+        setUserProfile(profile)
+      }
+    } catch (error) {
+      console.error("Error fetching user profile:", error)
+    } finally {
+      setIsLoadingUserProfile(false)
+    }
   }
 
   // Set up periodic auth check (every 5 minutes)
@@ -86,22 +102,23 @@ export const AuthProvider: ParentComponent = (props) => {
     onCleanup(() => clearInterval(interval))
   })
 
+  // Effect to fetch user profile when authentication state changes
+  createEffect(async (prevUser) => {
+    const currentUser = user()
+    if (currentUser && currentUser !== prevUser) {
+      await fetchUserProfile()
+    }
+    return currentUser
+  })
+
   onMount(async () => {
     try {
       await checkAuthStatus()
+
+      // We'll let the createEffect handle fetching the profile
+      // when authentication changes, rather than doing it here
     } finally {
       setIsLoading(false)
-    }
-
-    try {
-      const userProfile = await getUserProfile()
-      if (userProfile) {
-        setUserProfile(userProfile)
-      }
-    } catch (error) {
-      console.error("Error fetching user profile:", error)
-    } finally {
-      setIsLoadingUserProfile(false)
     }
   })
 
@@ -109,6 +126,7 @@ export const AuthProvider: ParentComponent = (props) => {
     setIsLoading(true)
     try {
       await authService.signIn()
+      await checkAuthStatus() // Refresh auth status after sign in
     } catch (error) {
       console.error("Error during sign in:", error)
       throw error
@@ -122,6 +140,7 @@ export const AuthProvider: ParentComponent = (props) => {
     try {
       await authService.signOut()
       setUser(null)
+      setUserProfile(null)
     } catch (error) {
       console.error("Error signing out:", error)
     } finally {
@@ -138,6 +157,7 @@ export const AuthProvider: ParentComponent = (props) => {
     setUser,
     checkAuthStatus,
     userProfile: () => userProfile(),
+    fetchUserProfile,
   }
 
   return (

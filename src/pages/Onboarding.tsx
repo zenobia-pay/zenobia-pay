@@ -5,6 +5,7 @@ import { EntityType, TaxIdType } from "../types/api"
 import { auth0Utils } from "../services/api"
 import { auth0Config } from "../config/auth0"
 import { useAuth } from "../context/AuthContext"
+import { authService } from "../services/auth"
 
 const Onboarding: Component = () => {
   const navigate = useNavigate()
@@ -26,6 +27,7 @@ const Onboarding: Component = () => {
   const [error, setError] = createSignal<string | null>(null)
   const [success, setSuccess] = createSignal(false)
   const [successMessage, setSuccessMessage] = createSignal("")
+  const [isSigningOut, setIsSigningOut] = createSignal(false)
 
   const auth = useAuth()
   const userProfile = auth.userProfile()
@@ -35,6 +37,17 @@ const Onboarding: Component = () => {
       navigate("/")
     }
   })
+
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true)
+      await auth.signOut()
+      // The user will be redirected to Auth0 logout page
+    } catch (error) {
+      console.error("Sign out error:", error)
+      setIsSigningOut(false)
+    }
+  }
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault()
@@ -127,36 +140,7 @@ const Onboarding: Component = () => {
       try {
         console.log("Attempting to refresh authentication token...")
 
-        // Clear all current tokens
-        auth0Utils.resetAuth0Client()
-
-        // Wait a moment for the reset to complete
-        await new Promise((resolve) => setTimeout(resolve, 100))
-
-        // Get a new Auth0 client
-        const auth0Client = await auth0Utils.getAuth0Client()
-
-        // Check if we can authenticate silently
-        const isAuthenticated = await auth0Client.isAuthenticated()
-
-        if (isAuthenticated) {
-          // Try to get a new token
-          await auth0Client.getTokenSilently({
-            authorizationParams: {
-              audience: auth0Config.audience,
-              scope: auth0Config.scope,
-            },
-          })
-          console.log("Token refreshed successfully with new permissions")
-
-          // Redirect to dashboard with the freshly updated token
-          navigate("/")
-        } else {
-          // If not authenticated after reset, go to login page
-          console.log("Not authenticated after reset, redirecting to login")
-          sessionStorage.setItem("redirectPath", "/")
-          navigate("/login")
-        }
+        await authService.silentLogin()
       } catch (refreshError) {
         console.error("Failed to refresh token silently:", refreshError)
 
@@ -176,6 +160,29 @@ const Onboarding: Component = () => {
   return (
     <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
+        <div class="flex justify-end mb-2">
+          <button
+            onClick={handleSignOut}
+            disabled={isSigningOut()}
+            class="text-sm text-gray-600 hover:text-gray-900 transition-colors duration-200 flex items-center"
+          >
+            {isSigningOut() ? "Signing out..." : "Sign out"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 ml-1"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+          </button>
+        </div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Complete Onboarding
         </h2>
