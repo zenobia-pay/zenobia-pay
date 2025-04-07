@@ -13,6 +13,7 @@ import type {
   DeleteM2mCredentialsResponse,
   SubmitMerchantOnboardingRequest,
   PlaidProduct,
+  MerchantPayoutResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -78,11 +79,6 @@ const getAuthToken = async (): Promise<string> => {
     const isAuthenticated = await auth0Client.isAuthenticated()
 
     if (!isAuthenticated) {
-      console.log(
-        "User is not authenticated in getAuthToken, redirecting to login"
-      )
-
-      // This won't actually execute due to the redirect
       throw new Error("User is not authenticated")
     }
 
@@ -347,6 +343,29 @@ export const api = {
 
       const json = await response.json()
       console.log("merchant transfers response", json)
+      return json
+    })
+  },
+
+  listMerchantPayouts: async (
+    continuationToken?: string
+  ): Promise<MerchantPayoutResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(`${API_BASE_URL}/list-merchant-payouts`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(continuationToken ? { continuationToken } : {}),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("merchant payouts response", json)
       return json
     })
   },

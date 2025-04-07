@@ -55,9 +55,7 @@ export const authService = {
       const redirectPath = sessionStorage.getItem("redirectPath")
 
       // Construct appState to pass through the login flow
-      const appState = redirectPath
-        ? { returnTo: redirectPath, prompt: "login" }
-        : { prompt: "login" }
+      const appState = redirectPath ? { returnTo: redirectPath } : {}
 
       console.log(
         "Starting Auth0 login with redirect to:",
@@ -68,6 +66,9 @@ export const authService = {
 
       await auth0.loginWithRedirect({
         appState,
+        authorizationParams: {
+          prompt: "login",
+        },
       })
 
       // This won't actually execute due to the redirect
