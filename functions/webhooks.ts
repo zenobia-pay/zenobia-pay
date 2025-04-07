@@ -13,6 +13,7 @@ export interface Context {
 
 // Import the sendPaymentEvent function
 import { sendPaymentEvent } from "./payment-events";
+import * as jose from "jose";
 
 // Helper function to add CORS headers to a response
 function addCorsHeaders(response: Response): Response {
@@ -30,6 +31,45 @@ function addCorsHeaders(response: Response): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+// Function to verify JWT token from Authorization header
+async function verifyJWT(
+  authHeader: string | null
+): Promise<jose.JWTVerifyResult | null> {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    console.error("Invalid or missing Authorization header");
+    return null;
+  }
+
+  try {
+    const token = authHeader.split(" ")[1];
+
+    // Fetch the JWKS (JSON Web Key Set) from Zenobia's well-known endpoint
+    const jwksResponse = await fetch(
+      "https://zenobiapay.com/.well-known/jwks.json"
+    );
+    if (!jwksResponse.ok) {
+      throw new Error(`Failed to fetch JWKS: ${jwksResponse.status}`);
+    }
+
+    const jwks = await jwksResponse.json();
+
+    // Create a JWKS instance
+    const keyStore = jose.createRemoteJWKSet(
+      new URL("https://zenobiapay.com/.well-known/jwks.json")
+    );
+
+    // Verify the JWT
+    const result = await jose.jwtVerify(token, keyStore, {
+      algorithms: ["RS256"], // Ensure we're using the correct algorithm
+    });
+
+    return result;
+  } catch (error) {
+    console.error("JWT verification failed:", error);
+    return null;
+  }
 }
 
 async function handleWebhook(request: Request, env: Env): Promise<Response> {
@@ -60,6 +100,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     const headers = Object.fromEntries(clonedRequest.headers.entries());
     const url = clonedRequest.url;
     const method = clonedRequest.method;
+    const authHeader = clonedRequest.headers.get("authorization");
 
     // Get the request body as text and try to parse it as JSON
     let body;
@@ -84,10 +125,68 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     console.log("Body:", body);
     console.log("============================");
 
+    // Verify the JWT token
+    const jwtVerification = await verifyJWT(authHeader);
+
+    if (!jwtVerification) {
+      console.error("JWT verification failed - unauthorized request");
+      const errorResponse = new Response(
+        JSON.stringify({ error: "Unauthorized - invalid signature" }),
+        {
+          status: 401,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return addCorsHeaders(errorResponse);
+    }
+
+    console.log("JWT verified successfully:", jwtVerification.payload);
+
+    // Verify that the JWT payload matches the body content (transferRequestId)
+    if (
+      typeof body === "object" &&
+      body !== null &&
+      body.transferRequestId &&
+      jwtVerification.payload.transferRequestId !== body.transferRequestId
+    ) {
+      console.error(
+        "JWT transferRequestId doesn't match body transferRequestId"
+      );
+      const errorResponse = new Response(
+        JSON.stringify({
+          error: "Bad Request - token payload doesn't match body",
+        }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      return addCorsHeaders(errorResponse);
+    }
+
     // Process payment status update if applicable
     if (typeof body === "object" && body !== null) {
-      // Check if this is a payment status update webhook
-      if (body.type === "payment.updated" && body.paymentId) {
+      // Check if this is a transfer request status update webhook
+      if (body.transferRequestId && body.status) {
+        const transferRequestId = body.transferRequestId.toString();
+        const status = body.status;
+        const amount = body.amount;
+
+        console.log(
+          `Transfer request status update received: ${transferRequestId} is now ${status} for amount ${amount}`
+        );
+
+        // Notify any connected clients waiting for this transfer update
+        sendPaymentEvent(transferRequestId, {
+          type: "transfer_status_update",
+          transferRequestId,
+          status,
+          amount,
+          timestamp: new Date().toISOString(),
+        });
+      }
+      // Original payment update handling (keeping for backward compatibility)
+      else if (body.type === "payment.updated" && body.paymentId) {
         const paymentId = body.paymentId.toString();
         const status = body.status;
 
