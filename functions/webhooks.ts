@@ -11,6 +11,9 @@ export interface Context {
   // Add other properties as needed
 }
 
+// Import the sendPaymentEvent function
+import { sendPaymentEvent } from "./payment-events";
+
 // Helper function to add CORS headers to a response
 function addCorsHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
@@ -81,11 +84,32 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     console.log("Body:", body);
     console.log("============================");
 
+    // Process payment status update if applicable
+    if (typeof body === "object" && body !== null) {
+      // Check if this is a payment status update webhook
+      if (body.type === "payment.updated" && body.paymentId) {
+        const paymentId = body.paymentId.toString();
+        const status = body.status;
+
+        console.log(
+          `Payment status update received: Payment ${paymentId} is now ${status}`
+        );
+
+        // Notify any connected clients waiting for this payment update
+        sendPaymentEvent(paymentId, {
+          type: "payment_status_update",
+          paymentId,
+          status,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    }
+
     // Return a success response
     const response = new Response(
       JSON.stringify({
         status: "success",
-        message: "Webhook received and logged",
+        message: "Webhook received and processed",
       }),
       {
         status: 200,

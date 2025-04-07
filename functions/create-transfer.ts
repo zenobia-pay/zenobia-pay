@@ -35,8 +35,6 @@ async function getAccessToken(env: Env): Promise<string> {
     const tokenUrl = "https://zenobia-beta.us.auth0.com/oauth/token";
     const clientId = env.ZENOBIA_CLIENT_ID || "";
     const clientSecret = env.ZENOBIA_CLIENT_SECRET || "";
-    console.log("clientId", clientId);
-    console.log("clientSecret", clientSecret);
     const audience = "https://dashboard.zenobiapay.com";
 
     // If using development/test mode and no credentials are provided
@@ -78,7 +76,6 @@ async function handleCreateTransfer(
   env: Env
 ): Promise<Response> {
   // Handle CORS preflight requests
-  console.log("request", request);
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204, // No content
@@ -122,15 +119,6 @@ async function handleCreateTransfer(
         amount: body.amount,
         statementItems: body.statementItems,
       };
-
-      console.log("Making API request with:", {
-        url: "https://api.zenobiapay.com/create-transfer-request",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: fetchBody,
-      });
 
       const apiResponse = await fetch(
         "https://api.zenobiapay.com/create-transfer-request",

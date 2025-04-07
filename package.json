@@ -8,7 +8,7 @@
     "dev": "vite",
     "build": "vite build",
     "serve": "vite preview",
-    "pages:dev": "npx wrangler pages dev dist",
+    "pages:dev": "npm run build && npx wrangler pages dev dist",
     "pages:deploy": "npm run build && npx wrangler pages deploy dist"
   },
   "license": "MIT",

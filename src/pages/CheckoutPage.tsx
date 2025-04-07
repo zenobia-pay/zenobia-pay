@@ -1,4 +1,12 @@
-import { Component, createSignal, createEffect, Show } from "solid-js";
+import {
+  Component,
+  createSignal,
+  createEffect,
+  createResource,
+  Show,
+  onCleanup,
+  untrack,
+} from "solid-js";
 import { A, useNavigate } from "@solidjs/router";
 import { ZenobiaPaymentButton, ZenobiaQRCode } from "@zenobia/ui-solid";
 import { CartItem } from "../types";
@@ -27,9 +35,10 @@ const CheckoutPage: Component = () => {
   const [total, setTotal] = createSignal(0);
 
   // Payment state
-  const [paymentId, setPaymentId] = createSignal<number | null>(null);
+  const [paymentId, setPaymentId] = createSignal<string | null>(null);
   const [paymentStatus, setPaymentStatus] = createSignal<string | null>(null);
   const [error, setError] = createSignal<string | null>(null);
+  const [eventSource, setEventSource] = createSignal<EventSource | null>(null);
 
   createEffect(() => {
     const itemsSubtotal = cartItems().reduce((sum, item) => {
@@ -41,28 +50,84 @@ const CheckoutPage: Component = () => {
     setTotal(subtotal() + tax() + shipping());
   });
 
-  const handlePaymentSuccess = (payment: { id: number }) => {
-    setPaymentId(payment.id);
-    setPaymentStatus("pending");
+  // Set up SSE connection when paymentId changes
+  createEffect(() => {
+    const payment = paymentId();
+
+    untrack(() => {
+      console.log("payment id found", payment);
+      if (payment) {
+        // Close any existing connection
+        const currentEventSource = eventSource();
+        if (currentEventSource) {
+          currentEventSource.close();
+        }
+
+        // Create new SSE connection
+        const sse = new EventSource(
+          `${window.location.origin}/payment-events?paymentId=${payment}`
+        );
+
+        // Handle connection established
+        sse.onopen = () => {
+          console.log("SSE connection established");
+        };
+
+        // Handle incoming messages
+        sse.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            console.log("Payment event received:", data);
+
+            if (data.type === "payment_status_update") {
+              setPaymentStatus(data.status);
+
+              // If payment is complete, close the connection
+              if (data.status === "success" || data.status === "failed") {
+                sse.close();
+              }
+            }
+          } catch (err) {
+            console.error("Error parsing SSE event:", err);
+          }
+        };
+
+        // Handle errors
+        sse.onerror = (err) => {
+          console.error("SSE connection error:", err);
+          setError(
+            "Lost connection to payment service. Will not see payment status updates on the client."
+          );
+          sse.close();
+        };
+
+        setEventSource(sse);
+        setPaymentStatus("pending");
+      }
+    });
+  });
+
+  // Clean up SSE connection when component unmounts
+  onCleanup(() => {
+    const currentEventSource = eventSource();
+    if (currentEventSource) {
+      currentEventSource.close();
+      console.log("SSE connection closed on cleanup");
+    }
+  });
+
+  const handlePaymentSuccess = (payment: {
+    transferRequestId: string;
+    merchantId: string;
+  }) => {
+    console.log("Payment success:", payment);
+    setPaymentId(payment.transferRequestId);
+    // The payment status will be updated via SSE
   };
 
   const handlePaymentError = (err: Error) => {
     setError(err.message);
   };
-
-  // In a real app, this would check the payment status periodically
-  const checkPaymentStatus = () => {
-    // Simulate a successful payment after 5 seconds
-    setTimeout(() => {
-      setPaymentStatus("success");
-    }, 5000);
-  };
-
-  createEffect(() => {
-    if (paymentStatus() === "pending") {
-      checkPaymentStatus();
-    }
-  });
 
   return (
     <div class="container mx-auto px-4 py-12">
@@ -205,7 +270,7 @@ const CheckoutPage: Component = () => {
               card required.
             </p>
 
-            <Show
+            {/* <Show
               when={!paymentId()}
               fallback={
                 <div class="text-center">
@@ -240,21 +305,21 @@ const CheckoutPage: Component = () => {
                   </Show>
                 </div>
               }
-            >
-              <ZenobiaPaymentButton
-                amount={total()}
-                url={`${window.location.origin}/create-transfer`}
-                statementItems={cartItems().map((item) => ({
-                  name: item.product.name,
-                  amount: item.product.price * item.quantity,
-                }))}
-                buttonText="Pay with Zenobia"
-                buttonClass="w-full bg-black text-white py-3 text-sm uppercase tracking-wider hover:bg-gray-800"
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-              />
-              {error() && <p class="text-red-600 text-sm mt-2">{error()}</p>}
-            </Show>
+            > */}
+            <ZenobiaPaymentButton
+              amount={total()}
+              url={`${window.location.origin}/create-transfer`}
+              statementItems={cartItems().map((item) => ({
+                name: item.product.name,
+                amount: item.product.price * item.quantity,
+              }))}
+              buttonText="Pay with Zenobia"
+              buttonClass="w-full bg-black text-white py-3 text-sm uppercase tracking-wider hover:bg-gray-800"
+              onSuccess={handlePaymentSuccess}
+              onError={handlePaymentError}
+            />
+            {error() && <p class="text-red-600 text-sm mt-2">{error()}</p>}
+            {/* </Show> */}
           </div>
 
           <div class="mt-6">
