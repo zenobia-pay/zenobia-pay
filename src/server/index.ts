@@ -1,11 +1,27 @@
 import type { TransferStatus, StatusMessage } from "../shared";
 
+// Import Cloudflare Workers types
+import type {
+  DurableObjectNamespace,
+  DurableObjectState,
+  ExportedHandler,
+  ExecutionContext,
+  WebSocket,
+  KVNamespace,
+} from "@cloudflare/workers-types";
+
 // Define environment interface
 interface Env {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
   TRANSFER_STATUS: KVNamespace; // KV namespace for transfer statuses
+  TransferStatusServer: DurableObjectNamespace; // Durable Object namespace
+}
+
+declare class WebSocketPair {
+  0: WebSocket;
+  1: WebSocket;
 }
 
 // In-memory cache for active transfers only
@@ -21,14 +37,61 @@ export class TransferStatusServer {
   localStorageMap = new Map<string, TransferStatus>();
   // Store metadata for listing transfers
   recentTransfersKey = "recent_transfers"; // Key for storing list of recent transfers
+  // The Durable Object state
+  state: DurableObjectState;
 
-  constructor(env: Env) {
+  // Static storage for local development to share state across instances
+  private static devLocalTransfers = new Map<string, TransferStatus>();
+  private static devLocalSockets = new Map<string, Set<WebSocket>>();
+
+  constructor(state: DurableObjectState, env: Env) {
+    this.state = state;
     this.kv = env.TRANSFER_STATUS;
-    // Check if we're in development mode (KV not available)
-    this.isLocalDev = !this.kv;
+
+    // Better detection of local development mode
+    // Check if we're in development mode - either KV is not available or we're running in local dev
+    const isLocalhost =
+      typeof location !== "undefined" && location.hostname === "localhost";
+    // Check for Node.js environment without directly referencing process
+    const isNodeEnv = typeof window === "undefined";
+    this.isLocalDev = !this.kv || isLocalhost || isNodeEnv;
     console.log(
-      `Running in ${this.isLocalDev ? "development" : "production"} mode`
+      `Running in ${
+        this.isLocalDev ? "development" : "production"
+      } mode (KV available: ${!!this.kv})`
     );
+
+    // Set up the Durable Object's fetch handler
+    this.state.blockConcurrencyWhile(async () => {
+      // Initialize any state that needs loading
+      await this.loadExistingTransfers();
+    });
+  }
+
+  // Load existing transfers from storage into memory when initializing
+  async loadExistingTransfers() {
+    if (this.isLocalDev) {
+      // In dev mode, load from static storage
+      for (const [
+        id,
+        transfer,
+      ] of TransferStatusServer.devLocalTransfers.entries()) {
+        this.activeTransfers.set(id, transfer);
+        this.localStorageMap.set(id, transfer);
+      }
+      console.log(
+        `[DEV] Loaded ${this.activeTransfers.size} transfers from dev storage`
+      );
+    } else {
+      // In production, we'll load transfers from KV as needed
+      // We won't preload all transfers as there could be thousands
+      console.log("Durable Object initialized, will load transfers as needed");
+    }
+  }
+
+  // Handle HTTP requests to this Durable Object
+  async fetch(request: Request): Promise<Response> {
+    return await this.handleHttpRequest(request);
   }
 
   // Load a transfer from KV or local memory
@@ -149,10 +212,33 @@ export class TransferStatusServer {
 
   broadcastStatus(transferId: string) {
     const transfer = this.activeTransfers.get(transferId);
-    if (!transfer) return;
+    if (!transfer) {
+      console.log(
+        `No active transfer found for ${transferId} - cannot broadcast`
+      );
+      return;
+    }
 
+    // Check if there are any sockets for this transfer
     const sockets = this.serverSockets.get(transferId);
-    if (!sockets || sockets.size === 0) return;
+    if (!sockets || sockets.size === 0) {
+      console.log(
+        `No WebSocket connections for transfer ${transferId} - cannot broadcast. Server has ${this.serverSockets.size} total connection mappings.`
+      );
+
+      // Log all active transfers with socket connections for debugging
+      if (this.serverSockets.size > 0) {
+        console.log("Current WebSocket mappings:");
+        for (const [tid, socketSet] of this.serverSockets.entries()) {
+          console.log(`- Transfer ${tid}: ${socketSet.size} active sockets`);
+        }
+      }
+      return;
+    }
+
+    console.log(
+      `Broadcasting to ${sockets.size} connections for transfer ${transferId}`
+    );
 
     const message: StatusMessage = {
       type: "status",
@@ -168,8 +254,12 @@ export class TransferStatusServer {
         if (socket.readyState === 1) {
           // OPEN
           socket.send(messageStr);
+          console.log(`Message sent to socket for ${transferId}`);
         } else {
           // Socket is no longer open, mark for removal
+          console.log(
+            `Dead socket found for ${transferId}, readyState: ${socket.readyState}`
+          );
           deadSockets.push(socket);
         }
       } catch (error) {
@@ -180,6 +270,9 @@ export class TransferStatusServer {
 
     // Clean up any dead sockets
     if (deadSockets.length > 0) {
+      console.log(
+        `Cleaning up ${deadSockets.length} dead sockets for ${transferId}`
+      );
       for (const socket of deadSockets) {
         sockets.delete(socket);
         try {
@@ -191,6 +284,9 @@ export class TransferStatusServer {
 
       // Remove the transfer from tracking if no sockets are left
       if (sockets.size === 0) {
+        console.log(
+          `No more active sockets for ${transferId}, removing from server tracking`
+        );
         this.serverSockets.delete(transferId);
 
         // Optionally, remove from active cache if no one is watching
@@ -200,6 +296,7 @@ export class TransferStatusServer {
           setTimeout(() => {
             // Check again if any new listeners have connected
             if (!this.serverSockets.has(transferId)) {
+              console.log(`Removing ${transferId} from active transfers cache`);
               this.activeTransfers.delete(transferId);
             }
           }, 60000); // 1 minute delay
@@ -240,17 +337,25 @@ export class TransferStatusServer {
       updatedAt: now,
     };
 
+    console.log(`Updating transfer ${transferId} to status: ${status}`);
+
     // Update in-memory active cache
     this.activeTransfers.set(transferId, transfer);
 
     // Save to KV or local storage
     try {
       if (this.isLocalDev) {
-        // In dev mode, just save to local map
+        // In dev mode, just save to local map AND static map for cross-instance sharing
         this.localStorageMap.set(transferId, transfer);
+        TransferStatusServer.devLocalTransfers.set(transferId, transfer);
+        console.log(`[DEV] Saved transfer to local storage: ${transferId}`);
+        console.log(
+          `Dev transfers count: ${TransferStatusServer.devLocalTransfers.size}`
+        );
       } else {
         // In production, save to KV
         await this.kv.put(`transfer:${transferId}`, JSON.stringify(transfer));
+        console.log(`Saved transfer to KV: ${transferId}`);
 
         // Update recent transfers list
         await this.updateRecentTransfersList(transferId, now);
@@ -260,15 +365,104 @@ export class TransferStatusServer {
       // Still keep the update in memory even if storage fails
     }
 
+    // List all active connections tracked across the server
+    console.log("Current server socket maps:");
+    console.log(`- Active transfers tracked: ${this.activeTransfers.size}`);
+    console.log(
+      `- WebSocket mappings: ${this.serverSockets.size} transfer IDs`
+    );
+
+    // Check if this specific transfer has sockets
+    if (this.serverSockets.has(transferId)) {
+      const socketCount = this.serverSockets.get(transferId)?.size || 0;
+      console.log(`- Transfer ${transferId} has ${socketCount} active sockets`);
+    } else {
+      console.log(`- Transfer ${transferId} has NO active sockets map`);
+    }
+
     // Broadcast the status update to all connections for this transfer
-    this.broadcastStatus(transferId);
+    console.log(
+      `Broadcasting status update for ${transferId}. Active sockets: ${
+        this.serverSockets.has(transferId)
+          ? this.serverSockets.get(transferId)?.size
+          : 0
+      }`
+    );
+
+    if (this.isLocalDev) {
+      // In dev mode, broadcast using static socket map
+      this.broadcastToDevSockets(transferId, transfer);
+    } else {
+      // In production mode, use instance-specific socket map
+      this.broadcastStatus(transferId);
+    }
 
     // Close connections if status is terminal
     if (status === "COMPLETED" || status === "FAILED") {
+      console.log(
+        `Status is terminal (${status}), closing WebSockets for ${transferId}`
+      );
       this.closeWebSockets(transferId);
     }
 
     return transfer;
+  }
+
+  // New method for development broadcasting
+  private broadcastToDevSockets(transferId: string, transfer: TransferStatus) {
+    const message: StatusMessage = {
+      type: "status",
+      transfer,
+    };
+
+    const messageStr = JSON.stringify(message);
+    console.log(
+      `[DEV] Broadcasting to all dev sockets for transfer: ${transferId}`
+    );
+
+    // Get sockets from static map
+    const sockets = TransferStatusServer.devLocalSockets.get(transferId);
+    if (!sockets || sockets.size === 0) {
+      console.log(`[DEV] No sockets found for transfer: ${transferId}`);
+      return;
+    }
+
+    console.log(
+      `[DEV] Found ${sockets.size} sockets for transfer: ${transferId}`
+    );
+
+    const deadSockets: WebSocket[] = [];
+
+    for (const socket of sockets) {
+      try {
+        if (socket.readyState === 1) {
+          // OPEN
+          socket.send(messageStr);
+          console.log(`[DEV] Message sent to socket for ${transferId}`);
+        } else {
+          console.log(
+            `[DEV] Dead socket found for ${transferId}, readyState: ${socket.readyState}`
+          );
+          deadSockets.push(socket);
+        }
+      } catch (error) {
+        console.error(`[DEV] Error broadcasting status:`, error);
+        deadSockets.push(socket);
+      }
+    }
+
+    // Clean up dead sockets
+    if (deadSockets.length > 0) {
+      console.log(`[DEV] Cleaning up ${deadSockets.length} dead sockets`);
+      for (const socket of deadSockets) {
+        sockets.delete(socket);
+        try {
+          socket.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+      }
+    }
   }
 
   // List all transfers in the system
@@ -279,18 +473,41 @@ export class TransferStatusServer {
   // Close all WebSockets for a transfer ID
   closeWebSockets(transferId: string) {
     const sockets = this.serverSockets.get(transferId);
-    if (!sockets) return;
-
-    for (const socket of sockets) {
-      try {
-        socket.close();
-      } catch (error) {
-        console.error("Error closing WebSocket:", error);
+    if (sockets) {
+      console.log(
+        `Closing ${sockets.size} WebSockets for transfer ${transferId}`
+      );
+      for (const socket of sockets) {
+        try {
+          socket.close();
+        } catch (error) {
+          console.error("Error closing WebSocket:", error);
+        }
       }
+
+      // Remove from the map
+      this.serverSockets.delete(transferId);
     }
 
-    // Remove from the map
-    this.serverSockets.delete(transferId);
+    // In dev mode, also close sockets in the static map
+    if (this.isLocalDev) {
+      const devSockets = TransferStatusServer.devLocalSockets.get(transferId);
+      if (devSockets) {
+        console.log(
+          `[DEV] Closing ${devSockets.size} static WebSockets for transfer ${transferId}`
+        );
+        for (const socket of devSockets) {
+          try {
+            socket.close();
+          } catch (error) {
+            console.error("[DEV] Error closing static WebSocket:", error);
+          }
+        }
+
+        // Remove from the static map
+        TransferStatusServer.devLocalSockets.delete(transferId);
+      }
+    }
   }
 
   // Handle WebSocket connection for a transfer
@@ -298,16 +515,50 @@ export class TransferStatusServer {
     request: Request,
     transferId: string
   ): Promise<Response> {
+    console.log(`WebSocket connection requested for transfer: ${transferId}`);
+
     // Check if the transfer exists in memory or load it from storage
     let transfer = this.activeTransfers.get(transferId);
     if (!transfer) {
-      transfer = await this.getTransferStatus(transferId);
-      if (!transfer) {
-        return new Response(JSON.stringify({ error: "Transfer not found" }), {
-          status: 404,
-          headers: { "Content-Type": "application/json" },
-        });
+      // In dev mode, also check the static map
+      if (this.isLocalDev) {
+        transfer = TransferStatusServer.devLocalTransfers.get(transferId);
+        if (transfer) {
+          console.log(
+            `Transfer found in dev static cache for WebSocket: ${transferId}`
+          );
+          // Add to local instance cache too
+          this.activeTransfers.set(transferId, transfer);
+        }
       }
+
+      if (!transfer) {
+        transfer = await this.getTransferStatus(transferId);
+        if (!transfer) {
+          console.log(
+            `Transfer not found for WebSocket connection: ${transferId}`
+          );
+          return new Response(JSON.stringify({ error: "Transfer not found" }), {
+            status: 404,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        console.log(
+          `Transfer loaded from storage for WebSocket: ${transferId}`
+        );
+
+        // In dev mode, add to static map for cross-instance access
+        if (this.isLocalDev) {
+          TransferStatusServer.devLocalTransfers.set(transferId, transfer);
+        }
+
+        // Make sure it's in the active transfers cache
+        this.activeTransfers.set(transferId, transfer);
+      }
+    } else {
+      console.log(
+        `Transfer found in active cache for WebSocket: ${transferId}`
+      );
     }
 
     // For completed/failed transfers, send one-time response
@@ -321,12 +572,44 @@ export class TransferStatusServer {
 
     // Accept the connection on the server side
     server.accept();
+    console.log(`WebSocket connection accepted for transfer: ${transferId}`);
 
     // Store the server socket for broadcasts
     if (!this.serverSockets.has(transferId)) {
       this.serverSockets.set(transferId, new Set());
+      console.log(`Created new socket set for transfer: ${transferId}`);
     }
-    this.serverSockets.get(transferId)?.add(server);
+
+    // Add socket to the set
+    const sockets = this.serverSockets.get(transferId);
+    if (sockets) {
+      sockets.add(server);
+      console.log(
+        `Added socket to set for transfer: ${transferId}, total: ${sockets.size}`
+      );
+    } else {
+      console.log(
+        `ERROR: Failed to get socket set that was just created for ${transferId}`
+      );
+      // Create the set again
+      this.serverSockets.set(transferId, new Set([server]));
+    }
+
+    // In dev mode, also store in static socket map for cross-instance access
+    if (this.isLocalDev) {
+      if (!TransferStatusServer.devLocalSockets.has(transferId)) {
+        TransferStatusServer.devLocalSockets.set(transferId, new Set());
+        console.log(
+          `[DEV] Created new static socket set for transfer: ${transferId}`
+        );
+      }
+      TransferStatusServer.devLocalSockets.get(transferId)?.add(server);
+      console.log(
+        `[DEV] Added socket to static set for transfer: ${transferId}, total: ${
+          TransferStatusServer.devLocalSockets.get(transferId)?.size
+        }`
+      );
+    }
 
     // Track if this connection is alive with a ping/pong mechanism
     let isAlive = true;
@@ -359,7 +642,7 @@ export class TransferStatusServer {
     }, 30000); // 30-second ping interval
 
     // Handle pong messages from client
-    server.addEventListener("message", (event) => {
+    server.addEventListener("message", (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data as string);
         if (data.type === "pong") {
@@ -386,8 +669,15 @@ export class TransferStatusServer {
       const sockets = this.serverSockets.get(transferId);
       if (sockets) {
         sockets.delete(server);
+        console.log(
+          `Removed closed socket for ${transferId}, remaining: ${sockets.size}`
+        );
+
         if (sockets.size === 0) {
           // No more clients listening to this transfer
+          console.log(
+            `No more active sockets for ${transferId}, removing socket mapping`
+          );
           this.serverSockets.delete(transferId);
 
           // Maybe remove from active cache if terminal state
@@ -397,6 +687,9 @@ export class TransferStatusServer {
           ) {
             setTimeout(() => {
               if (!this.serverSockets.has(transferId)) {
+                console.log(
+                  `Removing ${transferId} from active transfers cache`
+                );
                 this.activeTransfers.delete(transferId);
               }
             }, 60000); // 1 minute delay
@@ -406,7 +699,7 @@ export class TransferStatusServer {
     });
 
     // Handle errors gracefully
-    server.addEventListener("error", (error) => {
+    server.addEventListener("error", (error: Event) => {
       console.error(`WebSocket error for transfer ${transferId}:`, error);
       clearInterval(pingInterval);
 
@@ -419,6 +712,15 @@ export class TransferStatusServer {
         }
       }
     });
+
+    // Send a ping immediately to confirm the connection is active
+    try {
+      if (server.readyState === 1) {
+        server.send(JSON.stringify({ type: "ping", initial: true }));
+      }
+    } catch (e) {
+      console.error("Error sending initial ping:", e);
+    }
 
     // Set timeout to close connection after 2 minutes if not closed already
     // This ensures connections don't stay open indefinitely
@@ -469,7 +771,7 @@ export class TransferStatusServer {
     return new Response(null, {
       status: 101,
       webSocket: client,
-    });
+    } as ResponseInit & { webSocket: WebSocket });
   }
 
   async handleHttpRequest(request: Request): Promise<Response> {
@@ -497,6 +799,14 @@ export class TransferStatusServer {
       ...corsHeaders,
     };
 
+    // Helper to generate WebSocket URL
+    const generateWebSocketUrl = (transferId: string): string => {
+      const protocol =
+        request.headers.get("x-forwarded-proto") === "https" ? "wss" : "ws";
+      const host = request.headers.get("host") || url.host;
+      return `${protocol}://${host}/transfers/${transferId}/ws`;
+    };
+
     // Check for WebSocket upgrade request
     const upgrade = request.headers.get("Upgrade");
     const connection = request.headers.get("Connection");
@@ -521,9 +831,7 @@ export class TransferStatusServer {
           return new Response(
             JSON.stringify({
               error: "WebSocket connection required for this endpoint",
-              websocket_url: `${url.protocol === "https:" ? "wss" : "ws"}://${
-                url.host
-              }${path}`,
+              websocket_url: generateWebSocketUrl(transferId),
             }),
             {
               status: 400,
@@ -567,25 +875,30 @@ export class TransferStatusServer {
         });
       }
 
+      // Always include websocket_url for any status
+      const websocket_url = generateWebSocketUrl(transferId);
+
       // If transfer is completed or failed, return status immediately
       if (transfer.status === "COMPLETED" || transfer.status === "FAILED") {
-        return new Response(JSON.stringify(transfer), {
-          status: 200,
-          headers: responseHeaders,
-        });
+        return new Response(
+          JSON.stringify({
+            ...transfer,
+            websocket_url, // include websocket URL even for terminal states
+          }),
+          {
+            status: 200,
+            headers: responseHeaders,
+          }
+        );
       }
 
-      // Otherwise, suggest connecting via WebSocket for updates
-      const protocol =
-        request.headers.get("x-forwarded-proto") === "https" ? "wss" : "ws";
-      const host = request.headers.get("host") || url.host;
-
+      // For in-progress transfers, suggest connecting via WebSocket
       return new Response(
         JSON.stringify({
           ...transfer,
           message:
             "Transfer in progress. Connect to WebSocket for real-time updates.",
-          websocket_url: `${protocol}://${host}/transfers/${transferId}/ws`,
+          websocket_url,
         }),
         {
           status: 200,
@@ -594,7 +907,7 @@ export class TransferStatusServer {
       );
     }
 
-    // Handle create transfer endpoint (modified to use async/await)
+    // Handle create transfer endpoint
     if (path === "/create" && request.method === "POST") {
       try {
         const body = (await request.json()) as {
@@ -615,11 +928,18 @@ export class TransferStatusServer {
         }
 
         const result = await this.createTransferRequest(id, status, details);
+        const websocket_url = generateWebSocketUrl(id);
 
-        return new Response(JSON.stringify(result), {
-          status: 200,
-          headers: responseHeaders,
-        });
+        return new Response(
+          JSON.stringify({
+            ...result,
+            websocket_url, // Add WebSocket URL to connect for updates
+          }),
+          {
+            status: 200,
+            headers: responseHeaders,
+          }
+        );
       } catch (error) {
         console.error("Error creating transfer:", error);
         return new Response(JSON.stringify({ error: "Invalid request" }), {
@@ -629,7 +949,7 @@ export class TransferStatusServer {
       }
     }
 
-    // Handle status update endpoint (modified to use async/await)
+    // Handle status update endpoint
     if (path === "/update" && request.method === "POST") {
       try {
         const body = (await request.json()) as {
@@ -650,11 +970,18 @@ export class TransferStatusServer {
         }
 
         const result = await this.updateTransferStatus(id, status, details);
+        const websocket_url = generateWebSocketUrl(id);
 
-        return new Response(JSON.stringify(result), {
-          status: 200,
-          headers: responseHeaders,
-        });
+        return new Response(
+          JSON.stringify({
+            ...result,
+            websocket_url, // Add WebSocket URL to connect for updates
+          }),
+          {
+            status: 200,
+            headers: responseHeaders,
+          }
+        );
       } catch (error) {
         console.error("Error updating transfer:", error);
         return new Response(JSON.stringify({ error: "Invalid request" }), {
@@ -697,29 +1024,20 @@ export class TransferStatusServer {
 }
 
 export default {
-  async fetch(request: Request, env: Env) {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext) {
     // Log the request for debugging
     console.log(`Request: ${request.method} ${new URL(request.url).pathname}`);
 
     try {
-      // Initialize the server with KV namespace
-      const server = new TransferStatusServer(env);
+      // Create a unique ID for the TransferStatusServer Durable Object
+      // We only need one instance to manage all transfers
+      const id = env.TransferStatusServer.idFromName("global");
 
-      // Performance timer to monitor API response times
-      const startTime = performance.now();
+      // Get the stub for the Durable Object
+      const stub = env.TransferStatusServer.get(id);
 
-      // Handle the request
-      const response = await server.handleHttpRequest(request);
-
-      // Log performance for API monitoring
-      const duration = performance.now() - startTime;
-      console.log(
-        `Request processed in ${duration.toFixed(2)}ms: ${request.method} ${
-          new URL(request.url).pathname
-        }`
-      );
-
-      return response;
+      // Forward the request to the Durable Object
+      return await stub.fetch(request);
     } catch (error) {
       // Detailed error logging to help with debugging
       const url = new URL(request.url);

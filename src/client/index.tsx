@@ -18,78 +18,157 @@ function TransferStatusViewer() {
   const [wsUrl, setWsUrl] = useState<string | null>(null);
   const [allTransfers, setAllTransfers] = useState<TransferStatus[]>([]);
   const [showTransfersList, setShowTransfersList] = useState(false);
+  const [lastUpdateSource, setLastUpdateSource] = useState<
+    "http" | "websocket" | null
+  >(null);
   const socketRef = useRef<WebSocket | null>(null);
 
-  // WebSocket connection
+  // Track WebSocket message timestamps and counts
+  const [wsStats, setWsStats] = useState({
+    messageCount: 0,
+    lastMessageTime: null as number | null,
+  });
+
+  // WebSocket connection with automatic reconnection
   useEffect(() => {
-    // Close any existing socket connection
-    if (socketRef.current) {
-      socketRef.current.close();
-      socketRef.current = null;
-      setConnected(false);
-    }
+    let reconnectTimeout: number | null = null;
+    const maxReconnectAttempts = 5;
+    let reconnectAttempts = 0;
 
-    // Only create a new WebSocket if we have a transferId and wsUrl
-    if (!transferId || !wsUrl) {
-      return;
-    }
-
-    // Create new WebSocket connection
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
-
-    socket.onopen = () => {
-      setConnected(true);
-      setError(null);
-      console.log("WebSocket connected");
-    };
-
-    socket.onclose = () => {
-      setConnected(false);
-      socketRef.current = null;
-      console.log("WebSocket disconnected");
-    };
-
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      setError("WebSocket error occurred");
-      setConnected(false);
-    };
-
-    socket.onmessage = (evt) => {
-      try {
-        const data = JSON.parse(evt.data);
-
-        // Check the message type and handle accordingly
-        if (data.type === "status" && data.transfer) {
-          // Status message with transfer data
-          setStatus(data.transfer);
-          setError(null);
-        } else if (data.type === "error" && data.message) {
-          // Error message
-          setError(data.message);
-        } else if (data.type === "ping") {
-          // Respond to ping with pong to keep connection alive
-          if (socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({ type: "pong" }));
-          }
-        }
-      } catch (err) {
-        console.error("Failed to parse message:", err);
-        setError("Failed to parse message");
+    const connectWebSocket = () => {
+      // Close any existing socket connection
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+        setConnected(false);
       }
+
+      // Only create a new WebSocket if we have a transferId and wsUrl
+      if (!transferId || !wsUrl) {
+        return;
+      }
+
+      console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
+
+      // Create new WebSocket connection
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        setConnected(true);
+        setError(null);
+        reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+        console.log(`WebSocket connected for transfer: ${transferId}`);
+      };
+
+      socket.onclose = (event) => {
+        setConnected(false);
+        socketRef.current = null;
+        console.log(
+          `WebSocket disconnected for transfer: ${transferId}`,
+          event.code,
+          event.reason
+        );
+
+        // Try to reconnect if not manually closed
+        if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+          reconnectAttempts++;
+          const reconnectDelay = Math.min(1000 * reconnectAttempts, 5000);
+          console.log(
+            `Attempting to reconnect in ${reconnectDelay}ms (attempt ${reconnectAttempts})`
+          );
+
+          if (reconnectTimeout) {
+            window.clearTimeout(reconnectTimeout);
+          }
+
+          reconnectTimeout = window.setTimeout(() => {
+            console.log(
+              `Reconnecting to WebSocket (attempt ${reconnectAttempts})...`
+            );
+            connectWebSocket();
+          }, reconnectDelay);
+        }
+      };
+
+      socket.onerror = (error) => {
+        console.error(`WebSocket error for transfer: ${transferId}`, error);
+        setError("WebSocket error occurred");
+      };
+
+      socket.onmessage = (evt) => {
+        console.log(
+          `WebSocket message received for transfer: ${transferId}`,
+          evt.data
+        );
+
+        // Update WebSocket stats
+        setWsStats((prev) => ({
+          messageCount: prev.messageCount + 1,
+          lastMessageTime: Date.now(),
+        }));
+
+        try {
+          const data = JSON.parse(evt.data);
+
+          // Check the message type and handle accordingly
+          if (data.type === "status" && data.transfer) {
+            // Status message with transfer data
+            const oldStatus = status?.status;
+            const newStatus = data.transfer.status;
+
+            console.log(
+              `Status update received via WebSocket: ${
+                oldStatus || "none"
+              } -> ${newStatus}`,
+              data.transfer
+            );
+
+            setStatus(data.transfer);
+            setLastUpdateSource("websocket");
+            setError(null);
+
+            if (oldStatus !== newStatus) {
+              console.log(
+                `Status changed: ${oldStatus || "none"} -> ${newStatus}`
+              );
+            }
+          } else if (data.type === "error" && data.message) {
+            // Error message
+            console.error(`Error message from server: ${data.message}`);
+            setError(data.message);
+          } else if (data.type === "ping") {
+            // Respond to ping with pong to keep connection alive
+            console.log("Ping received, sending pong");
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({ type: "pong" }));
+            }
+          }
+        } catch (err) {
+          console.error("Failed to parse message:", err, evt.data);
+          setError("Failed to parse message");
+        }
+      };
     };
 
-    // Cleanup function to close socket when component unmounts
+    // Initial connection
+    connectWebSocket();
+
+    // Cleanup function to close socket and cancel reconnection when component unmounts
     // or when transferId/wsUrl changes
     return () => {
+      if (reconnectTimeout) {
+        window.clearTimeout(reconnectTimeout);
+      }
+
       if (socketRef.current && socketRef.current.readyState < 2) {
+        console.log(`Closing WebSocket for transfer: ${transferId}`);
         socketRef.current.close();
         socketRef.current = null;
         setConnected(false);
       }
     };
-  }, [transferId, wsUrl]);
+  }, [transferId, wsUrl]); // Keep the dependency array minimal to prevent unnecessary reconnections
 
   const checkStatus = async () => {
     if (!transferId) {
@@ -115,8 +194,9 @@ function TransferStatusViewer() {
       };
 
       if (response.ok) {
+        // For completed/failed statuses, we'll still need to display status
+        // as these won't establish a persistent WebSocket connection
         if (data.status === "COMPLETED" || data.status === "FAILED") {
-          // For completed/failed statuses, just display status
           if (data.id && data.status && data.updatedAt) {
             setStatus({
               id: data.id,
@@ -124,15 +204,14 @@ function TransferStatusViewer() {
               details: data.details,
               updatedAt: data.updatedAt,
             });
+            setLastUpdateSource("http");
           }
         } else if (data.status) {
-          // For pending/processing statuses, connect to WebSocket
-          setStatus({
-            id: transferId,
-            status: data.status,
-            details: data.details,
-            updatedAt: Date.now(),
-          });
+          // For pending/processing statuses, ONLY connect to WebSocket
+          // and don't update status directly - let the WebSocket do it
+          console.log(
+            `Connecting to WebSocket for status updates on ${transferId}`
+          );
 
           // Use the provided WebSocket URL if available
           if (data.websocket_url) {
@@ -166,6 +245,7 @@ function TransferStatusViewer() {
     setError(null);
 
     try {
+      console.log(`Creating transfer: ${transferId}`);
       const response = await fetch("/create", {
         method: "POST",
         headers: {
@@ -180,15 +260,38 @@ function TransferStatusViewer() {
 
       const data = (await response.json()) as TransferStatus & {
         error?: string;
+        websocket_url?: string;
       };
 
       if (response.ok) {
-        setStatus({
-          id: data.id,
-          status: data.status,
-          details: data.details,
-          updatedAt: data.updatedAt,
-        });
+        console.log(`Transfer created successfully: ${transferId}`);
+
+        // Set up WebSocket connection to get real-time updates
+        if (data.websocket_url) {
+          console.log(
+            `Connecting to WebSocket for new transfer: ${transferId}`
+          );
+          setWsUrl(data.websocket_url);
+        } else {
+          // Generate WebSocket URL and connect
+          const protocol =
+            window.location.protocol === "https:" ? "wss:" : "ws:";
+          setWsUrl(
+            `${protocol}//${window.location.host}/transfers/${transferId}/ws`
+          );
+        }
+
+        // Only if we can't establish a WebSocket, update status directly
+        if (data.status === "COMPLETED" || data.status === "FAILED") {
+          setStatus({
+            id: data.id,
+            status: data.status,
+            details: data.details,
+            updatedAt: data.updatedAt,
+          });
+          setLastUpdateSource("http");
+        }
+
         setError(null);
         // Reload the transfers list
         fetchAllTransfers();
@@ -197,6 +300,7 @@ function TransferStatusViewer() {
       }
     } catch (err) {
       setError("Network error occurred");
+      console.error("Error creating transfer:", err);
     } finally {
       setLoading(false);
     }
@@ -212,6 +316,7 @@ function TransferStatusViewer() {
 
     setLoading(true);
     try {
+      console.log(`Sending status update: ${transferId} -> ${newStatus}`);
       const response = await fetch("/update", {
         method: "POST",
         headers: {
@@ -230,17 +335,35 @@ function TransferStatusViewer() {
         details?: string;
         updatedAt?: number;
         error?: string;
+        websocket_url?: string;
       };
 
       if (response.ok) {
-        if (data.id && data.status && data.updatedAt) {
-          setStatus({
-            id: data.id,
-            status: data.status,
-            details: data.details,
-            updatedAt: data.updatedAt,
-          });
+        console.log(`Status update request successful: ${newStatus}`);
+        // Don't update status directly - wait for WebSocket update
+        // If there's no WebSocket connection (e.g., for terminal states),
+        // create one or update status directly
+        if (
+          !connected &&
+          (newStatus === "COMPLETED" || newStatus === "FAILED")
+        ) {
+          if (data.id && data.status && data.updatedAt) {
+            setStatus({
+              id: data.id,
+              status: data.status,
+              details: data.details,
+              updatedAt: data.updatedAt,
+            });
+            setLastUpdateSource("http");
+          }
+        } else if (data.websocket_url && !connected) {
+          // Try to establish WebSocket connection for real-time updates
+          console.log(
+            `Connecting to WebSocket after status update: ${transferId}`
+          );
+          setWsUrl(data.websocket_url);
         }
+
         setError(null);
         // Reload the transfers list if we're showing it
         if (showTransfersList) {
@@ -251,8 +374,43 @@ function TransferStatusViewer() {
       }
     } catch (err) {
       setError("Network error occurred");
+      console.error("Error updating status:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Debug WebSocket connection
+  const debugWebSocket = () => {
+    if (!socketRef.current) {
+      console.log("No active WebSocket connection");
+      return;
+    }
+
+    const readyStateMap: Record<number, string> = {
+      0: "CONNECTING",
+      1: "OPEN",
+      2: "CLOSING",
+      3: "CLOSED",
+    };
+
+    console.log("WebSocket Connection Info:");
+    console.log(`- URL: ${socketRef.current.url}`);
+    console.log(
+      `- Ready State: ${socketRef.current.readyState} (${
+        readyStateMap[socketRef.current.readyState]
+      })`
+    );
+    console.log(`- Protocol: ${socketRef.current.protocol || "none"}`);
+    console.log(`- Buffer Amount: ${socketRef.current.bufferedAmount}`);
+    console.log(`- Extensions: ${socketRef.current.extensions || "none"}`);
+
+    // Try sending a test message
+    if (socketRef.current.readyState === WebSocket.OPEN) {
+      console.log("Sending test ping message...");
+      socketRef.current.send(JSON.stringify({ type: "ping", test: true }));
+    } else {
+      console.log("WebSocket not open, cannot send test message");
     }
   };
 
@@ -449,14 +607,42 @@ function TransferStatusViewer() {
                   <strong>Details:</strong> {status.details}
                 </p>
               )}
-              <p>
-                <strong>Last Updated:</strong>{" "}
-                {new Date(status.updatedAt).toLocaleString()}
-              </p>
               {connected && (
                 <p className="websocket-status">
                   <span className="websocket-connected">●</span> WebSocket
                   Connected (Real-time updates)
+                  <button
+                    className="button-small debug-button"
+                    onClick={debugWebSocket}
+                    title="Debug WebSocket connection"
+                  >
+                    Debug
+                  </button>
+                </p>
+              )}
+              {status && status.updatedAt && (
+                <p className="update-info">
+                  <strong>Last Update:</strong>{" "}
+                  {new Date(status.updatedAt).toLocaleString()}
+                  {connected && (
+                    <span className={`source-badge source-${lastUpdateSource}`}>
+                      Via{" "}
+                      {lastUpdateSource === "websocket" ? "WebSocket" : "HTTP"}
+                    </span>
+                  )}
+                </p>
+              )}
+              {connected && wsStats.messageCount > 0 && (
+                <p className="ws-stats">
+                  <strong>WebSocket Stats:</strong> {wsStats.messageCount}{" "}
+                  messages received
+                  {wsStats.lastMessageTime && (
+                    <span>
+                      {" "}
+                      (Last:{" "}
+                      {new Date(wsStats.lastMessageTime).toLocaleTimeString()})
+                    </span>
+                  )}
                 </p>
               )}
             </div>
@@ -580,6 +766,32 @@ function TransferStatusViewer() {
           height: 30px;
           line-height: 30px;
           font-size: 11px;
+        }
+        .debug-button {
+          margin-left: 10px;
+          background-color: #6c757d;
+          color: white;
+          border: none;
+        }
+        .debug-button:hover {
+          background-color: #5a6268;
+        }
+        .update-info {
+          font-size: 0.9em;
+          color: #383d41;
+          margin-top: 10px;
+        }
+        .source-badge {
+          background-color: #d1ecf1;
+          padding: 2px 4px;
+          border-radius: 3px;
+          font-size: 0.8em;
+          margin-left: 5px;
+        }
+        .ws-stats {
+          font-size: 0.9em;
+          color: #383d41;
+          margin-top: 10px;
         }
       `}</style>
     </div>
