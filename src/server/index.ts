@@ -5,7 +5,7 @@ interface Env {
   ASSETS: {
     fetch: (request: Request) => Promise<Response>;
   };
-  TRANSFER_KV: KVNamespace; // KV namespace for transfer statuses
+  TRANSFER_STATUS: KVNamespace; // KV namespace for transfer statuses
 }
 
 // In-memory cache for active transfers only
@@ -23,7 +23,7 @@ export class TransferStatusServer {
   recentTransfersKey = "recent_transfers"; // Key for storing list of recent transfers
 
   constructor(env: Env) {
-    this.kv = env.TRANSFER_KV;
+    this.kv = env.TRANSFER_STATUS;
     // Check if we're in development mode (KV not available)
     this.isLocalDev = !this.kv;
     console.log(

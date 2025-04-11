@@ -39,8 +39,8 @@
    */
   "kv_namespaces": [
     {
-      "binding": "TRANSFER_KV",
-      "id": "transfer-status-kv"
+      "binding": "TRANSFER_STATUS",
+      "id": "4367a7ed5311485595700be0213d6354"
     }
   ]
   /**
