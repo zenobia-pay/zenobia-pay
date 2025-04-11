@@ -39,6 +39,8 @@ export class TransferStatusServer {
   recentTransfersKey = "recent_transfers"; // Key for storing list of recent transfers
   // The Durable Object state
   state: DurableObjectState;
+  // Shared key for HMAC authentication - this would be better stored securely
+  private hmacSecret = "12345"; // In production, use a real secure key
 
   // Static storage for local development to share state across instances
   private static devLocalTransfers = new Map<string, TransferStatus>();
@@ -774,6 +776,66 @@ export class TransferStatusServer {
     } as ResponseInit & { webSocket: WebSocket });
   }
 
+  // New method to verify HMAC signature
+  private async verifyHmacSignature(
+    transferId: string,
+    signature: string,
+    timestamp: number
+  ): Promise<boolean> {
+    // Check if timestamp is expired (we'll use 5 minutes validity)
+    const now = Date.now();
+    const validityPeriod = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+    if (now - timestamp > validityPeriod) {
+      console.log(
+        `Expired timestamp for transfer ${transferId}: ${timestamp}, now: ${now}`
+      );
+      return false;
+    }
+
+    // Create the message string that was signed (transferId + timestamp)
+    const message = `${transferId}:${timestamp}`;
+
+    try {
+      // Create key from secret
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(this.hmacSecret);
+      const messageData = encoder.encode(message);
+
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign", "verify"]
+      );
+
+      // Sign the message
+      const signatureData = await crypto.subtle.sign("HMAC", key, messageData);
+
+      // Convert to hex string
+      const signatureArray = new Uint8Array(signatureData);
+      const expectedSignature = Array.from(signatureArray)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+
+      // Compare provided signature with expected signature
+      const isValid = expectedSignature === signature;
+
+      if (!isValid) {
+        console.log(`Invalid HMAC signature for transfer ${transferId}`);
+        console.log(`Expected: ${expectedSignature}`);
+        console.log(`Received: ${signature}`);
+      }
+
+      return isValid;
+    } catch (error) {
+      console.error(`Error verifying HMAC signature: ${error}`);
+      return false;
+    }
+  }
+
   async handleHttpRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -822,6 +884,42 @@ export class TransferStatusServer {
       if (pathParts.length >= 3) {
         const transferId = pathParts[2];
 
+        // Check for HMAC authentication in WebSocket request
+        const signature = url.searchParams.get("signature");
+        const timestamp = url.searchParams.get("timestamp");
+
+        // Require HMAC authentication for WebSocket connections
+        if (!signature || !timestamp) {
+          return new Response(
+            JSON.stringify({
+              error: "Authentication required. Missing signature or timestamp.",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Verify HMAC signature for WebSocket connection
+        const isValidSignature = await this.verifyHmacSignature(
+          transferId,
+          signature,
+          parseInt(timestamp, 10)
+        );
+
+        if (!isValidSignature) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid authentication signature or expired timestamp.",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+
         // Only proceed if this is a WebSocket request
         if (isWebSocketRequest) {
           console.log(`WebSocket upgrade request for transfer: ${transferId}`);
@@ -848,6 +946,45 @@ export class TransferStatusServer {
       const limitParam = url.searchParams.get("limit");
       const limit = limitParam ? parseInt(limitParam, 10) : 100;
 
+      // Get authentication parameters
+      const signature = url.searchParams.get("signature");
+      const timestamp = url.searchParams.get("timestamp");
+
+      // We use a dummy ID "ALL_TRANSFERS" for listing operations
+      const dummyId = "ALL_TRANSFERS";
+
+      // Require HMAC authentication
+      if (!signature || !timestamp) {
+        return new Response(
+          JSON.stringify({
+            error: "Authentication required. Missing signature or timestamp.",
+          }),
+          {
+            status: 401,
+            headers: responseHeaders,
+          }
+        );
+      }
+
+      // Verify HMAC signature using the dummy ID
+      const isValidSignature = await this.verifyHmacSignature(
+        dummyId,
+        signature,
+        parseInt(timestamp, 10)
+      );
+
+      if (!isValidSignature) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid authentication signature or expired timestamp.",
+          }),
+          {
+            status: 401,
+            headers: responseHeaders,
+          }
+        );
+      }
+
       const transfers = await this.getRecentTransfers(limit);
       return new Response(JSON.stringify(transfers), {
         status: 200,
@@ -858,12 +995,46 @@ export class TransferStatusServer {
     // Handle status check endpoint
     if (path === "/status" && request.method === "GET") {
       const transferId = url.searchParams.get("id");
+      const signature = url.searchParams.get("signature");
+      const timestamp = url.searchParams.get("timestamp");
 
       if (!transferId) {
         return new Response(JSON.stringify({ error: "Missing transfer ID" }), {
           status: 400,
           headers: responseHeaders,
         });
+      }
+
+      // Require HMAC authentication for status checks
+      if (!signature || !timestamp) {
+        return new Response(
+          JSON.stringify({
+            error: "Authentication required. Missing signature or timestamp.",
+          }),
+          {
+            status: 401,
+            headers: responseHeaders,
+          }
+        );
+      }
+
+      // Verify HMAC signature
+      const isValidSignature = await this.verifyHmacSignature(
+        transferId,
+        signature,
+        parseInt(timestamp, 10)
+      );
+
+      if (!isValidSignature) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid authentication signature or expired timestamp.",
+          }),
+          {
+            status: 401,
+            headers: responseHeaders,
+          }
+        );
       }
 
       const transfer = await this.getTransferStatus(transferId);
@@ -914,14 +1085,48 @@ export class TransferStatusServer {
           id?: string;
           status?: "PENDING" | "PROCESSING";
           details?: string;
+          signature?: string;
+          timestamp?: number;
         };
-        const { id, status = "PENDING", details } = body;
+        const { id, status = "PENDING", details, signature, timestamp } = body;
 
         if (!id) {
           return new Response(
             JSON.stringify({ error: "Missing required field: id" }),
             {
               status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Require HMAC authentication
+        if (!signature || !timestamp) {
+          return new Response(
+            JSON.stringify({
+              error: "Authentication required. Missing signature or timestamp.",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Verify HMAC signature
+        const isValidSignature = await this.verifyHmacSignature(
+          id,
+          signature,
+          timestamp
+        );
+
+        if (!isValidSignature) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid authentication signature or expired timestamp.",
+            }),
+            {
+              status: 401,
               headers: responseHeaders,
             }
           );
@@ -956,14 +1161,48 @@ export class TransferStatusServer {
           id?: string;
           status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
           details?: string;
+          signature?: string;
+          timestamp?: number;
         };
-        const { id, status, details } = body;
+        const { id, status, details, signature, timestamp } = body;
 
         if (!id || !status) {
           return new Response(
             JSON.stringify({ error: "Missing required fields" }),
             {
               status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Require HMAC authentication
+        if (!signature || !timestamp) {
+          return new Response(
+            JSON.stringify({
+              error: "Authentication required. Missing signature or timestamp.",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Verify HMAC signature
+        const isValidSignature = await this.verifyHmacSignature(
+          id,
+          signature,
+          timestamp
+        );
+
+        if (!isValidSignature) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid authentication signature or expired timestamp.",
+            }),
+            {
+              status: 401,
               headers: responseHeaders,
             }
           );
@@ -997,15 +1236,23 @@ export class TransferStatusServer {
         JSON.stringify({
           endpoints: {
             "/create":
-              "POST - Create a new transfer (requires JSON body with id field)",
-            "/status?id=<transferId>": "GET - Check status of a transfer",
+              "POST - Create a new transfer (requires JSON body with id, signature, and timestamp fields)",
+            "/status?id=<transferId>&signature=<hmac>&timestamp=<ts>":
+              "GET - Check status of a transfer (requires HMAC authentication)",
             "/update":
-              "POST - Update a transfer status (requires JSON body with id, status fields)",
+              "POST - Update a transfer status (requires JSON body with id, status, signature, and timestamp fields)",
             "/transfers":
               "GET - List all transfers in the system (most recent 100 by default)",
             "/transfers?limit=<number>":
               "GET - Limit number of transfers returned",
-            "/transfers/:id/ws": "WebSocket - Connect for real-time updates",
+            "/transfers/:id/ws?signature=<hmac>&timestamp=<ts>":
+              "WebSocket - Connect for real-time updates (requires HMAC authentication)",
+          },
+          authentication: {
+            description: "HMAC authentication required for most endpoints",
+            method:
+              "SHA-256 HMAC signature of '[transferId]:[timestamp]' with the shared secret",
+            validity: "Timestamps are valid for 5 minutes",
           },
         }),
         {

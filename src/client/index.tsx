@@ -9,6 +9,46 @@ import {
   type StatusMessage,
 } from "../shared";
 
+// Function to generate HMAC signature
+async function generateHmacSignature(
+  transferId: string
+): Promise<{ signature: string; timestamp: number }> {
+  // The secret key - in a real application, this would be securely stored
+  const secretKey = "12345";
+  const timestamp = Date.now();
+  const message = `${transferId}:${timestamp}`;
+
+  try {
+    // Create encoder
+    const encoder = new TextEncoder();
+    const keyData = encoder.encode(secretKey);
+    const messageData = encoder.encode(message);
+
+    // Import the key
+    const key = await crypto.subtle.importKey(
+      "raw",
+      keyData,
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+
+    // Sign the message
+    const signatureBuffer = await crypto.subtle.sign("HMAC", key, messageData);
+
+    // Convert signature to hex string
+    const signatureArray = new Uint8Array(signatureBuffer);
+    const signature = Array.from(signatureArray)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+
+    return { signature, timestamp };
+  } catch (error) {
+    console.error("Error generating HMAC signature:", error);
+    throw error;
+  }
+}
+
 function TransferStatusViewer() {
   const [transferId, setTransferId] = useState("");
   const [status, setStatus] = useState<TransferStatus | null>(null);
@@ -21,6 +61,11 @@ function TransferStatusViewer() {
   const [lastUpdateSource, setLastUpdateSource] = useState<
     "http" | "websocket" | null
   >(null);
+  const [authInfo, setAuthInfo] = useState<{
+    signature?: string;
+    timestamp?: number;
+    generated?: number;
+  } | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
 
   // Track WebSocket message timestamps and counts
@@ -35,7 +80,7 @@ function TransferStatusViewer() {
     const maxReconnectAttempts = 5;
     let reconnectAttempts = 0;
 
-    const connectWebSocket = () => {
+    const connectWebSocket = async () => {
       // Close any existing socket connection
       if (socketRef.current) {
         socketRef.current.close();
@@ -50,105 +95,120 @@ function TransferStatusViewer() {
 
       console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
 
-      // Create new WebSocket connection
-      const socket = new WebSocket(wsUrl);
-      socketRef.current = socket;
-
-      socket.onopen = () => {
-        setConnected(true);
-        setError(null);
-        reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-        console.log(`WebSocket connected for transfer: ${transferId}`);
-      };
-
-      socket.onclose = (event) => {
-        setConnected(false);
-        socketRef.current = null;
-        console.log(
-          `WebSocket disconnected for transfer: ${transferId}`,
-          event.code,
-          event.reason
+      try {
+        // Generate HMAC signature
+        const { signature, timestamp } = await generateHmacSignature(
+          transferId
         );
 
-        // Try to reconnect if not manually closed
-        if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
-          reconnectAttempts++;
-          const reconnectDelay = Math.min(1000 * reconnectAttempts, 5000);
+        // Append auth parameters to the WebSocket URL
+        const wsUrlObj = new URL(wsUrl);
+        wsUrlObj.searchParams.append("signature", signature);
+        wsUrlObj.searchParams.append("timestamp", timestamp.toString());
+
+        // Create new WebSocket connection with auth parameters
+        const socket = new WebSocket(wsUrlObj.toString());
+        socketRef.current = socket;
+
+        socket.onopen = () => {
+          setConnected(true);
+          setError(null);
+          reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+          console.log(`WebSocket connected for transfer: ${transferId}`);
+        };
+
+        socket.onclose = (event) => {
+          setConnected(false);
+          socketRef.current = null;
           console.log(
-            `Attempting to reconnect in ${reconnectDelay}ms (attempt ${reconnectAttempts})`
+            `WebSocket disconnected for transfer: ${transferId}`,
+            event.code,
+            event.reason
           );
 
-          if (reconnectTimeout) {
-            window.clearTimeout(reconnectTimeout);
-          }
-
-          reconnectTimeout = window.setTimeout(() => {
+          // Try to reconnect if not manually closed
+          if (event.code !== 1000 && reconnectAttempts < maxReconnectAttempts) {
+            reconnectAttempts++;
+            const reconnectDelay = Math.min(1000 * reconnectAttempts, 5000);
             console.log(
-              `Reconnecting to WebSocket (attempt ${reconnectAttempts})...`
-            );
-            connectWebSocket();
-          }, reconnectDelay);
-        }
-      };
-
-      socket.onerror = (error) => {
-        console.error(`WebSocket error for transfer: ${transferId}`, error);
-        setError("WebSocket error occurred");
-      };
-
-      socket.onmessage = (evt) => {
-        console.log(
-          `WebSocket message received for transfer: ${transferId}`,
-          evt.data
-        );
-
-        // Update WebSocket stats
-        setWsStats((prev) => ({
-          messageCount: prev.messageCount + 1,
-          lastMessageTime: Date.now(),
-        }));
-
-        try {
-          const data = JSON.parse(evt.data);
-
-          // Check the message type and handle accordingly
-          if (data.type === "status" && data.transfer) {
-            // Status message with transfer data
-            const oldStatus = status?.status;
-            const newStatus = data.transfer.status;
-
-            console.log(
-              `Status update received via WebSocket: ${
-                oldStatus || "none"
-              } -> ${newStatus}`,
-              data.transfer
+              `Attempting to reconnect in ${reconnectDelay}ms (attempt ${reconnectAttempts})`
             );
 
-            setStatus(data.transfer);
-            setLastUpdateSource("websocket");
-            setError(null);
+            if (reconnectTimeout) {
+              window.clearTimeout(reconnectTimeout);
+            }
 
-            if (oldStatus !== newStatus) {
+            reconnectTimeout = window.setTimeout(() => {
               console.log(
-                `Status changed: ${oldStatus || "none"} -> ${newStatus}`
+                `Reconnecting to WebSocket (attempt ${reconnectAttempts})...`
               );
-            }
-          } else if (data.type === "error" && data.message) {
-            // Error message
-            console.error(`Error message from server: ${data.message}`);
-            setError(data.message);
-          } else if (data.type === "ping") {
-            // Respond to ping with pong to keep connection alive
-            console.log("Ping received, sending pong");
-            if (socket.readyState === WebSocket.OPEN) {
-              socket.send(JSON.stringify({ type: "pong" }));
-            }
+              connectWebSocket();
+            }, reconnectDelay);
           }
-        } catch (err) {
-          console.error("Failed to parse message:", err, evt.data);
-          setError("Failed to parse message");
-        }
-      };
+        };
+
+        socket.onerror = (error) => {
+          console.error(`WebSocket error for transfer: ${transferId}`, error);
+          setError("WebSocket error occurred");
+        };
+
+        socket.onmessage = (evt) => {
+          console.log(
+            `WebSocket message received for transfer: ${transferId}`,
+            evt.data
+          );
+
+          // Update WebSocket stats
+          setWsStats((prev) => ({
+            messageCount: prev.messageCount + 1,
+            lastMessageTime: Date.now(),
+          }));
+
+          try {
+            const data = JSON.parse(evt.data);
+
+            // Check the message type and handle accordingly
+            if (data.type === "status" && data.transfer) {
+              // Status message with transfer data
+              const oldStatus = status?.status;
+              const newStatus = data.transfer.status;
+
+              console.log(
+                `Status update received via WebSocket: ${
+                  oldStatus || "none"
+                } -> ${newStatus}`,
+                data.transfer
+              );
+
+              setStatus(data.transfer);
+              setLastUpdateSource("websocket");
+              setError(null);
+
+              if (oldStatus !== newStatus) {
+                console.log(
+                  `Status changed: ${oldStatus || "none"} -> ${newStatus}`
+                );
+              }
+            } else if (data.type === "error" && data.message) {
+              // Error message
+              console.error(`Error message from server: ${data.message}`);
+              setError(data.message);
+            } else if (data.type === "ping") {
+              // Respond to ping with pong to keep connection alive
+              console.log("Ping received, sending pong");
+              if (socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: "pong" }));
+              }
+            }
+          } catch (err) {
+            console.error("Failed to parse message:", err, evt.data);
+            setError("Failed to parse message");
+          }
+        };
+      } catch (error) {
+        console.error(`Error setting up WebSocket connection:`, error);
+        setError("Failed to authenticate WebSocket connection");
+      }
     };
 
     // Initial connection
@@ -180,9 +240,26 @@ function TransferStatusViewer() {
     setError(null);
     setWsUrl(null);
     setConnected(false);
+    setAuthInfo(null);
 
     try {
-      const response = await fetch(`/status?id=${transferId}`);
+      // Generate HMAC signature for authentication
+      const { signature, timestamp } = await generateHmacSignature(transferId);
+
+      // Store auth info for display
+      setAuthInfo({
+        signature,
+        timestamp,
+        generated: Date.now(),
+      });
+
+      // Build URL with auth parameters
+      const statusUrl = new URL(`/status`, window.location.origin);
+      statusUrl.searchParams.append("id", transferId);
+      statusUrl.searchParams.append("signature", signature);
+      statusUrl.searchParams.append("timestamp", timestamp.toString());
+
+      const response = await fetch(statusUrl.toString());
       const data = (await response.json()) as {
         status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
         id?: string;
@@ -226,10 +303,20 @@ function TransferStatusViewer() {
           }
         }
       } else {
-        setError(data.error || "Failed to check status");
+        if (response.status === 401) {
+          // Special handling for authentication errors
+          setError(
+            `Authentication error: ${
+              data.error || "Invalid or expired credentials"
+            }`
+          );
+        } else {
+          setError(data.error || "Failed to check status");
+        }
       }
     } catch (err) {
       setError("Network error occurred");
+      console.error("Error checking status:", err);
     } finally {
       setLoading(false);
     }
@@ -243,9 +330,21 @@ function TransferStatusViewer() {
 
     setLoading(true);
     setError(null);
+    setAuthInfo(null);
 
     try {
       console.log(`Creating transfer: ${transferId}`);
+
+      // Generate HMAC signature for authentication
+      const { signature, timestamp } = await generateHmacSignature(transferId);
+
+      // Store auth info for display
+      setAuthInfo({
+        signature,
+        timestamp,
+        generated: Date.now(),
+      });
+
       const response = await fetch("/create", {
         method: "POST",
         headers: {
@@ -255,6 +354,8 @@ function TransferStatusViewer() {
           id: transferId,
           status: "PENDING",
           details: `New transfer created at ${new Date().toISOString()}`,
+          signature,
+          timestamp,
         }),
       });
 
@@ -296,7 +397,16 @@ function TransferStatusViewer() {
         // Reload the transfers list
         fetchAllTransfers();
       } else {
-        setError(data.error || "Failed to create transfer");
+        if (response.status === 401) {
+          // Special handling for authentication errors
+          setError(
+            `Authentication error: ${
+              data.error || "Invalid or expired credentials"
+            }`
+          );
+        } else {
+          setError(data.error || "Failed to create transfer");
+        }
       }
     } catch (err) {
       setError("Network error occurred");
@@ -315,8 +425,21 @@ function TransferStatusViewer() {
     }
 
     setLoading(true);
+    setAuthInfo(null);
+
     try {
       console.log(`Sending status update: ${transferId} -> ${newStatus}`);
+
+      // Generate HMAC signature for authentication
+      const { signature, timestamp } = await generateHmacSignature(transferId);
+
+      // Store auth info for display
+      setAuthInfo({
+        signature,
+        timestamp,
+        generated: Date.now(),
+      });
+
       const response = await fetch("/update", {
         method: "POST",
         headers: {
@@ -326,6 +449,8 @@ function TransferStatusViewer() {
           id: transferId,
           status: newStatus,
           details: `Updated to ${newStatus} on ${new Date().toISOString()}`,
+          signature,
+          timestamp,
         }),
       });
 
@@ -370,7 +495,16 @@ function TransferStatusViewer() {
           fetchAllTransfers();
         }
       } else {
-        setError(data.error || "Failed to update status");
+        if (response.status === 401) {
+          // Special handling for authentication errors
+          setError(
+            `Authentication error: ${
+              data.error || "Invalid or expired credentials"
+            }`
+          );
+        } else {
+          setError(data.error || "Failed to update status");
+        }
       }
     } catch (err) {
       setError("Network error occurred");
@@ -422,15 +556,40 @@ function TransferStatusViewer() {
   const fetchAllTransfers = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/transfers");
+      // For listing all transfers, we'll create a dummy HMAC using a generic ID
+      // This is just one approach - you might want a different auth approach for admin operations
+      const dummyId = "ALL_TRANSFERS";
+      const { signature, timestamp } = await generateHmacSignature(dummyId);
+
+      // Build URL with auth parameters
+      const listUrl = new URL("/transfers", window.location.origin);
+      listUrl.searchParams.append("signature", signature);
+      listUrl.searchParams.append("timestamp", timestamp.toString());
+
+      const response = await fetch(listUrl.toString());
       if (response.ok) {
         const data = (await response.json()) as TransferStatus[];
         setAllTransfers(data);
       } else {
-        console.error("Failed to fetch transfers");
+        const errorData = (await response.json()) as { error?: string };
+        if (response.status === 401) {
+          console.error(
+            "Authentication failed when fetching transfers:",
+            errorData.error
+          );
+          setError(
+            `Authentication error: ${
+              errorData.error || "Could not authenticate listing request"
+            }`
+          );
+        } else {
+          console.error("Failed to fetch transfers:", errorData.error);
+          setError(errorData.error || "Failed to fetch transfers");
+        }
       }
     } catch (err) {
       console.error("Error fetching transfers:", err);
+      setError("Network error occurred while fetching transfers");
     } finally {
       setLoading(false);
     }
@@ -620,6 +779,25 @@ function TransferStatusViewer() {
                   </button>
                 </p>
               )}
+              {authInfo && (
+                <div className="auth-info">
+                  <p>
+                    <strong>Authentication:</strong>
+                  </p>
+                  <p className="auth-detail">
+                    <strong>HMAC Signature:</strong>{" "}
+                    <span className="signature">{authInfo.signature}</span>
+                  </p>
+                  <p className="auth-detail">
+                    <strong>Timestamp:</strong>{" "}
+                    {new Date(authInfo.timestamp || 0).toLocaleString()}
+                  </p>
+                  <p className="auth-detail">
+                    <strong>Generated:</strong>{" "}
+                    {new Date(authInfo.generated || 0).toLocaleString()}
+                  </p>
+                </div>
+              )}
               {status && status.updatedAt && (
                 <p className="update-info">
                   <strong>Last Update:</strong>{" "}
@@ -710,6 +888,24 @@ function TransferStatusViewer() {
           padding: 15px;
           border-radius: 4px;
           margin: 10px 0;
+        }
+        .auth-info {
+          margin-top: 15px;
+          padding: 10px;
+          background-color: #f0f8ff;
+          border-radius: 4px;
+          font-size: 0.9em;
+        }
+        .auth-detail {
+          margin: 5px 0;
+          word-break: break-all;
+        }
+        .signature {
+          font-family: monospace;
+          font-size: 0.85em;
+          background-color: #e6e6e6;
+          padding: 2px 4px;
+          border-radius: 2px;
         }
         .status-buttons {
           display: flex;
