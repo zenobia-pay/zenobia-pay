@@ -9,8 +9,13 @@
   "name": "transfer-status",
   "migrations": [
     {
-      "new_sqlite_classes": ["TransferStatusServer"],
+      "new_sqlite_classes": ["Chat"],
       "tag": "v1"
+    },
+    {
+      "new_sqlite_classes": ["TransferStatusServer"],
+      "deleted_classes": ["Chat"],
+      "tag": "v2"
     }
   ],
   "assets": {
