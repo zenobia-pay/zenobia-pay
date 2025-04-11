@@ -1,29 +1,35 @@
-export type ChatMessage = {
+export type TransferStatus = {
   id: string;
-  content: string;
-  user: string;
-  role: "user" | "assistant";
+  status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+  details?: string;
+  updatedAt: number; // timestamp
 };
 
-export type Message =
-  | {
-      type: "add";
-      id: string;
-      content: string;
-      user: string;
-      role: "user" | "assistant";
-    }
+export type StatusMessage =
   | {
       type: "update";
       id: string;
-      content: string;
-      user: string;
-      role: "user" | "assistant";
+      status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
+      details?: string;
+      updatedAt: number;
     }
   | {
-      type: "all";
-      messages: ChatMessage[];
+      type: "status";
+      transfer: TransferStatus;
+    }
+  | {
+      type: "error";
+      message: string;
     };
+
+// For testing purposes only
+export const sampleTransferIds = [
+  "TRF12345",
+  "TRF67890",
+  "TRF24680",
+  "TRF13579",
+  "TRF54321",
+];
 
 export const names = [
   "Alice",

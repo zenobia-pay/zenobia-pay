@@ -9,7 +9,7 @@
   "name": "transfer-status",
   "migrations": [
     {
-      "new_sqlite_classes": ["Chat"],
+      "new_sqlite_classes": ["TransferStatusServer"],
       "tag": "v1"
     }
   ],
@@ -24,15 +24,25 @@
   "durable_objects": {
     "bindings": [
       {
-        "class_name": "Chat",
-        "name": "Chat"
+        "class_name": "TransferStatusServer",
+        "name": "TransferStatusServer"
       }
     ]
   },
   "observability": {
     "enabled": true
   },
-  "upload_source_maps": true
+  "upload_source_maps": true,
+
+  /**
+   * KV Namespace for storing transfer statuses
+   */
+  "kv_namespaces": [
+    {
+      "binding": "TRANSFER_KV",
+      "id": "transfer-status-kv"
+    }
+  ]
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

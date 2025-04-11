@@ -1,48 +1,216 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
-    <!-- Basic Page Needs
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <meta charset="utf-8" />
-    <title>Chat!</title>
-    <meta name="description" content="" />
-    <meta name="author" content="" />
-
-    <!-- Mobile Specific Metas
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <!-- FONT
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-
-    <!-- CSS
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <link rel="stylesheet" href="css/normalize.css" />
-    <link rel="stylesheet" href="css/skeleton.css" />
-    <link rel="stylesheet" href="styles.css" />
-
-    <!-- Favicon
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <link rel="icon" type="image/ico" href="favicon.ico" />
-    <script src="/dist/index.js" type="module"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zenobia Pay - Transfer Status</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css"
+    />
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Helvetica, Arial, sans-serif;
+      }
+      .container {
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background: #fff;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .company-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      .company-logo {
+        font-size: 24px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-right: 10px;
+      }
+      .header-divider {
+        height: 30px;
+        width: 2px;
+        background-color: #ddd;
+        margin: 0 15px;
+      }
+      .product-name {
+        font-size: 20px;
+        color: #7f8c8d;
+      }
+      h1 {
+        color: #2c3e50;
+        margin-bottom: 30px;
+      }
+      .api-docs {
+        background-color: #f9f9f9;
+        border-radius: 5px;
+        padding: 20px;
+        margin-top: 30px;
+      }
+      .endpoint {
+        border-left: 3px solid #3498db;
+        padding-left: 15px;
+        margin-bottom: 20px;
+      }
+      .method {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 3px;
+        color: white;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .get {
+        background-color: #2ecc71;
+      }
+      .post {
+        background-color: #3498db;
+      }
+      .path {
+        font-family: monospace;
+        font-size: 14px;
+        margin-left: 10px;
+      }
+      code {
+        background-color: #f0f0f0;
+        padding: 2px 5px;
+        border-radius: 3px;
+        font-family: monospace;
+      }
+      .footer {
+        margin-top: 40px;
+        text-align: center;
+        color: #7f8c8d;
+        font-size: 14px;
+      }
+      .button-primary {
+        background-color: #3498db;
+        border-color: #3498db;
+      }
+      .button-primary:hover {
+        background-color: #2980b9;
+        border-color: #2980b9;
+      }
+    </style>
   </head>
   <body>
-    <!-- Primary Page Layout
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
-    <div class="container" style="width: 95%; height: 100%">
-      <div class="row" style="height: 100%">
-        <div class="one-third column" style="margin-top: 25%">
-          <h4><b>Chat</b>, powered by Durable Objects</h4>
+    <div class="container">
+      <div class="company-header">
+        <div class="company-logo">Zenobia Pay</div>
+        <div class="header-divider"></div>
+        <div class="product-name">Transfer Status Service</div>
+      </div>
+
+      <h1>Payment Transfer Status API</h1>
+
+      <p>
+        Welcome to the Zenobia Pay Transfer Status service. This service
+        provides real-time tracking of payment transfers across our payment
+        network.
+      </p>
+
+      <div class="row">
+        <div class="six columns">
+          <h4>Key Features</h4>
+          <ul>
+            <li>Real-time transfer status updates</li>
+            <li>WebSocket connections for live monitoring</li>
+            <li>RESTful API for status updates</li>
+            <li>Persistent status storage</li>
+          </ul>
+        </div>
+        <div class="six columns">
+          <h4>Try It Now</h4>
           <p>
-            This chat room is hosted in a single Durable Object, running in one
-            process in one machine in one location, very close to the users.
+            Access our status dashboard to monitor and test the transfer status
+            service:
+          </p>
+          <a href="/dashboard" class="button button-primary">Open Dashboard</a>
+        </div>
+      </div>
+
+      <div class="api-docs">
+        <h4>API Documentation</h4>
+
+        <div class="endpoint">
+          <span class="method post">POST</span>
+          <span class="path">/create</span>
+          <p>
+            Create a new transfer with an initial status. Used to initialize a
+            transfer before processing.
+          </p>
+          <p>
+            <strong>Request body:</strong>
+            <code>{ id, status?, details? }</code>
+          </p>
+          <p>
+            <strong>Initial status:</strong> <code>"PENDING"</code> (default) or
+            <code>"PROCESSING"</code>
           </p>
         </div>
-        <div class="two-thirds column" id="root"></div>
+
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <span class="path">/status?id=&lt;transferId&gt;</span>
+          <p>
+            Check the status of a transfer by ID. If transfer is still in
+            progress, connect to the WebSocket for real-time updates.
+          </p>
+          <p>
+            <strong>Response:</strong>
+            <code>{ id, status, details, updatedAt, websocket_url }</code>
+          </p>
+        </div>
+
+        <div class="endpoint">
+          <span class="method post">POST</span>
+          <span class="path">/update</span>
+          <p>
+            Update the status of a transfer. Used by the core payment system to
+            communicate status changes.
+          </p>
+          <p>
+            <strong>Request body:</strong> <code>{ id, status, details }</code>
+          </p>
+          <p>
+            <strong>Status values:</strong> <code>"PENDING"</code>,
+            <code>"PROCESSING"</code>, <code>"COMPLETED"</code>,
+            <code>"FAILED"</code>
+          </p>
+        </div>
+
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <span class="path">/transfers</span>
+          <p>List all transfers in the system with their current status.</p>
+          <p><strong>Response:</strong> Array of transfer objects</p>
+        </div>
+
+        <div class="endpoint">
+          <span class="method get">GET</span>
+          <span class="path">WebSocket: /transfers/&lt;transferId&gt;</span>
+          <p>
+            Connect to this WebSocket endpoint to receive real-time updates for
+            a specific transfer.
+          </p>
+          <p>
+            The connection will close automatically after 10 seconds if no
+            update is received, or immediately upon receiving a terminal status
+            (COMPLETED/FAILED).
+          </p>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>© 2023 Zenobia Pay. All rights reserved.</p>
       </div>
     </div>
-
-    <!-- End Document
-  –––––––––––––––––––––––––––––––––––––––––––––––––– -->
   </body>
 </html>
