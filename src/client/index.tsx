@@ -13,8 +13,7 @@ import {
 async function generateHmacSignature(
   transferId: string
 ): Promise<{ signature: string; timestamp: number }> {
-  // The secret key - in a real application, this would be securely stored
-  const secretKey = "12345";
+  const secretKey = "";
   const timestamp = Date.now();
   const message = `${transferId}:${timestamp}`;
 
