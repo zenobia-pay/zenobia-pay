@@ -10,18 +10,39 @@ import {
 } from "../shared";
 
 // Function to generate HMAC signature
-async function generateHmacSignature(
-  transferId: string
-): Promise<{ signature: string; timestamp: number }> {
-  const secretKey = "";
-  const timestamp = Date.now();
-  const message = `${transferId}:${timestamp}`;
+async function generateHmacSignature(transferId: string): Promise<{
+  transferRequestId: string;
+  merchantId: string;
+  expiry: number;
+  signature: string;
+}> {
+  // Use the provided transferId as the transferRequestId
+  const transferRequestId = transferId;
+
+  // Set fixed merchantId for demo purposes
+  const merchantId = "auth0|67f0a8703cc36ca458f5cf7b";
+
+  // Set expiry to 30 minutes from now
+  const expiry = Math.floor(Date.now() / 1000) + 30 * 60;
+
+  // Create payload object to be signed
+  const payload = {
+    transferRequestId,
+    merchantId,
+    expiry,
+  };
+
+  // Convert to string for signing
+  const payloadString = JSON.stringify(payload);
 
   try {
+    // Use the same dummy secret as the server (12345)
+    const dummySecret = "12345";
+
     // Create encoder
     const encoder = new TextEncoder();
-    const keyData = encoder.encode(secretKey);
-    const messageData = encoder.encode(message);
+    const keyData = encoder.encode(dummySecret);
+    const messageData = encoder.encode(payloadString);
 
     // Import the key
     const key = await crypto.subtle.importKey(
@@ -35,15 +56,23 @@ async function generateHmacSignature(
     // Sign the message
     const signatureBuffer = await crypto.subtle.sign("HMAC", key, messageData);
 
-    // Convert signature to hex string
+    // Convert signature to base64 string
     const signatureArray = new Uint8Array(signatureBuffer);
-    const signature = Array.from(signatureArray)
-      .map((b) => b.toString(16).padStart(2, "0"))
-      .join("");
+    const base64Signature = btoa(String.fromCharCode(...signatureArray));
 
-    return { signature, timestamp };
+    // Create a complete signature with payload.signature format
+    // Base64 encode the payload and append the signature part
+    const encodedPayload = btoa(payloadString);
+    const signature = `${encodedPayload}.${base64Signature}`;
+
+    return {
+      transferRequestId,
+      merchantId,
+      expiry,
+      signature,
+    };
   } catch (error) {
-    console.error("Error generating HMAC signature:", error);
+    console.error("Error generating signature:", error);
     throw error;
   }
 }
@@ -62,7 +91,9 @@ function TransferStatusViewer() {
   >(null);
   const [authInfo, setAuthInfo] = useState<{
     signature?: string;
-    timestamp?: number;
+    transferRequestId?: string;
+    merchantId?: string;
+    expiry?: number;
     generated?: number;
   } | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
@@ -95,15 +126,18 @@ function TransferStatusViewer() {
       console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
 
       try {
-        // Generate HMAC signature
-        const { signature, timestamp } = await generateHmacSignature(
-          transferId
-        );
+        // Generate authentication object
+        const authObj = await generateHmacSignature(transferId);
 
         // Append auth parameters to the WebSocket URL
         const wsUrlObj = new URL(wsUrl);
-        wsUrlObj.searchParams.append("signature", signature);
-        wsUrlObj.searchParams.append("timestamp", timestamp.toString());
+        wsUrlObj.searchParams.append(
+          "transferRequestId",
+          authObj.transferRequestId
+        );
+        wsUrlObj.searchParams.append("merchantId", authObj.merchantId);
+        wsUrlObj.searchParams.append("expiry", authObj.expiry.toString());
+        wsUrlObj.searchParams.append("signature", authObj.signature);
 
         // Create new WebSocket connection with auth parameters
         const socket = new WebSocket(wsUrlObj.toString());
@@ -242,21 +276,28 @@ function TransferStatusViewer() {
     setAuthInfo(null);
 
     try {
-      // Generate HMAC signature for authentication
-      const { signature, timestamp } = await generateHmacSignature(transferId);
+      // Generate authentication object
+      const authObj = await generateHmacSignature(transferId);
 
       // Store auth info for display
       setAuthInfo({
-        signature,
-        timestamp,
+        signature: authObj.signature,
+        transferRequestId: authObj.transferRequestId,
+        merchantId: authObj.merchantId,
+        expiry: authObj.expiry,
         generated: Date.now(),
       });
 
       // Build URL with auth parameters
       const statusUrl = new URL(`/status`, window.location.origin);
       statusUrl.searchParams.append("id", transferId);
-      statusUrl.searchParams.append("signature", signature);
-      statusUrl.searchParams.append("timestamp", timestamp.toString());
+      statusUrl.searchParams.append(
+        "transferRequestId",
+        authObj.transferRequestId
+      );
+      statusUrl.searchParams.append("merchantId", authObj.merchantId);
+      statusUrl.searchParams.append("expiry", authObj.expiry.toString());
+      statusUrl.searchParams.append("signature", authObj.signature);
 
       const response = await fetch(statusUrl.toString());
       const data = (await response.json()) as {
@@ -334,13 +375,15 @@ function TransferStatusViewer() {
     try {
       console.log(`Creating transfer: ${transferId}`);
 
-      // Generate HMAC signature for authentication
-      const { signature, timestamp } = await generateHmacSignature(transferId);
+      // Generate authentication object
+      const authObj = await generateHmacSignature(transferId);
 
       // Store auth info for display
       setAuthInfo({
-        signature,
-        timestamp,
+        signature: authObj.signature,
+        transferRequestId: authObj.transferRequestId,
+        merchantId: authObj.merchantId,
+        expiry: authObj.expiry,
         generated: Date.now(),
       });
 
@@ -353,8 +396,10 @@ function TransferStatusViewer() {
           id: transferId,
           status: "PENDING",
           details: `New transfer created at ${new Date().toISOString()}`,
-          signature,
-          timestamp,
+          transferRequestId: authObj.transferRequestId,
+          merchantId: authObj.merchantId,
+          expiry: authObj.expiry,
+          signature: authObj.signature,
         }),
       });
 
@@ -429,13 +474,15 @@ function TransferStatusViewer() {
     try {
       console.log(`Sending status update: ${transferId} -> ${newStatus}`);
 
-      // Generate HMAC signature for authentication
-      const { signature, timestamp } = await generateHmacSignature(transferId);
+      // Generate authentication object
+      const authObj = await generateHmacSignature(transferId);
 
       // Store auth info for display
       setAuthInfo({
-        signature,
-        timestamp,
+        signature: authObj.signature,
+        transferRequestId: authObj.transferRequestId,
+        merchantId: authObj.merchantId,
+        expiry: authObj.expiry,
         generated: Date.now(),
       });
 
@@ -448,8 +495,10 @@ function TransferStatusViewer() {
           id: transferId,
           status: newStatus,
           details: `Updated to ${newStatus} on ${new Date().toISOString()}`,
-          signature,
-          timestamp,
+          transferRequestId: authObj.transferRequestId,
+          merchantId: authObj.merchantId,
+          expiry: authObj.expiry,
+          signature: authObj.signature,
         }),
       });
 
@@ -555,15 +604,19 @@ function TransferStatusViewer() {
   const fetchAllTransfers = async () => {
     setLoading(true);
     try {
-      // For listing all transfers, we'll create a dummy HMAC using a generic ID
-      // This is just one approach - you might want a different auth approach for admin operations
+      // For listing all transfers, we'll create a dummy auth object
       const dummyId = "ALL_TRANSFERS";
-      const { signature, timestamp } = await generateHmacSignature(dummyId);
+      const authObj = await generateHmacSignature(dummyId);
 
       // Build URL with auth parameters
       const listUrl = new URL("/transfers", window.location.origin);
-      listUrl.searchParams.append("signature", signature);
-      listUrl.searchParams.append("timestamp", timestamp.toString());
+      listUrl.searchParams.append(
+        "transferRequestId",
+        authObj.transferRequestId
+      );
+      listUrl.searchParams.append("merchantId", authObj.merchantId);
+      listUrl.searchParams.append("expiry", authObj.expiry.toString());
+      listUrl.searchParams.append("signature", authObj.signature);
 
       const response = await fetch(listUrl.toString());
       if (response.ok) {
@@ -784,12 +837,26 @@ function TransferStatusViewer() {
                     <strong>Authentication:</strong>
                   </p>
                   <p className="auth-detail">
-                    <strong>HMAC Signature:</strong>{" "}
-                    <span className="signature">{authInfo.signature}</span>
+                    <strong>Transfer Request ID:</strong>{" "}
+                    <span className="auth-value">
+                      {authInfo.transferRequestId}
+                    </span>
                   </p>
                   <p className="auth-detail">
-                    <strong>Timestamp:</strong>{" "}
-                    {new Date(authInfo.timestamp || 0).toLocaleString()}
+                    <strong>Merchant ID:</strong>{" "}
+                    <span className="auth-value">{authInfo.merchantId}</span>
+                  </p>
+                  <p className="auth-detail">
+                    <strong>Expiry:</strong>{" "}
+                    <span className="auth-value">
+                      {authInfo.expiry
+                        ? new Date(authInfo.expiry * 1000).toLocaleString()
+                        : "N/A"}
+                    </span>
+                  </p>
+                  <p className="auth-detail">
+                    <strong>HMAC Signature:</strong>{" "}
+                    <span className="signature">{authInfo.signature}</span>
                   </p>
                   <p className="auth-detail">
                     <strong>Generated:</strong>{" "}
@@ -898,6 +965,13 @@ function TransferStatusViewer() {
         .auth-detail {
           margin: 5px 0;
           word-break: break-all;
+        }
+        .auth-value {
+          font-family: monospace;
+          font-size: 0.85em;
+          background-color: #f6f6f6;
+          padding: 2px 4px;
+          border-radius: 2px;
         }
         .signature {
           font-family: monospace;
