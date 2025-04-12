@@ -64,6 +64,12 @@ export class TransferStatusServer {
       } mode (KV available: ${!!this.kv})`
     );
 
+    console.log(
+      "this.kv, isLcoalhost, and isNodeEnv",
+      this.kv,
+      isLocalhost,
+      isNodeEnv
+    );
     // Set up the Durable Object's fetch handler
     this.state.blockConcurrencyWhile(async () => {
       // Initialize any state that needs loading
@@ -777,106 +783,62 @@ export class TransferStatusServer {
     } as ResponseInit & { webSocket: WebSocket });
   }
 
-  // Method to verify authentication object signature
-  private async verifyAuthObject(
-    transferRequestId: string,
-    merchantId: string,
-    expiry: number,
-    signature: string
-  ): Promise<boolean> {
-    // Check if expiry timestamp is expired
-    const now = Math.floor(Date.now() / 1000);
-
-    if (now > expiry) {
-      console.log(
-        `Expired authentication for transfer ${transferRequestId}: expiry: ${expiry}, now: ${now}`
-      );
-      return false;
-    }
-
-    // Create a payload object that matches what the client would have signed
-    const payloadObject = {
-      transferRequestId,
-      merchantId,
-      expiry,
-    };
-
-    // Convert the payload to a string - the same format used by the client
-    const payloadString = JSON.stringify(payloadObject);
-
-    console.log(`Payload string: ${payloadString}`);
+  // Method to verify a payload and its signature
+  // Token format follows JWT-like standard: "payload.signature" where:
+  // - payload is a base64-encoded JSON string containing:
+  //   * transferRequestId: the ID of the transfer
+  //   * merchantId: the ID of the merchant making the request
+  //   * expiry: Unix timestamp when this token expires
+  //   * (and other optional fields like status, details, etc.)
+  // - signature is a base64-encoded HMAC-SHA256 signature of the decoded payload
+  private async verifyPayloadSignature(token: string): Promise<boolean> {
     try {
-      // Extract parts from the signature (assuming format: "base64payload.signature")
-      const [encodedPayload, receivedSignaturePart] = signature.split(".");
+      // Split the token into parts
+      const [encodedPayload, receivedSignature] = token.split(".");
 
-      if (!encodedPayload || !receivedSignaturePart) {
-        console.log(
-          `Invalid signature format for transfer ${transferRequestId}`
-        );
+      if (!encodedPayload || !receivedSignature) {
+        console.log("Invalid token format. Expected payload.signature format");
         return false;
       }
 
-      try {
-        // Decode and verify the payload matches what we expect
-        const decodedPayload = atob(encodedPayload);
+      // Decode the payload from base64
+      const payloadStr = atob(encodedPayload);
 
-        console.log(`Decoded payload: ${decodedPayload}`);
-        const parsedPayload = JSON.parse(decodedPayload);
-        console.log(`Parsed payload: ${parsedPayload}`);
+      // Generate the expected signature using our secret key
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(this.hmacSecret);
+      const messageData = encoder.encode(payloadStr);
 
-        // Verify payload content matches expected values
-        if (
-          parsedPayload.transferRequestId !== transferRequestId ||
-          parsedPayload.merchantId !== merchantId ||
-          parsedPayload.expiry !== expiry
-        ) {
-          console.log(
-            `Payload mismatch in signature for transfer ${transferRequestId}`
-          );
-          console.log(`Expected:`, payloadObject);
-          console.log(`Received:`, parsedPayload);
-          return false;
-        }
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
 
-        // Generate the expected signature using our secret key
-        const encoder = new TextEncoder();
-        const keyData = encoder.encode(this.hmacSecret);
-        const messageData = encoder.encode(payloadString);
+      // Generate the expected signature
+      const signatureBuffer = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        messageData
+      );
+      const signatureArray = new Uint8Array(signatureBuffer);
+      const expectedSignature = btoa(String.fromCharCode(...signatureArray));
 
-        // Import the key
-        const key = await crypto.subtle.importKey(
-          "raw",
-          keyData,
-          { name: "HMAC", hash: "SHA-256" },
-          false,
-          ["sign"]
-        );
-
-        // Generate the expected signature
-        const signatureBuffer = await crypto.subtle.sign(
-          "HMAC",
-          key,
-          messageData
-        );
-        const signatureArray = new Uint8Array(signatureBuffer);
-        const expectedSignature = btoa(String.fromCharCode(...signatureArray));
-
-        // Compare the expected signature with the received one
-        if (receivedSignaturePart === expectedSignature) {
-          console.log(`Signature verified for transfer ${transferRequestId}`);
-          return true;
-        } else {
-          console.log(`Invalid signature for transfer ${transferRequestId}`);
-          console.log(`Expected: ${expectedSignature}`);
-          console.log(`Received: ${receivedSignaturePart}`);
-          return false;
-        }
-      } catch (e) {
-        console.error(`Error parsing signature payload: ${e}`);
+      // Compare the expected signature with the received one
+      if (receivedSignature === expectedSignature) {
+        console.log("Signature verified successfully");
+        return true;
+      } else {
+        console.log("Invalid signature");
+        console.log(`Expected: ${expectedSignature}`);
+        console.log(`Received: ${receivedSignature}`);
         return false;
       }
     } catch (error) {
-      console.error(`Error verifying auth signature: ${error}`);
+      console.error("Error verifying payload signature:", error);
       return false;
     }
   }
@@ -930,17 +892,13 @@ export class TransferStatusServer {
         const transferId = pathParts[2];
 
         // Check for authentication in WebSocket request
-        const transferRequestId = url.searchParams.get("transferRequestId");
-        const merchantId = url.searchParams.get("merchantId");
-        const expiry = url.searchParams.get("expiry");
-        const signature = url.searchParams.get("signature");
+        const token = url.searchParams.get("token");
 
         // Require authentication for WebSocket connections
-        if (!transferRequestId || !merchantId || !expiry || !signature) {
+        if (!token) {
           return new Response(
             JSON.stringify({
-              error:
-                "Authentication required. Missing authentication parameters.",
+              error: "Authentication required. Missing token.",
             }),
             {
               status: 401,
@@ -949,21 +907,77 @@ export class TransferStatusServer {
           );
         }
 
-        // Verify authentication object
-        const isValidSignature = await this.verifyAuthObject(
-          transferRequestId,
-          merchantId,
-          parseInt(expiry, 10),
-          signature
-        );
+        // Verify the signature
+        const isValidSignature = await this.verifyPayloadSignature(token);
 
         if (!isValidSignature) {
           return new Response(
             JSON.stringify({
-              error: "Invalid authentication signature or expired credentials.",
+              error: "Invalid signature or expired credentials",
             }),
             {
               status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Decode and validate the payload
+        try {
+          const [encodedPayload] = token.split(".");
+          const payloadStr = atob(encodedPayload);
+          const payloadData = JSON.parse(payloadStr);
+
+          // Check if payload contains all required fields
+          if (
+            !payloadData.transferRequestId ||
+            !payloadData.merchantId ||
+            !payloadData.expiry
+          ) {
+            return new Response(
+              JSON.stringify({
+                error: "Invalid payload format. Missing required fields.",
+              }),
+              {
+                status: 400,
+                headers: responseHeaders,
+              }
+            );
+          }
+
+          // Check if the request has expired
+          const now = Math.floor(Date.now() / 1000);
+          if (now > payloadData.expiry) {
+            return new Response(
+              JSON.stringify({
+                error: "Request has expired",
+              }),
+              {
+                status: 401,
+                headers: responseHeaders,
+              }
+            );
+          }
+
+          // Ensure transfer ID in the URL matches the one in the payload
+          if (transferId !== payloadData.transferRequestId) {
+            return new Response(
+              JSON.stringify({
+                error: "Transfer ID mismatch between URL and payload",
+              }),
+              {
+                status: 400,
+                headers: responseHeaders,
+              }
+            );
+          }
+        } catch (error) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid payload format",
+            }),
+            {
+              status: 400,
               headers: responseHeaders,
             }
           );
@@ -996,17 +1010,13 @@ export class TransferStatusServer {
       const limit = limitParam ? parseInt(limitParam, 10) : 100;
 
       // Get authentication parameters
-      const transferRequestId = url.searchParams.get("transferRequestId");
-      const merchantId = url.searchParams.get("merchantId");
-      const expiry = url.searchParams.get("expiry");
-      const signature = url.searchParams.get("signature");
+      const token = url.searchParams.get("token");
 
       // Require authentication
-      if (!transferRequestId || !merchantId || !expiry || !signature) {
+      if (!token) {
         return new Response(
           JSON.stringify({
-            error:
-              "Authentication required. Missing authentication parameters.",
+            error: "Authentication required. Missing token.",
           }),
           {
             status: 401,
@@ -1015,21 +1025,64 @@ export class TransferStatusServer {
         );
       }
 
-      // Verify authentication object
-      const isValidSignature = await this.verifyAuthObject(
-        transferRequestId,
-        merchantId,
-        parseInt(expiry, 10),
-        signature
-      );
+      // Verify the signature
+      const isValidSignature = await this.verifyPayloadSignature(token);
 
       if (!isValidSignature) {
         return new Response(
           JSON.stringify({
-            error: "Invalid authentication signature or expired credentials.",
+            error: "Invalid signature or expired credentials",
           }),
           {
             status: 401,
+            headers: responseHeaders,
+          }
+        );
+      }
+
+      // Decode and validate the payload
+      try {
+        const [encodedPayload] = token.split(".");
+        const payloadStr = atob(encodedPayload);
+        const payloadData = JSON.parse(payloadStr);
+
+        // Check if payload contains all required fields
+        if (
+          !payloadData.transferRequestId ||
+          !payloadData.merchantId ||
+          !payloadData.expiry
+        ) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid payload format. Missing required fields.",
+            }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Check if the request has expired
+        const now = Math.floor(Date.now() / 1000);
+        if (now > payloadData.expiry) {
+          return new Response(
+            JSON.stringify({
+              error: "Request has expired",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid payload format",
+          }),
+          {
+            status: 400,
             headers: responseHeaders,
           }
         );
@@ -1045,10 +1098,7 @@ export class TransferStatusServer {
     // Handle status check endpoint
     if (path === "/status" && request.method === "GET") {
       const transferId = url.searchParams.get("id");
-      const transferRequestId = url.searchParams.get("transferRequestId");
-      const merchantId = url.searchParams.get("merchantId");
-      const expiry = url.searchParams.get("expiry");
-      const signature = url.searchParams.get("signature");
+      const token = url.searchParams.get("token");
 
       if (!transferId) {
         return new Response(JSON.stringify({ error: "Missing transfer ID" }), {
@@ -1057,12 +1107,11 @@ export class TransferStatusServer {
         });
       }
 
-      // Require authentication for status checks
-      if (!transferRequestId || !merchantId || !expiry || !signature) {
+      // Require authentication parameter
+      if (!token) {
         return new Response(
           JSON.stringify({
-            error:
-              "Authentication required. Missing authentication parameters.",
+            error: "Authentication required. Missing token.",
           }),
           {
             status: 401,
@@ -1071,18 +1120,13 @@ export class TransferStatusServer {
         );
       }
 
-      // Verify authentication object
-      const isValidSignature = await this.verifyAuthObject(
-        transferRequestId,
-        merchantId,
-        parseInt(expiry, 10),
-        signature
-      );
+      // Verify signature
+      const isValidSignature = await this.verifyPayloadSignature(token);
 
       if (!isValidSignature) {
         return new Response(
           JSON.stringify({
-            error: "Invalid authentication signature or expired credentials.",
+            error: "Invalid signature or expired credentials",
           }),
           {
             status: 401,
@@ -1091,6 +1135,55 @@ export class TransferStatusServer {
         );
       }
 
+      // Split token and decode payload
+      try {
+        const [encodedPayload] = token.split(".");
+        const payloadStr = atob(encodedPayload);
+        const payloadData = JSON.parse(payloadStr);
+
+        // Check if payload contains all required fields
+        if (
+          !payloadData.transferRequestId ||
+          !payloadData.merchantId ||
+          !payloadData.expiry
+        ) {
+          return new Response(
+            JSON.stringify({
+              error: "Invalid payload format. Missing required fields.",
+            }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Check if the request has expired
+        const now = Math.floor(Date.now() / 1000);
+        if (now > payloadData.expiry) {
+          return new Response(
+            JSON.stringify({
+              error: "Request has expired",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+      } catch (error) {
+        return new Response(
+          JSON.stringify({
+            error: "Invalid payload format",
+          }),
+          {
+            status: 400,
+            headers: responseHeaders,
+          }
+        );
+      }
+
+      // If authentication is successful, get the transfer status
       const transfer = await this.getTransferStatus(transferId);
 
       if (!transfer) {
@@ -1135,28 +1228,21 @@ export class TransferStatusServer {
     // Handle create transfer endpoint
     if (path === "/create" && request.method === "POST") {
       try {
-        const body = (await request.json()) as {
-          id?: string;
-          status?: "PENDING" | "PROCESSING";
-          details?: string;
-          transferRequestId?: string;
-          merchantId?: string;
-          expiry?: number;
-          signature?: string;
-        };
-        const {
-          id,
-          status = "PENDING",
-          details,
-          transferRequestId,
-          merchantId,
-          expiry,
-          signature,
-        } = body;
+        console.log("Processing create request");
 
-        if (!id) {
+        // Extract the token from the request body
+        const body = (await request.json()) as {
+          token?: string; // payload.signature format
+        };
+
+        const { token } = body;
+
+        // Require token
+        if (!token) {
           return new Response(
-            JSON.stringify({ error: "Missing required field: id" }),
+            JSON.stringify({
+              error: "Missing required field. Request must include 'token'.",
+            }),
             {
               status: 400,
               headers: responseHeaders,
@@ -1164,32 +1250,13 @@ export class TransferStatusServer {
           );
         }
 
-        // Require authentication
-        if (!transferRequestId || !merchantId || !expiry || !signature) {
-          return new Response(
-            JSON.stringify({
-              error:
-                "Authentication required. Missing authentication parameters.",
-            }),
-            {
-              status: 401,
-              headers: responseHeaders,
-            }
-          );
-        }
-
-        // Verify authentication object
-        const isValidSignature = await this.verifyAuthObject(
-          transferRequestId,
-          merchantId,
-          expiry,
-          signature
-        );
+        // Verify the signature
+        const isValidSignature = await this.verifyPayloadSignature(token);
 
         if (!isValidSignature) {
           return new Response(
             JSON.stringify({
-              error: "Invalid authentication signature or expired credentials.",
+              error: "Invalid signature or expired credentials",
             }),
             {
               status: 401,
@@ -1198,13 +1265,74 @@ export class TransferStatusServer {
           );
         }
 
-        const result = await this.createTransferRequest(id, status, details);
-        const websocket_url = generateWebSocketUrl(id);
+        // Decode the payload
+        let decodedPayload;
+        try {
+          const [encodedPayload] = token.split(".");
+          const payloadStr = atob(encodedPayload);
+          console.log("Decoded payload string:", payloadStr);
+          decodedPayload = JSON.parse(payloadStr);
+        } catch (e) {
+          console.error("Error decoding or parsing payload:", e);
+          return new Response(
+            JSON.stringify({ error: "Invalid payload format" }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Extract required fields from the payload
+        const {
+          transferRequestId,
+          merchantId,
+          expiry,
+          status = "PENDING",
+          details,
+        } = decodedPayload;
+
+        // Validate required fields
+        if (!transferRequestId || !merchantId || !expiry) {
+          return new Response(
+            JSON.stringify({
+              error: "Incomplete payload. Missing required fields.",
+            }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Check if the expiry time has passed
+        const now = Math.floor(Date.now() / 1000);
+        if (now > expiry) {
+          return new Response(
+            JSON.stringify({
+              error: "Request has expired",
+            }),
+            {
+              status: 401,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // At this point the request is authenticated and valid
+        // Process the transfer creation
+        const result = await this.createTransferRequest(
+          transferRequestId,
+          status,
+          details || `Transfer created at ${new Date().toISOString()}`
+        );
+
+        const websocket_url = generateWebSocketUrl(transferRequestId);
 
         return new Response(
           JSON.stringify({
             ...result,
-            websocket_url, // Add WebSocket URL to connect for updates
+            websocket_url,
           }),
           {
             status: 200,
@@ -1223,28 +1351,21 @@ export class TransferStatusServer {
     // Handle status update endpoint
     if (path === "/update" && request.method === "POST") {
       try {
-        const body = (await request.json()) as {
-          id?: string;
-          status?: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
-          details?: string;
-          transferRequestId?: string;
-          merchantId?: string;
-          expiry?: number;
-          signature?: string;
-        };
-        const {
-          id,
-          status,
-          details,
-          transferRequestId,
-          merchantId,
-          expiry,
-          signature,
-        } = body;
+        console.log("Processing update request");
 
-        if (!id || !status) {
+        // Extract the token from the request body
+        const body = (await request.json()) as {
+          token?: string; // payload.signature format
+        };
+
+        const { token } = body;
+
+        // Require token
+        if (!token) {
           return new Response(
-            JSON.stringify({ error: "Missing required fields" }),
+            JSON.stringify({
+              error: "Missing required field. Request must include 'token'.",
+            }),
             {
               status: 400,
               headers: responseHeaders,
@@ -1252,32 +1373,48 @@ export class TransferStatusServer {
           );
         }
 
-        // Require authentication
-        if (!transferRequestId || !merchantId || !expiry || !signature) {
+        // Decode the payload
+        let decodedPayload;
+        try {
+          const [encodedPayload] = token.split(".");
+          const payloadStr = atob(encodedPayload);
+          console.log("Decoded payload string:", payloadStr);
+          decodedPayload = JSON.parse(payloadStr);
+        } catch (e) {
+          console.error("Error decoding or parsing payload:", e);
           return new Response(
-            JSON.stringify({
-              error:
-                "Authentication required. Missing authentication parameters.",
-            }),
+            JSON.stringify({ error: "Invalid payload format" }),
             {
-              status: 401,
+              status: 400,
               headers: responseHeaders,
             }
           );
         }
 
-        // Verify authentication object
-        const isValidSignature = await this.verifyAuthObject(
-          transferRequestId,
-          merchantId,
-          expiry,
-          signature
-        );
+        // Extract required fields from the payload
+        const { transferRequestId, merchantId, status, details } =
+          decodedPayload;
+
+        // Validate required fields
+        if (!transferRequestId || !merchantId || !status) {
+          return new Response(
+            JSON.stringify({
+              error: "Incomplete payload. Missing required fields.",
+            }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        // Verify the signature
+        const isValidSignature = await this.verifyPayloadSignature(token);
 
         if (!isValidSignature) {
           return new Response(
             JSON.stringify({
-              error: "Invalid authentication signature or expired credentials.",
+              error: "Invalid signature or expired credentials",
             }),
             {
               status: 401,
@@ -1286,13 +1423,20 @@ export class TransferStatusServer {
           );
         }
 
-        const result = await this.updateTransferStatus(id, status, details);
-        const websocket_url = generateWebSocketUrl(id);
+        // At this point the request is authenticated and valid
+        // Process the status update
+        const result = await this.updateTransferStatus(
+          transferRequestId,
+          status,
+          details || `Updated to ${status}`
+        );
+
+        const websocket_url = generateWebSocketUrl(transferRequestId);
 
         return new Response(
           JSON.stringify({
             ...result,
-            websocket_url, // Add WebSocket URL to connect for updates
+            websocket_url,
           }),
           {
             status: 200,
@@ -1314,23 +1458,25 @@ export class TransferStatusServer {
         JSON.stringify({
           endpoints: {
             "/create":
-              "POST - Create a new transfer (requires JSON body with id, signature, and timestamp fields)",
-            "/status?id=<transferId>&signature=<hmac>&timestamp=<ts>":
-              "GET - Check status of a transfer (requires HMAC authentication)",
+              "POST - Create a new transfer (requires JSON body with token field in payload.signature format)",
+            "/status?id=<transferId>&token=<payload.signature>":
+              "GET - Check status of a transfer (requires JWT-like token authentication)",
             "/update":
-              "POST - Update a transfer status (requires JSON body with id, status, signature, and timestamp fields)",
+              "POST - Update a transfer status (requires JSON body with token field in payload.signature format)",
             "/transfers":
               "GET - List all transfers in the system (most recent 100 by default)",
-            "/transfers?limit=<number>":
+            "/transfers?limit=<number>&token=<payload.signature>":
               "GET - Limit number of transfers returned",
-            "/transfers/:id/ws?signature=<hmac>&timestamp=<ts>":
-              "WebSocket - Connect for real-time updates (requires HMAC authentication)",
+            "/transfers/:id/ws?token=<payload.signature>":
+              "WebSocket - Connect for real-time updates (requires JWT-like token authentication)",
           },
           authentication: {
-            description: "HMAC authentication required for most endpoints",
+            description:
+              "JWT-like token authentication required for most endpoints",
             method:
-              "SHA-256 HMAC signature of '[transferId]:[timestamp]' with the shared secret",
-            validity: "Timestamps are valid for 5 minutes",
+              "Format: payload.signature where payload is base64-encoded JSON and signature is HMAC-SHA256",
+            validity:
+              "Tokens include an expiry field and are typically valid for 30 minutes",
           },
         }),
         {

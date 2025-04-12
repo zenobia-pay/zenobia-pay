@@ -10,11 +10,19 @@ import {
 } from "../shared";
 
 // Function to generate HMAC signature
+// Security Note:
+// 1. Each unique payload gets a unique signature - this is a property of HMAC-SHA256
+// 2. Having a valid signature for one payload (e.g., for /status) does NOT allow
+//    generating valid signatures for other payloads (e.g., for /update)
+// 3. Signatures are uniformly random and unrelated - having one signature doesn't
+//    give any information to help create or guess other signatures
+// 4. Each endpoint requires specific fields in the payload, so the signatures
+//    cannot be reused across different endpoints
 async function generateHmacSignature(transferId: string): Promise<{
   transferRequestId: string;
   merchantId: string;
   expiry: number;
-  signature: string;
+  token: string;
 }> {
   // Use the provided transferId as the transferRequestId
   const transferRequestId = transferId;
@@ -63,13 +71,13 @@ async function generateHmacSignature(transferId: string): Promise<{
     // Create a complete signature with payload.signature format
     // Base64 encode the payload and append the signature part
     const encodedPayload = btoa(payloadString);
-    const signature = `${encodedPayload}.${base64Signature}`;
+    const token = `${encodedPayload}.${base64Signature}`;
 
     return {
       transferRequestId,
       merchantId,
       expiry,
-      signature,
+      token,
     };
   } catch (error) {
     console.error("Error generating signature:", error);
@@ -126,18 +134,52 @@ function TransferStatusViewer() {
       console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
 
       try {
-        // Generate authentication object
-        const authObj = await generateHmacSignature(transferId);
+        // Create the complete payload with all necessary data
+        const payload = {
+          transferRequestId: transferId,
+          merchantId: "auth0|67f0a8703cc36ca458f5cf7b",
+          expiry: Math.floor(Date.now() / 1000) + 30 * 60,
+          action: "ws_connect",
+        };
+
+        // Convert to string for signing
+        const payloadString = JSON.stringify(payload);
+
+        // Use the same dummy secret as the server (12345)
+        const dummySecret = "12345";
+
+        // Create encoder
+        const encoder = new TextEncoder();
+        const keyData = encoder.encode(dummySecret);
+        const messageData = encoder.encode(payloadString);
+
+        // Import the key
+        const key = await crypto.subtle.importKey(
+          "raw",
+          keyData,
+          { name: "HMAC", hash: "SHA-256" },
+          false,
+          ["sign"]
+        );
+
+        // Sign the message
+        const signatureBuffer = await crypto.subtle.sign(
+          "HMAC",
+          key,
+          messageData
+        );
+
+        // Convert signature to base64 string
+        const signatureArray = new Uint8Array(signatureBuffer);
+        const base64Signature = btoa(String.fromCharCode(...signatureArray));
+
+        // Create a JWT-like token with payload.signature format
+        const encodedPayload = btoa(payloadString);
+        const token = `${encodedPayload}.${base64Signature}`;
 
         // Append auth parameters to the WebSocket URL
         const wsUrlObj = new URL(wsUrl);
-        wsUrlObj.searchParams.append(
-          "transferRequestId",
-          authObj.transferRequestId
-        );
-        wsUrlObj.searchParams.append("merchantId", authObj.merchantId);
-        wsUrlObj.searchParams.append("expiry", authObj.expiry.toString());
-        wsUrlObj.searchParams.append("signature", authObj.signature);
+        wsUrlObj.searchParams.append("token", token);
 
         // Create new WebSocket connection with auth parameters
         const socket = new WebSocket(wsUrlObj.toString());
@@ -276,28 +318,62 @@ function TransferStatusViewer() {
     setAuthInfo(null);
 
     try {
-      // Generate authentication object
-      const authObj = await generateHmacSignature(transferId);
+      // Create the complete payload with all necessary data
+      const payload = {
+        transferRequestId: transferId,
+        merchantId: "auth0|67f0a8703cc36ca458f5cf7b",
+        expiry: Math.floor(Date.now() / 1000) + 30 * 60,
+        action: "status_check",
+      };
+
+      // Convert to string for signing
+      const payloadString = JSON.stringify(payload);
+
+      // Use the same dummy secret as the server (12345)
+      const dummySecret = "12345";
+
+      // Create encoder
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(dummySecret);
+      const messageData = encoder.encode(payloadString);
+
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+
+      // Sign the message
+      const signatureBuffer = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        messageData
+      );
+
+      // Convert signature to base64 string
+      const signatureArray = new Uint8Array(signatureBuffer);
+      const base64Signature = btoa(String.fromCharCode(...signatureArray));
+
+      // Create a JWT-like token with payload.signature format
+      const encodedPayload = btoa(payloadString);
+      const token = `${encodedPayload}.${base64Signature}`;
 
       // Store auth info for display
       setAuthInfo({
-        signature: authObj.signature,
-        transferRequestId: authObj.transferRequestId,
-        merchantId: authObj.merchantId,
-        expiry: authObj.expiry,
+        signature: token,
+        transferRequestId: payload.transferRequestId,
+        merchantId: payload.merchantId,
+        expiry: payload.expiry,
         generated: Date.now(),
       });
 
-      // Build URL with auth parameters
+      // Build URL with token parameter
       const statusUrl = new URL(`/status`, window.location.origin);
       statusUrl.searchParams.append("id", transferId);
-      statusUrl.searchParams.append(
-        "transferRequestId",
-        authObj.transferRequestId
-      );
-      statusUrl.searchParams.append("merchantId", authObj.merchantId);
-      statusUrl.searchParams.append("expiry", authObj.expiry.toString());
-      statusUrl.searchParams.append("signature", authObj.signature);
+      statusUrl.searchParams.append("token", token);
 
       const response = await fetch(statusUrl.toString());
       const data = (await response.json()) as {
@@ -375,31 +451,67 @@ function TransferStatusViewer() {
     try {
       console.log(`Creating transfer: ${transferId}`);
 
-      // Generate authentication object
-      const authObj = await generateHmacSignature(transferId);
+      // Create the complete payload with all necessary data
+      const payload = {
+        transferRequestId: transferId,
+        merchantId: "auth0|67f0a8703cc36ca458f5cf7b",
+        expiry: Math.floor(Date.now() / 1000) + 30 * 60,
+        status: "PENDING",
+        details: `New transfer created at ${new Date().toISOString()}`,
+      };
+
+      // Convert to string for signing
+      const payloadString = JSON.stringify(payload);
+
+      // Use the same dummy secret as the server (12345)
+      const dummySecret = "12345";
+
+      // Create encoder
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(dummySecret);
+      const messageData = encoder.encode(payloadString);
+
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+
+      // Sign the message
+      const signatureBuffer = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        messageData
+      );
+
+      // Convert signature to base64 string
+      const signatureArray = new Uint8Array(signatureBuffer);
+      const base64Signature = btoa(String.fromCharCode(...signatureArray));
+
+      // Create a JWT-like token with payload.signature format
+      const encodedPayload = btoa(payloadString);
+      const token = `${encodedPayload}.${base64Signature}`;
 
       // Store auth info for display
       setAuthInfo({
-        signature: authObj.signature,
-        transferRequestId: authObj.transferRequestId,
-        merchantId: authObj.merchantId,
-        expiry: authObj.expiry,
+        signature: token,
+        transferRequestId: payload.transferRequestId,
+        merchantId: payload.merchantId,
+        expiry: payload.expiry,
         generated: Date.now(),
       });
 
+      // Send only the token
       const response = await fetch("/create", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: transferId,
-          status: "PENDING",
-          details: `New transfer created at ${new Date().toISOString()}`,
-          transferRequestId: authObj.transferRequestId,
-          merchantId: authObj.merchantId,
-          expiry: authObj.expiry,
-          signature: authObj.signature,
+          token,
         }),
       });
 
@@ -469,36 +581,73 @@ function TransferStatusViewer() {
     }
 
     setLoading(true);
+    setError(null);
     setAuthInfo(null);
 
     try {
       console.log(`Sending status update: ${transferId} -> ${newStatus}`);
 
-      // Generate authentication object
-      const authObj = await generateHmacSignature(transferId);
+      // Create the complete payload with all necessary data
+      const payload = {
+        transferRequestId: transferId,
+        merchantId: "auth0|67f0a8703cc36ca458f5cf7b",
+        expiry: Math.floor(Date.now() / 1000) + 30 * 60,
+        status: newStatus,
+        details: `Updated to ${newStatus} on ${new Date().toISOString()}`,
+      };
+
+      // Convert to string for signing
+      const payloadString = JSON.stringify(payload);
+
+      // Use the same dummy secret as the server (12345)
+      const dummySecret = "12345";
+
+      // Create encoder
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(dummySecret);
+      const messageData = encoder.encode(payloadString);
+
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+
+      // Sign the message
+      const signatureBuffer = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        messageData
+      );
+
+      // Convert signature to base64 string
+      const signatureArray = new Uint8Array(signatureBuffer);
+      const base64Signature = btoa(String.fromCharCode(...signatureArray));
+
+      // Create a JWT-like token with payload.signature format
+      const encodedPayload = btoa(payloadString);
+      const token = `${encodedPayload}.${base64Signature}`;
 
       // Store auth info for display
       setAuthInfo({
-        signature: authObj.signature,
-        transferRequestId: authObj.transferRequestId,
-        merchantId: authObj.merchantId,
-        expiry: authObj.expiry,
+        signature: token,
+        transferRequestId: payload.transferRequestId,
+        merchantId: payload.merchantId,
+        expiry: payload.expiry,
         generated: Date.now(),
       });
 
+      // Send only the token
       const response = await fetch("/update", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          id: transferId,
-          status: newStatus,
-          details: `Updated to ${newStatus} on ${new Date().toISOString()}`,
-          transferRequestId: authObj.transferRequestId,
-          merchantId: authObj.merchantId,
-          expiry: authObj.expiry,
-          signature: authObj.signature,
+          token,
         }),
       });
 
@@ -604,19 +753,52 @@ function TransferStatusViewer() {
   const fetchAllTransfers = async () => {
     setLoading(true);
     try {
-      // For listing all transfers, we'll create a dummy auth object
-      const dummyId = "ALL_TRANSFERS";
-      const authObj = await generateHmacSignature(dummyId);
+      // Create the complete payload with all necessary data
+      const payload = {
+        transferRequestId: "ALL_TRANSFERS",
+        merchantId: "auth0|67f0a8703cc36ca458f5cf7b",
+        expiry: Math.floor(Date.now() / 1000) + 30 * 60,
+        action: "list_transfers",
+      };
 
-      // Build URL with auth parameters
-      const listUrl = new URL("/transfers", window.location.origin);
-      listUrl.searchParams.append(
-        "transferRequestId",
-        authObj.transferRequestId
+      // Convert to string for signing
+      const payloadString = JSON.stringify(payload);
+
+      // Use the same dummy secret as the server (12345)
+      const dummySecret = "12345";
+
+      // Create encoder
+      const encoder = new TextEncoder();
+      const keyData = encoder.encode(dummySecret);
+      const messageData = encoder.encode(payloadString);
+
+      // Import the key
+      const key = await crypto.subtle.importKey(
+        "raw",
+        keyData,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
       );
-      listUrl.searchParams.append("merchantId", authObj.merchantId);
-      listUrl.searchParams.append("expiry", authObj.expiry.toString());
-      listUrl.searchParams.append("signature", authObj.signature);
+
+      // Sign the message
+      const signatureBuffer = await crypto.subtle.sign(
+        "HMAC",
+        key,
+        messageData
+      );
+
+      // Convert signature to base64 string
+      const signatureArray = new Uint8Array(signatureBuffer);
+      const base64Signature = btoa(String.fromCharCode(...signatureArray));
+
+      // Create a JWT-like token with payload.signature format
+      const encodedPayload = btoa(payloadString);
+      const token = `${encodedPayload}.${base64Signature}`;
+
+      // Build URL with token parameter
+      const listUrl = new URL("/transfers", window.location.origin);
+      listUrl.searchParams.append("token", token);
 
       const response = await fetch(listUrl.toString());
       if (response.ok) {
@@ -855,7 +1037,7 @@ function TransferStatusViewer() {
                     </span>
                   </p>
                   <p className="auth-detail">
-                    <strong>HMAC Signature:</strong>{" "}
+                    <strong>JWT-like Token:</strong>{" "}
                     <span className="signature">{authInfo.signature}</span>
                   </p>
                   <p className="auth-detail">
