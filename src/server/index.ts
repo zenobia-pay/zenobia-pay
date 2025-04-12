@@ -804,6 +804,8 @@ export class TransferStatusServer {
       // Decode the payload from base64
       const payloadStr = atob(encodedPayload);
 
+      console.log("Payload:", payloadStr);
+
       // Generate the expected signature using our secret key
       const encoder = new TextEncoder();
       const keyData = encoder.encode(this.hmacSecret);
