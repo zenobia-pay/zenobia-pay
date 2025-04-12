@@ -805,21 +805,14 @@ export class TransferStatusServer {
         return false;
       }
 
-      // Decode the payload from base64
-      const payloadStr = atob(encodedPayload);
+      // Simple approach matching the Java implementation:
+      // 1. Convert the key and payload to byte arrays (UTF-8 encoding)
+      // 2. Calculate HMAC-SHA256
+      // 3. Base64 encode the result
 
-      // Log crucial input data
-      console.log("Payload to verify:", payloadStr);
-      console.log("Secret key length:", this.env.HMAC_SECRET.length);
-      console.log(
-        "Secret key first 4 chars:",
-        this.env.HMAC_SECRET.substring(0, 4)
-      );
-
-      // Generate the expected signature using our secret key
       const encoder = new TextEncoder();
       const keyData = encoder.encode(this.env.HMAC_SECRET);
-      const messageData = encoder.encode(payloadStr);
+      const messageData = encoder.encode(encodedPayload);
 
       // Import the key
       const key = await crypto.subtle.importKey(
@@ -830,77 +823,37 @@ export class TransferStatusServer {
         ["sign"]
       );
 
-      // Generate the expected signature
+      // Generate the signature
       const signatureBuffer = await crypto.subtle.sign(
         "HMAC",
         key,
         messageData
       );
-
-      // Convert to base64 for the comparison
       const signatureArray = new Uint8Array(signatureBuffer);
       const expectedSignature = btoa(String.fromCharCode(...signatureArray));
 
-      // Compare key elements for debugging
-      console.log("Signature comparison:");
-      console.log(`Expected sig length: ${expectedSignature.length}`);
-      console.log(`Received sig length: ${receivedSignature.length}`);
+      // Simple debugging
       console.log(
-        `Expected sig first 10 chars: ${expectedSignature.substring(0, 10)}`
+        "Matching Java implementation - toByteArray() + HmacSHA256 + Base64"
       );
-      console.log(
-        `Received sig first 10 chars: ${receivedSignature.substring(0, 10)}`
-      );
-
-      // For character-by-character comparison of the beginning
-      const minLength = Math.min(
-        expectedSignature.length,
-        receivedSignature.length
-      );
-      let firstDiffIndex = -1;
-      for (let i = 0; i < minLength; i++) {
-        if (expectedSignature[i] !== receivedSignature[i]) {
-          firstDiffIndex = i;
-          break;
-        }
-      }
-
-      if (firstDiffIndex === -1) {
-        console.log(
-          "Signatures match in all compared characters, but lengths differ"
-        );
-      } else {
-        console.log(`First difference at position ${firstDiffIndex}`);
-        console.log(
-          `Expected character: '${
-            expectedSignature[firstDiffIndex]
-          }' (code: ${expectedSignature.charCodeAt(firstDiffIndex)})`
-        );
-        console.log(
-          `Received character: '${
-            receivedSignature[firstDiffIndex]
-          }' (code: ${receivedSignature.charCodeAt(firstDiffIndex)})`
-        );
-
-        // Show context of the difference
-        const start = Math.max(0, firstDiffIndex - 5);
-        const end = Math.min(minLength, firstDiffIndex + 6);
-        console.log(
-          `Expected context: ${expectedSignature.substring(start, end)}`
-        );
-        console.log(
-          `Received context: ${receivedSignature.substring(start, end)}`
-        );
-      }
 
       // Compare the expected signature with the received one
-      if (receivedSignature === expectedSignature) {
+      const signaturesMatch = receivedSignature === expectedSignature;
+
+      if (signaturesMatch) {
         console.log("Signature verified successfully");
-        return true;
       } else {
-        console.log("Invalid signature");
-        return false;
+        console.log("Signature verification failed");
+        console.log(`Expected signature: ${expectedSignature}`);
+        console.log(`Received signature: ${receivedSignature}`);
+
+        // Log the lengths too for quick reference
+        console.log(
+          `Expected length: ${expectedSignature.length}, Received length: ${receivedSignature.length}`
+        );
       }
+
+      return signaturesMatch;
     } catch (error) {
       console.error("Error verifying payload signature:", error);
       return false;
