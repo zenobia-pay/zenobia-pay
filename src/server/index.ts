@@ -549,24 +549,31 @@ export class TransferStatusServer {
         transfer = await this.getTransferStatus(transferId);
         if (!transfer) {
           console.log(
-            `Transfer not found for WebSocket connection: ${transferId}`
+            `Transfer not found for WebSocket connection: ${transferId}, but allowing connection anyway`
           );
-          return new Response(JSON.stringify({ error: "Transfer not found" }), {
-            status: 404,
-            headers: { "Content-Type": "application/json" },
-          });
-        }
-        console.log(
-          `Transfer loaded from storage for WebSocket: ${transferId}`
-        );
+          // Create a placeholder transfer status instead of returning 404
+          transfer = {
+            id: transferId,
+            status: "PENDING",
+            details: "Waiting for transfer to be created...",
+            updatedAt: Date.now(),
+          };
 
-        // In dev mode, add to static map for cross-instance access
-        if (this.isLocalDev) {
-          TransferStatusServer.devLocalTransfers.set(transferId, transfer);
-        }
+          // Don't add it to activeTransfers yet since it doesn't really exist
+          // It will be added when the transfer is actually created
+        } else {
+          console.log(
+            `Transfer loaded from storage for WebSocket: ${transferId}`
+          );
 
-        // Make sure it's in the active transfers cache
-        this.activeTransfers.set(transferId, transfer);
+          // In dev mode, add to static map for cross-instance access
+          if (this.isLocalDev) {
+            TransferStatusServer.devLocalTransfers.set(transferId, transfer);
+          }
+
+          // Make sure it's in the active transfers cache
+          this.activeTransfers.set(transferId, transfer);
+        }
       }
     } else {
       console.log(
