@@ -805,11 +805,6 @@ export class TransferStatusServer {
         return false;
       }
 
-      // Simple approach matching the Java implementation:
-      // 1. Convert the key and payload to byte arrays (UTF-8 encoding)
-      // 2. Calculate HMAC-SHA256
-      // 3. Base64 encode the result
-
       const encoder = new TextEncoder();
       const keyData = encoder.encode(this.env.HMAC_SECRET);
       const messageData = encoder.encode(encodedPayload);
@@ -830,12 +825,12 @@ export class TransferStatusServer {
         messageData
       );
       const signatureArray = new Uint8Array(signatureBuffer);
-      const expectedSignature = btoa(String.fromCharCode(...signatureArray));
 
-      // Simple debugging
-      console.log(
-        "Matching Java implementation - toByteArray() + HmacSHA256 + Base64"
-      );
+      // Convert to URL-safe Base64 without padding to match Java's Base64.getUrlEncoder().withoutPadding()
+      let expectedSignature = btoa(String.fromCharCode(...signatureArray))
+        .replace(/\+/g, "-") // Convert '+' to '-'
+        .replace(/\//g, "_") // Convert '/' to '_'
+        .replace(/=+$/, ""); // Remove padding '='
 
       // Compare the expected signature with the received one
       const signaturesMatch = receivedSignature === expectedSignature;
