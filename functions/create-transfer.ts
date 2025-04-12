@@ -161,6 +161,7 @@ async function handleCreateTransfer(
       }
 
       // Return the response to the client with CORS headers
+      console.log("data", data);
       const response = new Response(JSON.stringify(data), {
         status: apiResponse.status,
         headers: { "Content-Type": "application/json" },
