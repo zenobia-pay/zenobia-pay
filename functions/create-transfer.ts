@@ -2,6 +2,7 @@ export interface Env {
   // Add your environment bindings here
   ZENOBIA_CLIENT_ID?: string;
   ZENOBIA_CLIENT_SECRET?: string;
+  API_DOMAIN?: string;
 }
 
 export interface Context {
@@ -121,7 +122,7 @@ async function handleCreateTransfer(
       };
 
       const apiResponse = await fetch(
-        "https://api.zenobiapay.com/create-transfer-request",
+        `${env.API_DOMAIN}/create-transfer-request`,
         {
           method: "POST",
           headers: {

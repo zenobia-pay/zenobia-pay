@@ -19,7 +19,7 @@
     "typescript": "^5.7.2",
     "vite": "^6.0.0",
     "vite-plugin-solid": "^2.11.6",
-    "wrangler": "^4.7.2"
+    "wrangler": "^4.10.0"
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
