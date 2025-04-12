@@ -18,6 +18,7 @@ interface Env {
   };
   TRANSFER_STATUS: KVNamespace; // KV namespace for transfer statuses
   TransferStatusServer: DurableObjectNamespace; // Durable Object namespace
+  HMAC_SECRET: string; // Secret key used for HMAC verification
 }
 
 declare class WebSocketPair {
@@ -28,6 +29,8 @@ declare class WebSocketPair {
 // In-memory cache for active transfers only
 export class TransferStatusServer {
   kv: KVNamespace;
+  // Store the environment for use in methods
+  private env: Env;
   // Only store active transfers in memory (those being watched or recently updated)
   activeTransfers = new Map<string, TransferStatus>();
   // WebSocket connections by transfer ID
@@ -41,7 +44,6 @@ export class TransferStatusServer {
   // The Durable Object state
   state: DurableObjectState;
   // Shared key for HMAC authentication - this would be better stored securely
-  private hmacSecret = "12345"; // In production, use a real secure key
 
   // Static storage for local development to share state across instances
   private static devLocalTransfers = new Map<string, TransferStatus>();
@@ -50,6 +52,8 @@ export class TransferStatusServer {
   constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.kv = env.TRANSFER_STATUS;
+    // Store the env for use in other methods
+    this.env = env;
 
     // Better detection of local development mode
     // Check if we're in development mode - either KV is not available or we're running in local dev
@@ -808,7 +812,7 @@ export class TransferStatusServer {
 
       // Generate the expected signature using our secret key
       const encoder = new TextEncoder();
-      const keyData = encoder.encode(this.hmacSecret);
+      const keyData = encoder.encode(this.env.HMAC_SECRET);
       const messageData = encoder.encode(payloadStr);
 
       // Import the key
