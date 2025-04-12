@@ -96,7 +96,7 @@ const CheckoutPage: Component = () => {
         sse.onerror = (err) => {
           console.error("SSE connection error:", err);
           setError(
-            "Lost connection to payment service. Will not see payment status updates on the client."
+            "SSE Connection not established. Will not see payment status updates, check merchant dashboard and user mobile app for payment status."
           );
           sse.close();
         };
