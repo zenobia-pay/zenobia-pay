@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@solidjs/router": "^0.15.3",
-    "@zenobia/ui-solid": "^0.0.10",
+    "@zenobia/ui-solid": "^0.0.11",
     "jose": "^6.0.10",
     "solid-js": "^1.9.5"
   }
