@@ -160,28 +160,6 @@ const Footer: Component = () => {
           <p class="text-xs text-gray-500">
             &copy; 2025 Pendertif Stimmen. All rights reserved.
           </p>
-          <div class="flex space-x-6 mt-4 md:mt-0">
-            <img
-              src="https://via.placeholder.com/40x25"
-              alt="Visa"
-              class="h-6"
-            />
-            <img
-              src="https://via.placeholder.com/40x25"
-              alt="Mastercard"
-              class="h-6"
-            />
-            <img
-              src="https://via.placeholder.com/40x25"
-              alt="American Express"
-              class="h-6"
-            />
-            <img
-              src="https://via.placeholder.com/40x25"
-              alt="PayPal"
-              class="h-6"
-            />
-          </div>
         </div>
       </div>
     </footer>
