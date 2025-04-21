@@ -1,5 +1,4 @@
 export interface Env {
-  // Add your environment bindings here
   ZENOBIA_CLIENT_ID?: string;
   ZENOBIA_CLIENT_SECRET?: string;
   API_DOMAIN?: string;
@@ -9,10 +8,8 @@ export interface Context {
   env: Env;
   params: Record<string, string>;
   request: Request;
-  // Add other properties as needed
 }
 
-// Helper function to add CORS headers to a response
 function addCorsHeaders(response: Response): Response {
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", "*");
@@ -21,7 +18,7 @@ function addCorsHeaders(response: Response): Response {
     "GET, POST, PUT, DELETE, OPTIONS"
   );
   headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  headers.set("Access-Control-Max-Age", "86400"); // 24 hours
+  headers.set("Access-Control-Max-Age", "86400");
 
   return new Response(response.body, {
     status: response.status,
@@ -38,7 +35,6 @@ async function getAccessToken(env: Env): Promise<string> {
     const clientSecret = env.ZENOBIA_CLIENT_SECRET || "";
     const audience = "https://dashboard.zenobiapay.com";
 
-    // If using development/test mode and no credentials are provided
     if (!clientId || !clientSecret) {
       console.warn("No Auth0 credentials provided, using test mode");
       return "test_token";
@@ -67,7 +63,6 @@ async function getAccessToken(env: Env): Promise<string> {
     const data = await response.json();
     return data.access_token;
   } catch (error) {
-    console.error("Error getting access token:", error);
     throw new Error("Failed to authenticate with Auth0");
   }
 }
@@ -76,7 +71,6 @@ async function handleCreateTransfer(
   request: Request,
   env: Env
 ): Promise<Response> {
-  // Handle CORS preflight requests
   if (request.method === "OPTIONS") {
     return new Response(null, {
       status: 204, // No content
@@ -89,17 +83,14 @@ async function handleCreateTransfer(
     });
   }
 
-  // Check if it's a POST request
   if (request.method !== "POST") {
     const errorResponse = new Response("Method not allowed", { status: 405 });
     return addCorsHeaders(errorResponse);
   }
 
   try {
-    // Get the request body
     const body = await request.json();
 
-    // Validate required fields
     if (!body.amount || !Array.isArray(body.statementItems)) {
       const errorResponse = new Response(
         "Invalid request: missing required fields",
@@ -113,7 +104,6 @@ async function handleCreateTransfer(
 
     // Forward the request to the Zenobia Pay API
     try {
-      // Get access token from Auth0
       const accessToken = await getAccessToken(env);
 
       const fetchBody = {
@@ -179,7 +169,6 @@ async function handleCreateTransfer(
       return addCorsHeaders(errorResponse);
     }
   } catch (error) {
-    console.error("Error processing transfer request:", error);
     const errorResponse = new Response(
       JSON.stringify({ error: "Failed to process payment" }),
       {

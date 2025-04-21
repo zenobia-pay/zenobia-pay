@@ -41,7 +41,7 @@ const Footer: Component = () => {
 
           <div>
             <h3 class="text-sm font-semibold uppercase tracking-wider mb-4">
-              About ZENOBIA
+              About Pendertif Stimmen
             </h3>
             <ul class="space-y-2">
               <li>
@@ -158,7 +158,7 @@ const Footer: Component = () => {
 
         <div class="border-t border-gray-200 pt-8 flex flex-col md:flex-row justify-between items-center">
           <p class="text-xs text-gray-500">
-            &copy; 2023 ZENOBIA. All rights reserved.
+            &copy; 2025 Pendertif Stimmen. All rights reserved.
           </p>
           <div class="flex space-x-6 mt-4 md:mt-0">
             <img

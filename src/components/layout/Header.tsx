@@ -35,7 +35,7 @@ const Header: Component = () => {
               href="/"
               class="text-3xl font-bold tracking-widest text-center flex-grow md:flex-grow-0"
             >
-              <span class="font-serif">ZENOBIA</span>
+              <span class="font-serif">Pendertif Stimmen</span>
             </A>
 
             {/* Icons */}

@@ -1,284 +1,242 @@
-import { Component, createSignal, createEffect, Show } from "solid-js";
-import { useParams, A } from "@solidjs/router";
+import { Component, createSignal, onMount } from "solid-js";
+import { useParams, A, useNavigate } from "@solidjs/router";
 import { getProductById } from "../data/products";
 import { Product } from "../types";
+import { useCart } from "../context/CartContext";
+import { Show } from "solid-js";
 
 const ProductDetailPage: Component = () => {
   const params = useParams();
-  const [product, setProduct] = createSignal<Product | undefined>(undefined);
+  const { addToCart } = useCart();
+  const [product, setProduct] = createSignal<Product | null>(null);
+  const [loading, setLoading] = createSignal(true);
+  const [error, setError] = createSignal<string | null>(null);
   const [selectedColor, setSelectedColor] = createSignal<string | null>(null);
   const [selectedSize, setSelectedSize] = createSignal<string | null>(null);
   const [quantity, setQuantity] = createSignal(1);
-  const [isLoading, setIsLoading] = createSignal(true);
-  const [activeTab, setActiveTab] = createSignal<
-    "details" | "shipping" | "returns"
-  >("details");
+  const [addingToCart, setAddingToCart] = createSignal(false);
+  const navigate = useNavigate();
 
-  createEffect(() => {
-    setIsLoading(true);
-    const id = params.id;
-    const fetchedProduct = getProductById(id);
-    setProduct(fetchedProduct);
+  const formatPrice = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
+  };
 
-    if (fetchedProduct) {
-      // Set default selections
-      if (fetchedProduct.colors?.length > 0) {
-        setSelectedColor(fetchedProduct.colors[0]);
+  onMount(async () => {
+    try {
+      const productData = getProductById(params.id);
+      setProduct(productData || null);
+
+      // Set default color and size if available
+      if (productData && productData.colors && productData.colors.length > 0) {
+        setSelectedColor(productData.colors[0]);
       }
 
-      if (fetchedProduct.sizes?.length > 0) {
-        setSelectedSize(fetchedProduct.sizes[0]);
+      if (productData && productData.sizes && productData.sizes.length > 0) {
+        setSelectedSize(productData.sizes[0]);
       }
+    } catch (err) {
+      setError("Failed to load product");
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
-
-    setIsLoading(false);
   });
 
-  const handleIncreaseQuantity = () => {
-    setQuantity((prev) => prev + 1);
-  };
+  const handleAddToCart = async () => {
+    if (!product()) return;
 
-  const handleDecreaseQuantity = () => {
-    setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
-  };
-
-  const handleAddToCart = () => {
-    console.log("Added to cart:", {
-      product: product(),
-      quantity: quantity(),
-      color: selectedColor(),
-      size: selectedSize(),
-    });
-    // Here you would normally dispatch to a cart store
+    setAddingToCart(true);
+    try {
+      addToCart(
+        product()!,
+        quantity(),
+        selectedColor() || undefined,
+        selectedSize() || undefined
+      );
+      // Navigate to cart after a short delay to show the success state
+      setTimeout(() => {
+        navigate("/cart");
+      }, 500);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   return (
-    <div>
-      {isLoading() ? (
-        <div class="flex justify-center items-center h-64">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
-        </div>
-      ) : (
-        <Show
-          when={product()}
-          fallback={<div class="text-center py-12">Product not found</div>}
-        >
+    <div class="container mx-auto px-4 py-8">
+      <Show when={loading()}>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div class="bg-gray-200 h-[600px] rounded"></div>
           <div>
-            {/* Breadcrumb navigation */}
-            <div class="border-b border-gray-200 py-4">
-              <div class="container mx-auto px-4">
-                <div class="flex items-center text-sm">
-                  <A href="/" class="text-gray-600 hover:text-black">
-                    {product()!.category.charAt(0).toUpperCase() +
-                      product()!.category.slice(1)}
-                  </A>
-                  <span class="mx-2">/</span>
-                  <span class="font-medium">{product()!.name}</span>
+            <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
+            <div class="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
+            <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
+            <div class="h-4 bg-gray-200 rounded w-5/6 mb-6"></div>
+            <div class="mb-6">
+              <div class="h-6 bg-gray-200 rounded w-24 mb-2"></div>
+              <div class="flex gap-2">
+                {Array(4)
+                  .fill(0)
+                  .map(() => (
+                    <div class="h-10 w-10 bg-gray-300 rounded"></div>
+                  ))}
+              </div>
+            </div>
+            <div class="mb-6">
+              <div class="h-6 bg-gray-200 rounded w-24 mb-2"></div>
+              <div class="flex gap-2">
+                {Array(4)
+                  .fill(0)
+                  .map(() => (
+                    <div class="h-10 w-16 bg-gray-300 rounded"></div>
+                  ))}
+              </div>
+            </div>
+            <div class="mb-6">
+              <div class="h-6 bg-gray-200 rounded w-24 mb-2"></div>
+              <div class="h-12 bg-gray-300 rounded w-24"></div>
+            </div>
+            <div class="h-12 bg-gray-200 rounded w-full"></div>
+          </div>
+        </div>
+      </Show>
+
+      <Show when={error() || !product()}>
+        <div class="text-center text-red-500 p-4">
+          {error() || "Product not found"}
+        </div>
+        <div class="text-center mt-4">
+          <A href="/products" class="text-black underline">
+            Return to Products
+          </A>
+        </div>
+      </Show>
+
+      <Show when={!loading() && !error() && product()}>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <img
+              src={product()!.imageUrl}
+              alt={product()!.name}
+              class="w-full h-auto object-cover"
+            />
+          </div>
+
+          <div>
+            <h1 class="text-3xl font-serif mb-2">{product()!.name}</h1>
+            <p class="text-2xl mb-6">{formatPrice(product()!.price)}</p>
+
+            {product()!.isNew && (
+              <span class="inline-block bg-red-500 text-white text-xs px-2 py-1 rounded mb-4">
+                New
+              </span>
+            )}
+
+            <p class="text-gray-600 mb-6">{product()!.description}</p>
+
+            {product()!.colors && product()!.colors.length > 0 && (
+              <div class="mb-6">
+                <h3 class="text-sm font-medium mb-2">Color</h3>
+                <div class="flex flex-wrap gap-2">
+                  {product()!.colors.map((color) => (
+                    <button
+                      class={`px-4 py-2 border ${
+                        selectedColor() === color
+                          ? "border-black"
+                          : "border-gray-300"
+                      }`}
+                      onClick={() => setSelectedColor(color)}
+                    >
+                      {color}
+                    </button>
+                  ))}
                 </div>
+              </div>
+            )}
+
+            {product()!.sizes && product()!.sizes.length > 0 && (
+              <div class="mb-6">
+                <h3 class="text-sm font-medium mb-2">Size</h3>
+                <div class="flex flex-wrap gap-2">
+                  {product()!.sizes.map((size) => (
+                    <button
+                      class={`px-4 py-2 border ${
+                        selectedSize() === size
+                          ? "border-black"
+                          : "border-gray-300"
+                      }`}
+                      onClick={() => setSelectedSize(size)}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div class="mb-6">
+              <h3 class="text-sm font-medium mb-2">Quantity</h3>
+              <div class="flex items-center border border-gray-300 w-32">
+                <button
+                  class="px-3 py-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setQuantity(Math.max(1, quantity() - 1))}
+                >
+                  -
+                </button>
+                <span class="flex-grow text-center">{quantity()}</span>
+                <button
+                  class="px-3 py-2 text-gray-500 hover:text-gray-700"
+                  onClick={() => setQuantity(quantity() + 1)}
+                >
+                  +
+                </button>
               </div>
             </div>
 
-            {/* Product display */}
-            <div class="container mx-auto px-4 py-8">
-              <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-                {/* Product Images */}
-                <div>
-                  <div class="relative">
-                    <img
-                      src={product()!.image}
-                      alt={product()!.name}
-                      class="w-full h-auto"
-                    />
-                    <button
-                      class="absolute top-2 right-2 p-2"
-                      aria-label="Add to Wishlist"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-6 w-6 text-black"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-
-                {/* Product Details */}
-                <div>
-                  <h1 class="text-2xl uppercase font-medium mb-1">
-                    {product()!.name}
-                  </h1>
-                  <p class="text-xl mb-6">${product()!.price.toFixed(2)}</p>
-
-                  <div class="border-t border-gray-200 pt-6 mb-6">
-                    <p class="text-gray-700 mb-6">{product()!.description}</p>
-                  </div>
-
-                  {product()!.colors && product()!.colors.length > 0 && (
-                    <div class="mb-6">
-                      <h3 class="text-sm font-medium mb-3 uppercase">
-                        Color:{" "}
-                        <span class="font-normal">{selectedColor()}</span>
-                      </h3>
-                      <div class="flex space-x-3">
-                        {product()!.colors.map((color) => (
-                          <button
-                            class={`w-10 h-10 rounded-full ${
-                              selectedColor() === color
-                                ? "ring-2 ring-offset-2 ring-black"
-                                : ""
-                            }`}
-                            style={{
-                              "background-color": color.includes("/")
-                                ? "#ccc"
-                                : color,
-                            }}
-                            onClick={() => setSelectedColor(color)}
-                            aria-label={`Color: ${color}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {product()!.sizes && product()!.sizes.length > 0 && (
-                    <div class="mb-6">
-                      <h3 class="text-sm font-medium mb-3 uppercase">
-                        Size: <span class="font-normal">{selectedSize()}</span>
-                      </h3>
-                      <div class="flex flex-wrap gap-2">
-                        {product()!.sizes.map((size) => (
-                          <button
-                            class={`min-w-[3rem] h-10 px-3 border ${
-                              selectedSize() === size
-                                ? "border-black bg-black text-white"
-                                : "border-gray-300 hover:border-black"
-                            }`}
-                            onClick={() => setSelectedSize(size)}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div class="mb-8">
-                    <h3 class="text-sm font-medium mb-3 uppercase">Quantity</h3>
-                    <div class="flex items-center border border-gray-300 w-32">
-                      <button
-                        class="px-4 py-2 text-xl"
-                        onClick={handleDecreaseQuantity}
-                        disabled={quantity() <= 1}
-                      >
-                        -
-                      </button>
-                      <span class="px-4 py-2 flex-grow text-center">
-                        {quantity()}
-                      </span>
-                      <button
-                        class="px-4 py-2 text-xl"
-                        onClick={handleIncreaseQuantity}
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    class="bg-black text-white py-4 uppercase text-sm tracking-wider w-full mb-6 hover:bg-gray-800"
-                    onClick={handleAddToCart}
+            <button
+              class="w-full bg-black text-white px-6 py-3 text-sm uppercase tracking-wider hover:bg-gray-800 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleAddToCart}
+              disabled={addingToCart()}
+            >
+              {addingToCart() ? (
+                <span class="flex items-center justify-center">
+                  <svg
+                    class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
                   >
-                    Add to Shopping Bag
-                  </button>
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Adding to Cart...
+                </span>
+              ) : (
+                "Add to Cart"
+              )}
+            </button>
 
-                  {/* Product tabs */}
-                  <div class="border-t border-gray-200 pt-6">
-                    <div class="flex border-b border-gray-200">
-                      <button
-                        class={`py-3 px-4 text-sm uppercase ${
-                          activeTab() === "details"
-                            ? "border-b-2 border-black font-medium"
-                            : "text-gray-500"
-                        }`}
-                        onClick={() => setActiveTab("details")}
-                      >
-                        Details
-                      </button>
-                      <button
-                        class={`py-3 px-4 text-sm uppercase ${
-                          activeTab() === "shipping"
-                            ? "border-b-2 border-black font-medium"
-                            : "text-gray-500"
-                        }`}
-                        onClick={() => setActiveTab("shipping")}
-                      >
-                        Shipping
-                      </button>
-                      <button
-                        class={`py-3 px-4 text-sm uppercase ${
-                          activeTab() === "returns"
-                            ? "border-b-2 border-black font-medium"
-                            : "text-gray-500"
-                        }`}
-                        onClick={() => setActiveTab("returns")}
-                      >
-                        Returns
-                      </button>
-                    </div>
-
-                    <div class="py-4">
-                      <Show when={activeTab() === "details"}>
-                        <p class="text-sm leading-relaxed">
-                          {product()!.description} Made in Italy. Comes with
-                          dustbag and authenticity card.
-                        </p>
-                        <ul class="mt-4 text-sm list-disc pl-5 space-y-1">
-                          <li>Premium quality materials</li>
-                          <li>Product code: {product()!.id}0123</li>
-                          <li>Care: Wipe with a soft cloth</li>
-                        </ul>
-                      </Show>
-
-                      <Show when={activeTab() === "shipping"}>
-                        <p class="text-sm leading-relaxed">
-                          Free standard shipping on all orders. Express delivery
-                          available.
-                        </p>
-                        <ul class="mt-4 text-sm list-disc pl-5 space-y-1">
-                          <li>Standard delivery: 3-5 business days</li>
-                          <li>Express delivery: 1-2 business days</li>
-                          <li>Same-day delivery available in select cities</li>
-                        </ul>
-                      </Show>
-
-                      <Show when={activeTab() === "returns"}>
-                        <p class="text-sm leading-relaxed">
-                          Free returns within 30 days of delivery. Items must be
-                          unworn and in original packaging.
-                        </p>
-                        <ul class="mt-4 text-sm list-disc pl-5 space-y-1">
-                          <li>Return label included with every order</li>
-                          <li>Exchanges available</li>
-                          <li>Contact customer service for assistance</li>
-                        </ul>
-                      </Show>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div class="border-t border-gray-200 pt-4">
+              <h3 class="text-sm font-medium mb-2">Product Details</h3>
+              <ul class="text-sm text-gray-600 space-y-1">
+                <li>Category: {product()!.category}</li>
+                <li>SKU: {product()!._id}</li>
+              </ul>
             </div>
           </div>
-        </Show>
-      )}
+        </div>
+      </Show>
     </div>
   );
 };
