@@ -2,6 +2,8 @@ export interface Env {
   ZENOBIA_CLIENT_ID?: string;
   ZENOBIA_CLIENT_SECRET?: string;
   API_DOMAIN?: string;
+  ACCOUNTS_DOMAIN?: string;
+  ACCOUNTS_AUDIENCE?: string;
 }
 
 export interface Context {
@@ -30,10 +32,10 @@ function addCorsHeaders(response: Response): Response {
 // Function to get an access token from Auth0
 async function getAccessToken(env: Env): Promise<string> {
   try {
-    const tokenUrl = "https://zenobia-beta.us.auth0.com/oauth/token";
+    const tokenUrl = `${env.ACCOUNTS_DOMAIN}/oauth/token`;
     const clientId = env.ZENOBIA_CLIENT_ID || "";
     const clientSecret = env.ZENOBIA_CLIENT_SECRET || "";
-    const audience = "https://dashboard.zenobiapay.com";
+    const audience = env.ACCOUNTS_AUDIENCE || "";
 
     if (!clientId || !clientSecret) {
       console.warn("No Auth0 credentials provided, using test mode");
