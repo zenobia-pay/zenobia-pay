@@ -62,7 +62,11 @@ export class TransferStatusServer {
     console.log(
       `Running in ${
         this.isLocalDev ? "development" : "production"
-      } mode (KV available: ${!!this.kv})`
+      } mode (KV available: ${!!this.kv}),
+       and location: ${location}
+       and hostname: ${location?.hostname}
+       and window: ${window}
+       and typeof window: ${typeof window}`
     );
 
     console.log(
