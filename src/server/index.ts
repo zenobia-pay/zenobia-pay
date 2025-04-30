@@ -63,10 +63,10 @@ export class TransferStatusServer {
       `Running in ${
         this.isLocalDev ? "development" : "production"
       } mode (KV available: ${!!this.kv}),
-       and location: ${location}
-       and hostname: ${location?.hostname}
-       and window: ${window}
-       and typeof window: ${typeof window}`
+       and location typeof: ${typeof location}
+       and typeof window: ${typeof window},
+       so isLocalhost: ${isLocalhost},
+       and isNodeEnv: ${isNodeEnv}`
     );
 
     console.log(
