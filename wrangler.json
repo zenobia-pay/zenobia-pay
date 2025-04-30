@@ -24,7 +24,7 @@
     "not_found_handling": "single-page-application"
   },
   "build": {
-    "command": "esbuild src/client/index.tsx --bundle --splitting --format=esm --platform=browser --outdir=public/dist"
+    "command": "npx esbuild src/client/index.tsx --bundle --splitting --format=esm --platform=browser --outdir=public/dist"
   },
   "durable_objects": {
     "bindings": [
@@ -47,7 +47,26 @@
       "binding": "TRANSFER_STATUS",
       "id": "4367a7ed5311485595700be0213d6354"
     }
-  ]
+  ],
+  "env": {
+    "beta": {
+      "name": "transfer-status-beta",
+      "durable_objects": {
+        "bindings": [
+          {
+            "class_name": "TransferStatusServer",
+            "name": "TransferStatusServer"
+          }
+        ]
+      },
+      "kv_namespaces": [
+        {
+          "binding": "TRANSFER_STATUS",
+          "id": "53e293fadb394a3fa566886f796ce194"
+        }
+      ]
+    }
+  }
   /**
    * Smart Placement
    * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
