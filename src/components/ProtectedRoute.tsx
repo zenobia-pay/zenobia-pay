@@ -43,10 +43,10 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
             return
           }
 
-          const isOnboarded = userProfile.hasOnboarded
-          if (!isOnboarded && !isOnboardingRoute) {
-            navigate("/onboarding")
-          }
+          // const isOnboarded = userProfile.hasOnboarded
+          // if (!isOnboarded && !isOnboardingRoute) {
+          //   navigate("/onboarding")
+          // }
         })
       } else {
         // Store the current path so we can redirect back after login
