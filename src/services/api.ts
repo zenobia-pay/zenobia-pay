@@ -31,7 +31,7 @@ interface Auth0Error extends Error {
   scope?: string
 }
 
-const API_BASE_URL = "https://api.zenobiapay.com"
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 // Shared Auth0 client instance
 let auth0ClientInstance: Auth0Client | null = null
