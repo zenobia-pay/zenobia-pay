@@ -12,18 +12,15 @@ import type {
 } from "@cloudflare/workers-types";
 
 // Define environment interface
-interface Env {
-  ASSETS: {
-    fetch: (request: Request) => Promise<Response>;
-  };
-  TRANSFER_STATUS: KVNamespace; // KV namespace for transfer statuses
-  TransferStatusServer: DurableObjectNamespace; // Durable Object namespace
-  HMAC_SECRET: string; // Secret key used for HMAC verification
-}
 
 declare class WebSocketPair {
   0: WebSocket;
   1: WebSocket;
+}
+
+enum HmacType {
+  SUBSCRIBE = "subscribe",
+  UPDATE = "update",
 }
 
 // In-memory cache for active transfers only
@@ -794,6 +791,12 @@ export class TransferStatusServer {
     } as ResponseInit & { webSocket: WebSocket });
   }
 
+  private getHmacSecret(signatureType: HmacType): string {
+    return signatureType === HmacType.SUBSCRIBE
+      ? this.env.SUBSCRIBE_HMAC
+      : this.env.UPDATE_HMAC;
+  }
+
   // Method to verify a payload and its signature
   // Token format follows JWT-like standard: "payload.signature" where:
   // - payload is a base64-encoded JSON string containing:
@@ -802,7 +805,10 @@ export class TransferStatusServer {
   //   * expiry: Unix timestamp when this token expires
   //   * (and other optional fields like status, details, etc.)
   // - signature is a base64-encoded HMAC-SHA256 signature of the decoded payload
-  private async verifyPayloadSignature(token: string): Promise<boolean> {
+  private async verifyPayloadSignature(
+    token: string,
+    signatureType: HmacType
+  ): Promise<boolean> {
     try {
       // Split the token into parts
       const [encodedPayload, receivedSignature] = token.split(".");
@@ -813,7 +819,9 @@ export class TransferStatusServer {
       }
 
       const encoder = new TextEncoder();
-      const keyData = encoder.encode(this.env.HMAC_SECRET);
+
+      const secret = this.getHmacSecret(signatureType);
+      const keyData = encoder.encode(secret);
       const messageData = encoder.encode(encodedPayload);
 
       // Import the key
@@ -927,7 +935,10 @@ export class TransferStatusServer {
         }
 
         // Verify the signature
-        const isValidSignature = await this.verifyPayloadSignature(token);
+        const isValidSignature = await this.verifyPayloadSignature(
+          token,
+          HmacType.SUBSCRIBE
+        );
 
         if (!isValidSignature) {
           return new Response(
@@ -1045,7 +1056,10 @@ export class TransferStatusServer {
       }
 
       // Verify the signature
-      const isValidSignature = await this.verifyPayloadSignature(token);
+      const isValidSignature = await this.verifyPayloadSignature(
+        token,
+        HmacType.SUBSCRIBE
+      );
 
       if (!isValidSignature) {
         return new Response(
@@ -1140,7 +1154,10 @@ export class TransferStatusServer {
       }
 
       // Verify signature
-      const isValidSignature = await this.verifyPayloadSignature(token);
+      const isValidSignature = await this.verifyPayloadSignature(
+        token,
+        HmacType.SUBSCRIBE
+      );
 
       if (!isValidSignature) {
         return new Response(
@@ -1245,127 +1262,130 @@ export class TransferStatusServer {
     }
 
     // Handle create transfer endpoint
-    if (path === "/create" && request.method === "POST") {
-      try {
-        console.log("Processing create request");
+    // if (path === "/create" && request.method === "POST") {
+    //   try {
+    //     console.log("Processing create request");
 
-        // Extract the token from the request body
-        const body = (await request.json()) as {
-          token?: string; // payload.signature format
-        };
+    //     // Extract the token from the request body
+    //     const body = (await request.json()) as {
+    //       token?: string; // payload.signature format
+    //     };
 
-        const { token } = body;
+    //     const { token } = body;
 
-        // Require token
-        if (!token) {
-          return new Response(
-            JSON.stringify({
-              error: "Missing required field. Request must include 'token'.",
-            }),
-            {
-              status: 400,
-              headers: responseHeaders,
-            }
-          );
-        }
+    //     // Require token
+    //     if (!token) {
+    //       return new Response(
+    //         JSON.stringify({
+    //           error: "Missing required field. Request must include 'token'.",
+    //         }),
+    //         {
+    //           status: 400,
+    //           headers: responseHeaders,
+    //         }
+    //       );
+    //     }
 
-        // Verify the signature
-        const isValidSignature = await this.verifyPayloadSignature(token);
+    //     // Verify the signature
+    //     const isValidSignature = await this.verifyPayloadSignature(
+    //       token,
+    //       HmacType.SUBSCRIBE
+    //     );
 
-        if (!isValidSignature) {
-          return new Response(
-            JSON.stringify({
-              error: "Invalid signature or expired credentials",
-            }),
-            {
-              status: 401,
-              headers: responseHeaders,
-            }
-          );
-        }
+    //     if (!isValidSignature) {
+    //       return new Response(
+    //         JSON.stringify({
+    //           error: "Invalid signature or expired credentials",
+    //         }),
+    //         {
+    //           status: 401,
+    //           headers: responseHeaders,
+    //         }
+    //       );
+    //     }
 
-        // Decode the payload
-        let decodedPayload;
-        try {
-          const [encodedPayload] = token.split(".");
-          const payloadStr = atob(encodedPayload);
-          console.log("Decoded payload string:", payloadStr);
-          decodedPayload = JSON.parse(payloadStr);
-        } catch (e) {
-          console.error("Error decoding or parsing payload:", e);
-          return new Response(
-            JSON.stringify({ error: "Invalid payload format" }),
-            {
-              status: 400,
-              headers: responseHeaders,
-            }
-          );
-        }
+    //     // Decode the payload
+    //     let decodedPayload;
+    //     try {
+    //       const [encodedPayload] = token.split(".");
+    //       const payloadStr = atob(encodedPayload);
+    //       console.log("Decoded payload string:", payloadStr);
+    //       decodedPayload = JSON.parse(payloadStr);
+    //     } catch (e) {
+    //       console.error("Error decoding or parsing payload:", e);
+    //       return new Response(
+    //         JSON.stringify({ error: "Invalid payload format" }),
+    //         {
+    //           status: 400,
+    //           headers: responseHeaders,
+    //         }
+    //       );
+    //     }
 
-        // Extract required fields from the payload
-        const {
-          transferRequestId,
-          merchantId,
-          expiry,
-          status = "PENDING",
-          details,
-        } = decodedPayload;
+    //     // Extract required fields from the payload
+    //     const {
+    //       transferRequestId,
+    //       merchantId,
+    //       expiry,
+    //       status = "PENDING",
+    //       details,
+    //     } = decodedPayload;
 
-        // Validate required fields
-        if (!transferRequestId || !merchantId || !expiry) {
-          return new Response(
-            JSON.stringify({
-              error: "Incomplete payload. Missing required fields.",
-            }),
-            {
-              status: 400,
-              headers: responseHeaders,
-            }
-          );
-        }
+    //     // Validate required fields
+    //     if (!transferRequestId || !merchantId || !expiry) {
+    //       return new Response(
+    //         JSON.stringify({
+    //           error: "Incomplete payload. Missing required fields.",
+    //         }),
+    //         {
+    //           status: 400,
+    //           headers: responseHeaders,
+    //         }
+    //       );
+    //     }
 
-        // Check if the expiry time has passed
-        const now = Math.floor(Date.now() / 1000);
-        if (now > expiry) {
-          return new Response(
-            JSON.stringify({
-              error: "Request has expired",
-            }),
-            {
-              status: 401,
-              headers: responseHeaders,
-            }
-          );
-        }
+    //     // Check if the expiry time has passed
+    //     const now = Math.floor(Date.now() / 1000);
+    //     if (now > expiry) {
+    //       return new Response(
+    //         JSON.stringify({
+    //           error: "Request has expired",
+    //         }),
+    //         {
+    //           status: 401,
+    //           headers: responseHeaders,
+    //         }
+    //       );
+    //     }
 
-        // At this point the request is authenticated and valid
-        // Process the transfer creation
-        const result = await this.createTransferRequest(
-          transferRequestId,
-          status,
-          details || `Transfer created at ${new Date().toISOString()}`
-        );
+    //     // At this point the request is authenticated and valid
+    //     // Process the transfer creation
+    //     const result = await this.createTransferRequest(
+    //       transferRequestId,
+    //       status,
+    //       details || `Transfer created at ${new Date().toISOString()}`
+    //     );
 
-        const websocket_url = generateWebSocketUrl(transferRequestId);
+    //     const websocket_url = generateWebSocketUrl(transferRequestId);
 
-        return new Response(
-          JSON.stringify({
-            ...result,
-            websocket_url,
-          }),
-          {
-            status: 200,
-            headers: responseHeaders,
-          }
-        );
-      } catch (error) {
-        console.error("Error creating transfer:", error);
-        return new Response(JSON.stringify({ error: "Invalid request" }), {
-          status: 400,
-          headers: responseHeaders,
-        });
-      }
-    }
+    //     return new Response(
+    //       JSON.stringify({
+    //         ...result,
+    //         websocket_url,
+    //       }),
+    //       {
+    //         status: 200,
+    //         headers: responseHeaders,
+    //       }
+    //     );
+    //   } catch (error) {
+    //     console.error("Error creating transfer:", error);
+    //     return new Response(JSON.stringify({ error: "Invalid request" }), {
+    //       status: 400,
+    //       headers: responseHeaders,
+    //     });
+    //   }
+    // }
 
     // Handle status update endpoint
     if (path === "/update" && request.method === "POST") {
