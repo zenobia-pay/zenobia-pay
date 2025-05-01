@@ -55,7 +55,7 @@ export const CartProvider: Component<{ children: JSX.Element }> = (props) => {
   const [items, setItems] = createSignal<CartItem[]>([
     {
       product: defaultProduct,
-      quantity: 2,
+      quantity: 1,
       color: "Black",
       size: "M",
     },

@@ -1,13 +1,20 @@
-import { Component } from "solid-js";
+import { Component, createSignal } from "solid-js";
 import { useCart } from "../context/CartContext";
 import { A } from "@solidjs/router";
 
 const CartPage: Component = () => {
   const { items, removeFromCart, updateQuantity, totalItems, totalPrice } =
     useCart();
+  const [editingQuantity, setEditingQuantity] = createSignal<string | null>(
+    null
+  );
+
+  const formatPrice = (cents: number) => {
+    return (cents / 100).toFixed(2);
+  };
 
   const handleQuantityChange = (productId: string, newQuantity: number) => {
-    if (newQuantity > 0) {
+    if (newQuantity > 0 && newQuantity <= 10) {
       updateQuantity(productId, newQuantity);
     }
   };
@@ -76,9 +83,6 @@ const CartPage: Component = () => {
                             {item.product.brand}
                           </p>
                           <p class="text-sm mb-2">{item.product.name}</p>
-                          <p class="text-sm mb-4">
-                            FARFETCH ID: {item.product._id}
-                          </p>
                         </div>
                         <button
                           onClick={() => removeFromCart(item.product._id)}
@@ -98,19 +102,35 @@ const CartPage: Component = () => {
 
                         <div class="flex items-center">
                           <span class="text-sm mr-4">Quantity</span>
-                          <div class="flex items-center">
-                            <button
-                              class="text-sm hover:opacity-70"
-                              onClick={() =>
+                          <div class="relative">
+                            <select
+                              class="appearance-none pl-4 pr-8 py-2 border border-gray-300 bg-white text-sm"
+                              value={item.quantity}
+                              onChange={(e) =>
                                 handleQuantityChange(
                                   item.product._id,
-                                  item.quantity - 1
+                                  parseInt(e.currentTarget.value)
                                 )
                               }
                             >
-                              Change
-                            </button>
-                            <span class="mx-2">{item.quantity}</span>
+                              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                <option value={num}>{num}</option>
+                              ))}
+                            </select>
+                            <div class="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-4 w-4"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path
+                                  fill-rule="evenodd"
+                                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                  clip-rule="evenodd"
+                                />
+                              </svg>
+                            </div>
                           </div>
                         </div>
 
@@ -125,7 +145,7 @@ const CartPage: Component = () => {
                       </div>
                     </div>
                     <div class="text-right">
-                      <p class="text-sm">${item.product.price}</p>
+                      <p class="text-sm">${formatPrice(item.product.price)}</p>
                     </div>
                   </div>
                 </div>
@@ -139,7 +159,7 @@ const CartPage: Component = () => {
                 <div class="space-y-4 mb-6">
                   <div class="flex justify-between">
                     <span class="text-sm">Subtotal</span>
-                    <span class="text-sm">${totalPrice()}</span>
+                    <span class="text-sm">${formatPrice(totalPrice())}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-sm">Delivery</span>
@@ -149,7 +169,7 @@ const CartPage: Component = () => {
                 <div class="flex justify-between border-t border-black pt-4 mb-6">
                   <span class="text-sm">Total</span>
                   <div class="text-right">
-                    <p class="text-sm">USD ${totalPrice()}</p>
+                    <p class="text-sm">USD ${formatPrice(totalPrice())}</p>
                     <p class="text-xs text-gray-500">Import duties included</p>
                   </div>
                 </div>

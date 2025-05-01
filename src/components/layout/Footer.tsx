@@ -7,7 +7,7 @@ const Footer: Component = () => {
       <div class="container mx-auto px-4">
         {/* Newsletter Signup */}
         <div class="max-w-xl mb-16">
-          <h2 class="text-2xl mb-4">FARFETCH emails</h2>
+          <h2 class="text-2xl mb-4">NOT FARFETCH emails</h2>
           <p class="text-sm text-gray-600 mb-4">
             Sign up for promotions, tailored new arrivals, stock updates and
             more – straight to your inbox
@@ -70,14 +70,14 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/promise" class="text-sm hover:text-gray-600">
-                  FARFETCH Customer Promise
+                  NOT FARFETCH Customer Promise
                 </A>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 class="font-medium mb-6">About FARFETCH</h3>
+            <h3 class="font-medium mb-6">About NOT FARFETCH</h3>
             <ul class="space-y-4">
               <li>
                 <A href="/about" class="text-sm hover:text-gray-600">
@@ -86,7 +86,7 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/partners" class="text-sm hover:text-gray-600">
-                  FARFETCH partner boutiques
+                  NOT FARFETCH partner boutiques
                 </A>
               </li>
               <li>
@@ -96,7 +96,7 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/app" class="text-sm hover:text-gray-600">
-                  FARFETCH app
+                  NOT FARFETCH app
                 </A>
               </li>
               <li>
@@ -122,7 +122,7 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/membership" class="text-sm hover:text-gray-600">
-                  FARFETCH membership
+                  NOT FARFETCH membership
                 </A>
               </li>
               <li>
@@ -165,7 +165,9 @@ const Footer: Component = () => {
 
           <div>
             <div class="mb-12">
-              <h3 class="font-medium mb-6">FARFETCH Sustainable Services</h3>
+              <h3 class="font-medium mb-6">
+                NOT FARFETCH Sustainable Services
+              </h3>
               <ul class="space-y-4">
                 <li>
                   <A href="/refresh" class="text-sm hover:text-gray-600">
@@ -268,12 +270,12 @@ const Footer: Component = () => {
             </A>
           </div>
           <p class="text-xs text-gray-500 mt-4">
-            'FARFETCH' and the 'FARFETCH' logo are trade marks of FARFETCH UK
-            Limited and are registered in numerous jurisdictions around the
-            world.
+            'NOT FARFETCH' and the 'NOT FARFETCH' logo are trade marks of NOT
+            FARFETCH UK Limited and are registered in numerous jurisdictions
+            around the world.
           </p>
           <p class="text-xs text-gray-500 mt-2">
-            © Copyright 2025 FARFETCH UK Limited. All rights reserved.
+            © Copyright 2025 NOT FARFETCH UK Limited. All rights reserved.
           </p>
         </div>
       </div>
