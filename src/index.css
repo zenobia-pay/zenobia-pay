@@ -1,1 +1,29 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "Farfetch Basis";
+  src: url(https://cdn-static.farfetch-contents.com/assets/portal-core-appportal/desktop/public/fonts/v3.00/FarfetchBasis-Regular.woff2)
+      format("woff2"),
+    url(https://cdn-static.farfetch-contents.com/assets/portal-core-appportal/desktop/public/fonts/v3.00/FarfetchBasis-Regular.woff)
+      format("woff");
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "Farfetch Basis";
+  src: url(https://cdn-static.farfetch-contents.com/assets/portal-core-appportal/desktop/public/fonts/v3.00/FarfetchBasis-Bold.woff2)
+      format("woff2"),
+    url(https://cdn-static.farfetch-contents.com/assets/portal-core-appportal/desktop/public/fonts/v3.00/FarfetchBasis-Bold.woff)
+      format("woff");
+  font-display: swap;
+  font-weight: 700;
+  font-style: normal;
+}
+
+body {
+  font-family: "Farfetch Basis", sans-serif;
+}

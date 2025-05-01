@@ -26,8 +26,43 @@ export const routes: RouteDefinition[] = [
     component: LayoutHomePage,
   },
   {
-    path: "/products",
-    component: LayoutProductsPage,
+    path: "/men",
+    children: [
+      {
+        path: "/",
+        component: LayoutProductsPage,
+      },
+      {
+        path: "/:category",
+        component: LayoutProductsPage,
+      },
+    ],
+  },
+  {
+    path: "/women",
+    children: [
+      {
+        path: "/",
+        component: LayoutProductsPage,
+      },
+      {
+        path: "/:category",
+        component: LayoutProductsPage,
+      },
+    ],
+  },
+  {
+    path: "/kids",
+    children: [
+      {
+        path: "/",
+        component: LayoutProductsPage,
+      },
+      {
+        path: "/:category",
+        component: LayoutProductsPage,
+      },
+    ],
   },
   {
     path: "/products/:id",
@@ -39,6 +74,6 @@ export const routes: RouteDefinition[] = [
   },
   {
     path: "/checkout",
-    component: LayoutCheckoutPage,
+    component: CheckoutPage,
   },
 ];

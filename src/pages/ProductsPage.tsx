@@ -1,119 +1,243 @@
-import { Component, createSignal, onMount } from "solid-js";
-import { useParams, useSearchParams } from "@solidjs/router";
-import ProductCard from "../components/products/ProductCard";
-import { getProducts, getProductsByCategory } from "../data/products";
+import { Component, createSignal, createEffect, Show } from "solid-js";
+import { A, useParams, useSearchParams } from "@solidjs/router";
+import { getProducts } from "../data/products";
 import { Product } from "../types";
-import { Show } from "solid-js";
+
+type CategoryInfo = {
+  title: string;
+  description: string;
+};
+
+type CategoryDescriptions = {
+  [key: string]: CategoryInfo;
+};
+
+type FilterOptions = {
+  [key: string]: string[];
+};
+
+const CATEGORY_DESCRIPTIONS: CategoryDescriptions = {
+  coats: {
+    title: "Designer Coats for Men",
+    description:
+      "Statement pieces or winter warmers — we've got an extensive range of designer coats, covering all your favorite brands. Moncler and Canada Goose's signature insulating puffer jackets will shield you from the elements, whilst Thom Browne offers a mix of classic and contemporary styles.",
+  },
+  shoes: {
+    title: "Designer Shoes for Men",
+    description:
+      "Step into luxury with our curated selection of designer shoes. From classic leather oxfords to contemporary sneakers, discover footwear that combines style and craftsmanship from the world's leading brands.",
+  },
+  bags: {
+    title: "Designer Bags for Men",
+    description:
+      "Elevate your everyday carry with our selection of designer bags. From practical backpacks to sophisticated briefcases, find the perfect bag to match your style and needs.",
+  },
+  // Add more categories as needed
+};
+
+const FILTER_OPTIONS: FilterOptions = {
+  coats: [
+    "Single Breasted Coats",
+    "Burberry",
+    "AMI Paris",
+    "Trench Coats",
+    "Dolce & Gabbana",
+    "Double Breasted Coats",
+    "Polo Ralph Lauren",
+  ],
+  shoes: [
+    "Sneakers",
+    "Boots",
+    "Loafers",
+    "Oxford Shoes",
+    "Sandals",
+    "Slip-ons",
+    "Designer Shoes",
+  ],
+  bags: [
+    "Backpacks",
+    "Briefcases",
+    "Tote Bags",
+    "Messenger Bags",
+    "Travel Bags",
+    "Leather Bags",
+    "Designer Bags",
+  ],
+  // Add more categories as needed
+};
 
 const ProductsPage: Component = () => {
+  const params = useParams();
   const [searchParams] = useSearchParams();
   const [products, setProducts] = createSignal<Product[]>([]);
   const [loading, setLoading] = createSignal(true);
-  const [error, setError] = createSignal<string | null>(null);
-  const [selectedCategory, setSelectedCategory] = createSignal<string | null>(
-    searchParams.category ? String(searchParams.category) : null
-  );
+  const [selectedFilters, setSelectedFilters] = createSignal<string[]>([]);
 
-  const categories = ["clothing", "shoes", "accessories"];
+  const category = () => params.category || searchParams.category || "";
 
-  onMount(async () => {
-    try {
-      if (selectedCategory()) {
-        const categoryProducts = getProductsByCategory(selectedCategory()!);
-        setProducts(categoryProducts);
-      } else {
+  const categoryInfo = () =>
+    CATEGORY_DESCRIPTIONS[category() as keyof typeof CATEGORY_DESCRIPTIONS] ||
+    null;
+  const availableFilters = () =>
+    FILTER_OPTIONS[category() as keyof typeof FILTER_OPTIONS] || [];
+
+  createEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
         const allProducts = getProducts();
-        setProducts(allProducts);
+        setProducts(allProducts.filter((p) => p.category === category()));
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError("Failed to load products");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    fetchProducts();
   });
 
-  const handleCategoryChange = async (category: string | null) => {
-    setSelectedCategory(category);
-    setLoading(true);
-    try {
-      if (category) {
-        const categoryProducts = getProductsByCategory(category);
-        setProducts(categoryProducts);
-      } else {
-        const allProducts = getProducts();
-        setProducts(allProducts);
-      }
-    } catch (err) {
-      setError("Failed to load products");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+  const toggleFilter = (filter: string) => {
+    setSelectedFilters((prev) =>
+      prev.includes(filter)
+        ? prev.filter((f) => f !== filter)
+        : [...prev, filter]
+    );
   };
 
   return (
-    <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-serif mb-8">All Products</h1>
+    <div class="min-h-screen bg-white">
+      <Show
+        when={categoryInfo()}
+        fallback={
+          <div class="flex flex-col items-center justify-center min-h-[60vh]">
+            <h1 class="text-2xl font-farfetch mb-4">Page not found :(</h1>
+            <A href="/" class="text-black underline hover:opacity-70">
+              Return to Homepage
+            </A>
+          </div>
+        }
+      >
+        {/* Breadcrumb */}
+        <div class="max-w-[1920px] mx-auto px-12 py-4">
+          <div class="flex items-center space-x-2 text-sm">
+            <A href="/" class="hover:opacity-70">
+              Home
+            </A>
+            <span>/</span>
+            <A href="/men" class="hover:opacity-70">
+              Men
+            </A>
+            <span>/</span>
+            <span class="text-gray-500">{category()}</span>
+          </div>
+        </div>
 
-      <div class="mb-8">
-        <div class="flex flex-wrap gap-2">
-          <button
-            class={`px-4 py-2 text-sm uppercase tracking-wider ${
-              selectedCategory() === null
-                ? "bg-black text-white"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-            }`}
-            onClick={() => handleCategoryChange(null)}
-          >
-            All
-          </button>
-          {categories.map((category) => (
+        {/* Header Section */}
+        <div class="max-w-[1920px] mx-auto px-12 py-8">
+          <h1 class="text-[32px] font-farfetch font-light mb-4">
+            {categoryInfo()?.title}
+          </h1>
+          <p class="text-[16px] font-farfetch text-[#222] max-w-[800px] mb-8">
+            {categoryInfo()?.description}
+          </p>
+
+          {/* Filter Chips */}
+          <div class="flex flex-wrap gap-3 mb-8">
             <button
-              class={`px-4 py-2 text-sm uppercase tracking-wider ${
-                selectedCategory() === category
-                  ? "bg-black text-white"
-                  : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-              }`}
-              onClick={() => handleCategoryChange(category)}
+              class="px-4 py-2 border border-black text-sm font-farfetch flex items-center gap-2"
+              onClick={() => {}}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              All Filters
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
             </button>
-          ))}
-        </div>
-      </div>
-
-      <Show when={loading()}>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {Array(8)
-            .fill(0)
-            .map(() => (
-              <div class="group">
-                <div class="relative mb-4 overflow-hidden bg-gray-200 h-96"></div>
-                <div class="text-center">
-                  <div class="h-5 bg-gray-200 rounded mb-1 mx-auto w-3/4"></div>
-                  <div class="h-4 bg-gray-200 rounded w-1/4 mx-auto"></div>
-                </div>
-              </div>
+            {availableFilters().map((filter) => (
+              <button
+                class={`px-4 py-2 border text-sm font-farfetch hover:border-black transition-colors ${
+                  selectedFilters().includes(filter)
+                    ? "border-black"
+                    : "border-gray-300"
+                }`}
+                onClick={() => toggleFilter(filter)}
+              >
+                {filter}
+              </button>
             ))}
-        </div>
-      </Show>
+            <button
+              class="px-4 py-2 border border-gray-300 text-sm font-farfetch flex items-center gap-2"
+              onClick={() => {}}
+            >
+              Sort by
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+            </button>
+          </div>
 
-      <Show when={error()}>
-        <div class="text-center text-red-500 p-4">{error()}</div>
-      </Show>
-
-      <Show when={!loading() && !error() && products().length === 0}>
-        <div class="text-center py-12">
-          <p class="text-gray-600">No products found in this category.</p>
-        </div>
-      </Show>
-
-      <Show when={!loading() && !error() && products().length > 0}>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {products().map((product) => (
-            <ProductCard product={product} />
-          ))}
+          {/* Products Grid */}
+          <div class="grid grid-cols-4 gap-6">
+            {loading()
+              ? Array(8)
+                  .fill(0)
+                  .map(() => (
+                    <div class="animate-pulse">
+                      <div class="bg-gray-200 aspect-[3/4] mb-4" />
+                      <div class="h-4 bg-gray-200 w-1/2 mb-2" />
+                      <div class="h-4 bg-gray-200 w-3/4 mb-2" />
+                      <div class="h-4 bg-gray-200 w-1/4" />
+                    </div>
+                  ))
+              : products().map((product) => (
+                  <A href={`/products/${product._id}`} class="group">
+                    <div class="relative mb-4">
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        class="w-full aspect-[3/4] object-cover"
+                      />
+                      <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-6 w-6"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="1.5"
+                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-1">{product.brand}</p>
+                    <p class="text-sm mb-2">{product.name}</p>
+                    <p class="text-sm">${product.price}</p>
+                  </A>
+                ))}
+          </div>
         </div>
       </Show>
     </div>

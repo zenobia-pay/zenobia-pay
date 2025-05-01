@@ -9,8 +9,9 @@ export interface Product {
   price: number;
   imageUrl: string;
   category: string;
+  brand?: string;
   colors: string[];
-  sizes: string[];
+  sizes?: string[];
   featured: boolean;
   isNew?: boolean;
 }

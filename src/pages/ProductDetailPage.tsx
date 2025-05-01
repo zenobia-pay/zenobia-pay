@@ -11,29 +11,15 @@ const ProductDetailPage: Component = () => {
   const [product, setProduct] = createSignal<Product | null>(null);
   const [loading, setLoading] = createSignal(true);
   const [error, setError] = createSignal<string | null>(null);
-  const [selectedColor, setSelectedColor] = createSignal<string | null>(null);
   const [selectedSize, setSelectedSize] = createSignal<string | null>(null);
-  const [quantity, setQuantity] = createSignal(1);
+  const [sizeDropdownOpen, setSizeDropdownOpen] = createSignal(false);
   const [addingToCart, setAddingToCart] = createSignal(false);
   const navigate = useNavigate();
-
-  const formatPrice = (cents: number) => {
-    return `$${(cents / 100).toFixed(2)}`;
-  };
 
   onMount(async () => {
     try {
       const productData = getProductById(params.id);
       setProduct(productData || null);
-
-      // Set default color and size if available
-      if (productData && productData.colors && productData.colors.length > 0) {
-        setSelectedColor(productData.colors[0]);
-      }
-
-      if (productData && productData.sizes && productData.sizes.length > 0) {
-        setSelectedSize(productData.sizes[0]);
-      }
     } catch (err) {
       setError("Failed to load product");
       console.error(err);
@@ -47,13 +33,7 @@ const ProductDetailPage: Component = () => {
 
     setAddingToCart(true);
     try {
-      addToCart(
-        product()!,
-        quantity(),
-        selectedColor() || undefined,
-        selectedSize() || undefined
-      );
-      // Navigate to cart after a short delay to show the success state
+      addToCart(product()!, 1, undefined, selectedSize() || undefined);
       setTimeout(() => {
         navigate("/cart");
       }, 500);
@@ -62,177 +42,156 @@ const ProductDetailPage: Component = () => {
     }
   };
 
+  const handleAddToWishlist = () => {
+    // Implement wishlist functionality
+  };
+
   return (
-    <div class="container mx-auto px-4 py-8">
+    <div class="max-w-[1920px] mx-auto">
       <Show when={loading()}>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div class="bg-gray-200 h-[600px] rounded"></div>
-          <div>
-            <div class="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
-            <div class="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
-            <div class="h-4 bg-gray-200 rounded w-full mb-2"></div>
-            <div class="h-4 bg-gray-200 rounded w-5/6 mb-6"></div>
-            <div class="mb-6">
-              <div class="h-6 bg-gray-200 rounded w-24 mb-2"></div>
-              <div class="flex gap-2">
-                {Array(4)
-                  .fill(0)
-                  .map(() => (
-                    <div class="h-10 w-10 bg-gray-300 rounded"></div>
-                  ))}
-              </div>
+        <div class="grid grid-cols-2 gap-8 px-12 py-8">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-100 h-[600px]" />
+            <div class="bg-gray-100 h-[600px]" />
+          </div>
+          <div class="py-8">
+            <div class="h-8 bg-gray-100 w-3/4 mb-4" />
+            <div class="h-6 bg-gray-100 w-1/4 mb-8" />
+            <div class="h-12 bg-gray-100 w-full mb-8" />
+            <div class="space-y-2">
+              {Array(4)
+                .fill(0)
+                .map(() => (
+                  <div class="h-12 bg-gray-100 w-full" />
+                ))}
             </div>
-            <div class="mb-6">
-              <div class="h-6 bg-gray-200 rounded w-24 mb-2"></div>
-              <div class="flex gap-2">
-                {Array(4)
-                  .fill(0)
-                  .map(() => (
-                    <div class="h-10 w-16 bg-gray-300 rounded"></div>
-                  ))}
-              </div>
-            </div>
-            <div class="mb-6">
-              <div class="h-6 bg-gray-200 rounded w-24 mb-2"></div>
-              <div class="h-12 bg-gray-300 rounded w-24"></div>
-            </div>
-            <div class="h-12 bg-gray-200 rounded w-full"></div>
           </div>
         </div>
       </Show>
 
-      <Show when={error() || !product()}>
-        <div class="text-center text-red-500 p-4">
-          {error() || "Product not found"}
-        </div>
-        <div class="text-center mt-4">
-          <A href="/products" class="text-black underline">
+      <Show when={error()}>
+        <div class="text-center py-12">
+          <p class="text-red-600 mb-4">{error()}</p>
+          <A href="/products" class="text-black underline hover:text-gray-600">
             Return to Products
           </A>
         </div>
       </Show>
 
       <Show when={!loading() && !error() && product()}>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
+        <div class="grid grid-cols-2 gap-8 px-12 py-8">
+          {/* Left Column - Images */}
+          <div class="grid grid-cols-2 gap-4">
             <img
               src={product()!.imageUrl}
-              alt={product()!.name}
-              class="w-full h-auto object-cover"
+              alt={`${product()!.name} - View 1`}
+              class="w-full aspect-square object-contain bg-[#f8f8f8]"
+            />
+            <img
+              src={product()!.imageUrl}
+              alt={`${product()!.name} - View 2`}
+              class="w-full aspect-square object-contain bg-[#f8f8f8]"
             />
           </div>
 
-          <div>
-            <h1 class="text-3xl font-serif mb-2">{product()!.name}</h1>
-            <p class="text-2xl mb-6">{formatPrice(product()!.price)}</p>
+          {/* Right Column - Product Info */}
+          <div class="py-8 max-w-[480px]">
+            <Show when={product()!.isNew}>
+              <p class="text-sm mb-2">Last 1 left — make it yours!</p>
+            </Show>
 
-            {product()!.isNew && (
-              <span class="inline-block bg-red-500 text-white text-xs px-2 py-1 rounded mb-4">
-                New
+            <h1 class="text-xl font-light mb-1">{product()!.name}</h1>
+            <p class="text-base mb-4">{product()!.description}</p>
+
+            <p class="text-xl mb-8">
+              ${product()!.price}
+              <span class="text-sm ml-2 text-gray-600">
+                Import duties included
               </span>
-            )}
+            </p>
 
-            <p class="text-gray-600 mb-6">{product()!.description}</p>
-
-            {product()!.colors && product()!.colors.length > 0 && (
-              <div class="mb-6">
-                <h3 class="text-sm font-medium mb-2">Color</h3>
-                <div class="flex flex-wrap gap-2">
-                  {product()!.colors.map((color) => (
-                    <button
-                      class={`px-4 py-2 border ${
-                        selectedColor() === color
-                          ? "border-black"
-                          : "border-gray-300"
-                      }`}
-                      onClick={() => setSelectedColor(color)}
-                    >
-                      {color}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {product()!.sizes && product()!.sizes.length > 0 && (
-              <div class="mb-6">
-                <h3 class="text-sm font-medium mb-2">Size</h3>
-                <div class="flex flex-wrap gap-2">
-                  {product()!.sizes.map((size) => (
-                    <button
-                      class={`px-4 py-2 border ${
-                        selectedSize() === size
-                          ? "border-black"
-                          : "border-gray-300"
-                      }`}
-                      onClick={() => setSelectedSize(size)}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div class="mb-6">
-              <h3 class="text-sm font-medium mb-2">Quantity</h3>
-              <div class="flex items-center border border-gray-300 w-32">
+            <div class="mb-8">
+              <p class="text-sm mb-2">One Size available</p>
+              <div class="relative">
                 <button
-                  class="px-3 py-2 text-gray-500 hover:text-gray-700"
-                  onClick={() => setQuantity(Math.max(1, quantity() - 1))}
+                  class="w-full py-3 px-4 border border-gray-300 text-left text-sm flex justify-between items-center hover:border-black"
+                  onClick={() => setSizeDropdownOpen(!sizeDropdownOpen())}
                 >
-                  -
+                  <span>{selectedSize() || "Select size"}</span>
+                  <svg
+                    class={`w-5 h-5 transition-transform ${
+                      sizeDropdownOpen() ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </button>
-                <span class="flex-grow text-center">{quantity()}</span>
-                <button
-                  class="px-3 py-2 text-gray-500 hover:text-gray-700"
-                  onClick={() => setQuantity(quantity() + 1)}
-                >
-                  +
-                </button>
+
+                <Show when={sizeDropdownOpen()}>
+                  <div class="absolute top-full left-0 right-0 bg-white border border-gray-300 mt-1 z-10">
+                    {product()!.sizes?.map((size) => (
+                      <button
+                        class="w-full py-3 px-4 text-left text-sm hover:bg-gray-50"
+                        onClick={() => {
+                          setSelectedSize(size);
+                          setSizeDropdownOpen(false);
+                        }}
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </Show>
               </div>
             </div>
 
-            <button
-              class="w-full bg-black text-white px-6 py-3 text-sm uppercase tracking-wider hover:bg-gray-800 mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={handleAddToCart}
-              disabled={addingToCart()}
-            >
-              {addingToCart() ? (
-                <span class="flex items-center justify-center">
-                  <svg
-                    class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Adding to Cart...
-                </span>
-              ) : (
-                "Add to Cart"
-              )}
-            </button>
+            <div class="space-y-3">
+              <button
+                onClick={handleAddToCart}
+                disabled={addingToCart() || !selectedSize()}
+                class="w-full bg-black text-white py-4 text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {addingToCart() ? "Adding to Bag..." : "Add To Bag"}
+              </button>
+              <button
+                onClick={handleAddToWishlist}
+                class="w-full border border-black py-4 text-sm hover:bg-black hover:text-white transition-colors flex items-center justify-center gap-2"
+              >
+                <span>Wishlist</span>
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="1.5"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                  />
+                </svg>
+              </button>
+            </div>
 
-            <div class="border-t border-gray-200 pt-4">
-              <h3 class="text-sm font-medium mb-2">Product Details</h3>
-              <ul class="text-sm text-gray-600 space-y-1">
-                <li>Category: {product()!.category}</li>
-                <li>SKU: {product()!._id}</li>
-              </ul>
+            <div class="mt-8">
+              <p class="text-sm mb-2">Estimated delivery</p>
+              <p class="text-sm text-gray-600">May 7 - May 9</p>
+            </div>
+
+            <div class="mt-4 p-4 bg-[#f8f8f8]">
+              <p class="text-sm">
+                Free shipping on orders over $200 | Plus free returns for 30
+                days
+              </p>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import { Component, JSX } from "solid-js";
-import Header from "./Header";
+import Navigation from "./Navigation";
 import Footer from "./Footer";
 
 interface MainLayoutProps {
@@ -8,8 +8,8 @@ interface MainLayoutProps {
 
 const MainLayout: Component<MainLayoutProps> = (props) => {
   return (
-    <div class="min-h-screen flex flex-col bg-white text-gray-900 font-serif">
-      <Header />
+    <div class="min-h-screen flex flex-col bg-white text-gray-900">
+      <Navigation />
       <main class="flex-grow">{props.children}</main>
       <Footer />
     </div>
