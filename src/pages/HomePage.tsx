@@ -1,8 +1,11 @@
-import { Component } from "solid-js";
+import { Component, createSignal } from "solid-js";
 import { A } from "@solidjs/router";
-import FeaturedProducts from "../components/products/FeaturedProducts";
+import { getFeaturedProducts } from "../data/products";
 
 const HomePage: Component = () => {
+  const featuredProducts = getFeaturedProducts();
+  const [hoveredProduct, setHoveredProduct] = createSignal<string | null>(null);
+
   return (
     <div class="min-h-screen bg-white">
       <main class="max-w-[1920px] mx-auto px-12">
@@ -38,125 +41,54 @@ const HomePage: Component = () => {
         {/* Product Grid Section */}
         <div class="mb-16">
           <div class="grid grid-cols-4 gap-6">
-            <A href="/products/1" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/221404M192009_1/prada-brown-striped-bowling-shirt.jpg"
-                  alt="Prada Striped Bowling Shirt"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            {featuredProducts.map((product) => (
+              <A
+                href={`/products/${product._id}`}
+                class="group relative"
+                onMouseEnter={() => setHoveredProduct(product._id)}
+                onMouseLeave={() => setHoveredProduct(null)}
+              >
+                <div class="relative mb-4 before:content-[''] before:absolute before:inset-0 before:bg-[rgba(34,34,34,.04)]">
+                  <div class="relative w-full aspect-[3/4]">
+                    <img
+                      src={product.secondaryImageUrl}
+                      alt={product.name}
+                      class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.66,0,0.2,1)] group-hover:opacity-100"
                     />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Prada</p>
-              <p class="text-sm mb-2">Cotton bowling shirt</p>
-              <p class="text-sm">$1,750</p>
-            </A>
-
-            <A href="/products/2" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/231404M134001_1/prada-brown-bucket-hat.jpg"
-                  alt="Prada Bucket Hat"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      class="absolute inset-0 w-full h-full object-cover opacity-100 transition-opacity duration-300 [transition-timing-function:cubic-bezier(0.66,0,0.2,1)] group-hover:opacity-0"
                     />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Prada</p>
-              <p class="text-sm mb-2">Cotton bucket hat</p>
-              <p class="text-sm">$850</p>
-            </A>
-
-            <A href="/products/3" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/231404M190000_1/prada-brown-trousers.jpg"
-                  alt="Prada Trousers"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Prada</p>
-              <p class="text-sm mb-2">Belted trousers</p>
-              <p class="text-sm">$4,800</p>
-            </A>
-
-            <A href="/products/4" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/231404M234001_1/prada-beige-slides.jpg"
-                  alt="Prada Slides"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Prada</p>
-              <p class="text-sm mb-2">Logo slides</p>
-              <p class="text-sm">$1,250</p>
-            </A>
+                  </div>
+                  <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-6 w-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="1.5"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <p class="text-sm text-gray-500 mb-1">
+                  {product.brand || "Brand"}
+                </p>
+                <p class="text-sm mb-2">{product.name}</p>
+                <p class="text-sm">${(product.price / 100).toLocaleString()}</p>
+              </A>
+            ))}
           </div>
           <div class="text-center mt-8">
             <button class="border border-black text-[13px] px-8 py-3 uppercase tracking-wider hover:bg-black hover:text-white transition-all duration-300">
-              Shop Prada
+              Shop All
             </button>
           </div>
         </div>
@@ -186,135 +118,6 @@ const HomePage: Component = () => {
                 Shop Now
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* New Arrivals Section */}
-        <div class="mb-16">
-          <h3 class="text-[16px] mb-8">
-            New in: handpicked daily from the world's best brands and boutiques
-          </h3>
-          <div class="grid grid-cols-4 gap-6">
-            <A href="/products/5" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/232338M513001_1/versace-black-leather-jacket.jpg"
-                  alt="Versace Leather Jacket"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Versace</p>
-              <p class="text-sm mb-2">Leather jacket</p>
-              <p class="text-sm">$3,900</p>
-            </A>
-
-            <A href="/products/6" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/232338M484001_1/valentino-garavani-black-pouch.jpg"
-                  alt="Valentino Garavani Pouch"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Valentino Garavani</p>
-              <p class="text-sm mb-2">VLOGO SIGNATURE GRAINY CALFSKIN POUCH</p>
-              <p class="text-sm">$1,250</p>
-            </A>
-
-            <A href="/products/7" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/232451M192003_1/versace-white-silk-shirt.jpg"
-                  alt="Versace Silk Shirt"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Versace</p>
-              <p class="text-sm mb-2">Coral Reef button-up shirt</p>
-              <p class="text-sm">$750</p>
-            </A>
-
-            <A href="/products/8" class="group">
-              <div class="relative mb-4">
-                <img
-                  src="https://img.ssensemedia.com/images/b_white,c_lpad,g_center,h_1412,w_940/c_scale,h_960/f_auto,dpr_2.0/232451M237001_1/martine-rose-black-slides.jpg"
-                  alt="Martine Rose Slides"
-                  class="w-full aspect-[3/4] object-cover"
-                />
-                <button class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="1.5"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
-                </button>
-              </div>
-              <p class="text-sm text-gray-500 mb-1">Martine Rose</p>
-              <p class="text-sm mb-2">monogram-embossed leather slides</p>
-              <p class="text-sm">$870</p>
-            </A>
-          </div>
-          <div class="text-center mt-8">
-            <button class="border border-black text-[13px] px-8 py-3 uppercase tracking-wider hover:bg-black hover:text-white transition-all duration-300">
-              Shop Now
-            </button>
           </div>
         </div>
       </main>

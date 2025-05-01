@@ -88,7 +88,7 @@ const ProductDetailPage: Component = () => {
               class="w-full aspect-square object-contain bg-[#f8f8f8]"
             />
             <img
-              src={product()!.imageUrl}
+              src={product()!.secondaryImageUrl}
               alt={`${product()!.name} - View 2`}
               class="w-full aspect-square object-contain bg-[#f8f8f8]"
             />
@@ -96,22 +96,12 @@ const ProductDetailPage: Component = () => {
 
           {/* Right Column - Product Info */}
           <div class="py-8 max-w-[480px]">
-            <Show when={product()!.isNew}>
-              <p class="text-sm mb-2">Last 1 left — make it yours!</p>
-            </Show>
-
             <h1 class="text-xl font-light mb-1">{product()!.name}</h1>
             <p class="text-base mb-4">{product()!.description}</p>
 
-            <p class="text-xl mb-8">
-              ${product()!.price}
-              <span class="text-sm ml-2 text-gray-600">
-                Import duties included
-              </span>
-            </p>
+            <p class="text-xl mb-8">${product()!.price / 100}</p>
 
             <div class="mb-8">
-              <p class="text-sm mb-2">One Size available</p>
               <div class="relative">
                 <button
                   class="w-full py-3 px-4 border border-gray-300 text-left text-sm flex justify-between items-center hover:border-black"

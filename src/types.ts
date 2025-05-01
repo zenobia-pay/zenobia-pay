@@ -14,6 +14,7 @@ export interface Product {
   sizes?: string[];
   featured: boolean;
   isNew?: boolean;
+  secondaryImageUrl?: string;
 }
 
 export interface CartItem {
