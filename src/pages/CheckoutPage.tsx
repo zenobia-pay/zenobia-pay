@@ -279,7 +279,23 @@ const CheckoutPage: Component = () => {
                               >
                                 <option value="">Select State</option>
                                 <option value="NY">New York</option>
-                                {/* Add other states */}
+                                <option value="CA">California</option>
+                                <option value="TX">Texas</option>
+                                <option value="FL">Florida</option>
+                                <option value="IL">Illinois</option>
+                                <option value="OH">Ohio</option>
+                                <option value="PA">Pennsylvania</option>
+                                <option value="VA">Virginia</option>
+                                <option value="WA">Washington</option>
+                                <option value="WV">West Virginia</option>
+                                <option value="WI">Wisconsin</option>
+                                <option value="WY">Wyoming</option>
+                                <option value="AZ">Arizona</option>
+                                <option value="AR">Arkansas</option>
+                                <option value="CO">Colorado</option>
+                                <option value="CT">Connecticut</option>
+                                <option value="DE">Delaware</option>
+                                <option value="DC">District of Columbia</option>
                               </select>
                               <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
                                 <svg
@@ -489,7 +505,7 @@ const CheckoutPage: Component = () => {
                                 <img
                                   src={
                                     selectedPayment() === "zenobia"
-                                      ? "/zenobia-logo.png"
+                                      ? "https://zenobiapay.com/zenobia-pay.png"
                                       : selectedPayment() === "alipay"
                                       ? "https://upload.wikimedia.org/wikipedia/en/c/c7/Alipay_logo_%282020%29.svg"
                                       : selectedPayment() === "paypal"
@@ -612,11 +628,10 @@ const CheckoutPage: Component = () => {
                             onClick={() => handlePaymentSelect("zenobia")}
                           >
                             <img
-                              src="/zenobia-logo.png"
+                              src="https://zenobiapay.com/zenobia-pay.png"
                               alt="Zenobia Pay"
                               class="h-8"
                             />
-                            <span class="text-sm">Zenobia Pay</span>
                           </button>
                         </div>
 
