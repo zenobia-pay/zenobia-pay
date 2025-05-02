@@ -63,7 +63,6 @@ const CheckoutPage: Component = () => {
 
   const handlePaymentSuccess = () => {
     setPaymentSuccess(true);
-    clearCart();
   };
 
   const handlePaymentError = (error: Error) => {
