@@ -115,7 +115,7 @@ const CheckoutPage: Component = () => {
                 href="/"
                 class="text-2xl font-normal tracking-widest font-farfetch"
               >
-                NOT FARFETCH
+                Merch by Zenobia
               </A>
               <div class="flex items-center gap-2">
                 <span class="text-sm">Need help?</span>

@@ -63,7 +63,7 @@ const Navigation: Component = () => {
             href="/"
             class="text-2xl font-normal tracking-widest font-farfetch"
           >
-            NOT FARFETCH
+            Merch by Zenobia
           </A>
 
           <div class="flex items-center space-x-6">

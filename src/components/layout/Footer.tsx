@@ -7,7 +7,7 @@ const Footer: Component = () => {
       <div class="container mx-auto px-4">
         {/* Newsletter Signup */}
         <div class="max-w-xl mb-16">
-          <h2 class="text-2xl mb-4">NOT FARFETCH emails</h2>
+          <h2 class="text-2xl mb-4">Merch by Zenobia emails</h2>
           <p class="text-sm text-gray-600 mb-4">
             Sign up for promotions, tailored new arrivals, stock updates and
             more – straight to your inbox
@@ -70,14 +70,14 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/promise" class="text-sm hover:text-gray-600">
-                  NOT FARFETCH Customer Promise
+                  Merch by Zenobia Customer Promise
                 </A>
               </li>
             </ul>
           </div>
 
           <div>
-            <h3 class="font-medium mb-6">About NOT FARFETCH</h3>
+            <h3 class="font-medium mb-6">About Merch by Zenobia</h3>
             <ul class="space-y-4">
               <li>
                 <A href="/about" class="text-sm hover:text-gray-600">
@@ -86,7 +86,7 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/partners" class="text-sm hover:text-gray-600">
-                  NOT FARFETCH partner boutiques
+                  Merch by Zenobia partner boutiques
                 </A>
               </li>
               <li>
@@ -96,7 +96,7 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/app" class="text-sm hover:text-gray-600">
-                  NOT FARFETCH app
+                  Merch by Zenobia app
                 </A>
               </li>
               <li>
@@ -122,7 +122,7 @@ const Footer: Component = () => {
               </li>
               <li>
                 <A href="/membership" class="text-sm hover:text-gray-600">
-                  NOT FARFETCH membership
+                  Merch by Zenobia membership
                 </A>
               </li>
               <li>
@@ -166,7 +166,7 @@ const Footer: Component = () => {
           <div>
             <div class="mb-12">
               <h3 class="font-medium mb-6">
-                NOT FARFETCH Sustainable Services
+                Merch by Zenobia Sustainable Services
               </h3>
               <ul class="space-y-4">
                 <li>
@@ -270,12 +270,12 @@ const Footer: Component = () => {
             </A>
           </div>
           <p class="text-xs text-gray-500 mt-4">
-            'NOT FARFETCH' and the 'NOT FARFETCH' logo are trade marks of NOT
-            FARFETCH UK Limited and are registered in numerous jurisdictions
-            around the world.
+            'Merch by Zenobia' and the 'Merch by Zenobia' logo are trade marks
+            of NOT FARFETCH UK Limited and are registered in numerous
+            jurisdictions around the world.
           </p>
           <p class="text-xs text-gray-500 mt-2">
-            © Copyright 2025 NOT FARFETCH UK Limited. All rights reserved.
+            © Copyright 2025 Merch by Zenobia UK Limited. All rights reserved.
           </p>
         </div>
       </div>
