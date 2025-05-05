@@ -65,8 +65,8 @@ const CheckoutPage: Component = () => {
   const handlePaymentSuccess = (transfer, status) => {
     setPaymentSuccess(true);
     console.log("Finished payment", transfer, status);
-    if (status?.transfer?.customerName) {
-      setCustomerName(status.transfer.customerName);
+    if (status?.customerName) {
+      setCustomerName(status.customerName);
     }
   };
 
