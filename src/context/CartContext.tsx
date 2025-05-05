@@ -52,7 +52,14 @@ const defaultProduct: Product = {
 
 export const CartProvider: Component<{ children: JSX.Element }> = (props) => {
   // Initialize with default items
-  const [items, setItems] = createSignal<CartItem[]>([]);
+  const [items, setItems] = createSignal<CartItem[]>([
+    {
+      product: defaultProduct,
+      quantity: 1,
+      color: "White",
+      size: "S",
+    },
+  ]);
 
   const addToCart = (
     product: Product,

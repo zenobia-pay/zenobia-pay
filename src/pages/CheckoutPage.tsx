@@ -27,6 +27,7 @@ const CheckoutPage: Component = () => {
   const [paymentMethodConfirmed, setPaymentMethodConfirmed] =
     createSignal(false);
   const [paymentSuccess, setPaymentSuccess] = createSignal(false);
+  const [customerName, setCustomerName] = createSignal<string | null>(null);
   const navigate = useNavigate();
 
   const formatPrice = (cents: number) => {
@@ -61,8 +62,12 @@ const CheckoutPage: Component = () => {
     setCurrentStep("delivery");
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (transfer, status) => {
     setPaymentSuccess(true);
+    console.log("Finished payment", transfer, status);
+    if (status?.transfer?.customerName) {
+      setCustomerName(status.transfer.customerName);
+    }
   };
 
   const handlePaymentError = (error: Error) => {
@@ -783,7 +788,9 @@ const CheckoutPage: Component = () => {
                 </svg>
               </div>
               <h1 class="text-3xl font-light mb-4">
-                Congratulations on your purchase!
+                {customerName()
+                  ? `Congrats, ${customerName()}!`
+                  : "Congratulations on your purchase!"}
               </h1>
               <p class="text-gray-600">
                 We'll send you an email confirmation with tracking details
