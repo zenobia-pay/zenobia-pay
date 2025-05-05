@@ -2,6 +2,7 @@ export type TransferStatus = {
   id: string;
   status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED";
   details?: string;
+  customerName?: string;
   updatedAt: number; // timestamp
 };
 

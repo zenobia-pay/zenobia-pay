@@ -341,7 +341,8 @@ export class TransferStatusServer {
   async updateTransferStatus(
     transferId: string,
     status: "PENDING" | "PROCESSING" | "COMPLETED" | "FAILED",
-    details?: string
+    details?: string,
+    customerName?: string
   ): Promise<TransferStatus> {
     const now = Date.now();
     const transfer: TransferStatus = {
@@ -349,6 +350,7 @@ export class TransferStatusServer {
       status,
       details,
       updatedAt: now,
+      customerName,
     };
 
     console.log(`Updating transfer ${transferId} to status: ${status}`);
@@ -1265,132 +1267,6 @@ export class TransferStatusServer {
       );
     }
 
-    // Handle create transfer endpoint
-    // if (path === "/create" && request.method === "POST") {
-    //   try {
-    //     console.log("Processing create request");
-
-    //     // Extract the token from the request body
-    //     const body = (await request.json()) as {
-    //       token?: string; // payload.signature format
-    //     };
-
-    //     const { token } = body;
-
-    //     // Require token
-    //     if (!token) {
-    //       return new Response(
-    //         JSON.stringify({
-    //           error: "Missing required field. Request must include 'token'.",
-    //         }),
-    //         {
-    //           status: 400,
-    //           headers: responseHeaders,
-    //         }
-    //       );
-    //     }
-
-    //     // Verify the signature
-    //     const isValidSignature = await this.verifyPayloadSignature(
-    //       token,
-    //       HmacType.SUBSCRIBE
-    //     );
-
-    //     if (!isValidSignature) {
-    //       return new Response(
-    //         JSON.stringify({
-    //           error: "Invalid signature or expired credentials",
-    //         }),
-    //         {
-    //           status: 401,
-    //           headers: responseHeaders,
-    //         }
-    //       );
-    //     }
-
-    //     // Decode the payload
-    //     let decodedPayload;
-    //     try {
-    //       const [encodedPayload] = token.split(".");
-    //       const payloadStr = atob(encodedPayload);
-    //       console.log("Decoded payload string:", payloadStr);
-    //       decodedPayload = JSON.parse(payloadStr);
-    //     } catch (e) {
-    //       console.error("Error decoding or parsing payload:", e);
-    //       return new Response(
-    //         JSON.stringify({ error: "Invalid payload format" }),
-    //         {
-    //           status: 400,
-    //           headers: responseHeaders,
-    //         }
-    //       );
-    //     }
-
-    //     // Extract required fields from the payload
-    //     const {
-    //       transferRequestId,
-    //       merchantId,
-    //       expiry,
-    //       status = "PENDING",
-    //       details,
-    //     } = decodedPayload;
-
-    //     // Validate required fields
-    //     if (!transferRequestId || !merchantId || !expiry) {
-    //       return new Response(
-    //         JSON.stringify({
-    //           error: "Incomplete payload. Missing required fields.",
-    //         }),
-    //         {
-    //           status: 400,
-    //           headers: responseHeaders,
-    //         }
-    //       );
-    //     }
-
-    //     // Check if the expiry time has passed
-    //     const now = Math.floor(Date.now() / 1000);
-    //     if (now > expiry) {
-    //       return new Response(
-    //         JSON.stringify({
-    //           error: "Request has expired",
-    //         }),
-    //         {
-    //           status: 401,
-    //           headers: responseHeaders,
-    //         }
-    //       );
-    //     }
-
-    //     // At this point the request is authenticated and valid
-    //     // Process the transfer creation
-    //     const result = await this.createTransferRequest(
-    //       transferRequestId,
-    //       status,
-    //       details || `Transfer created at ${new Date().toISOString()}`
-    //     );
-
-    //     const websocket_url = generateWebSocketUrl(transferRequestId);
-
-    //     return new Response(
-    //       JSON.stringify({
-    //         ...result,
-    //         websocket_url,
-    //       }),
-    //       {
-    //         status: 200,
-    //         headers: responseHeaders,
-    //       }
-    //     );
-    //   } catch (error) {
-    //     console.error("Error creating transfer:", error);
-    //     return new Response(JSON.stringify({ error: "Invalid request" }), {
-    //       status: 400,
-    //       headers: responseHeaders,
-    //     });
-    //   }
-    // }
-
     // Handle status update endpoint
     if (path === "/update" && request.method === "POST") {
       try {
@@ -1399,9 +1275,10 @@ export class TransferStatusServer {
         // Extract the token from the request body
         const body = (await request.json()) as {
           token?: string; // payload.signature format
+          customerName?: string;
         };
 
-        const { token } = body;
+        const { token, customerName } = body;
 
         // Require token
         if (!token) {
@@ -1452,7 +1329,10 @@ export class TransferStatusServer {
         }
 
         // Verify the signature
-        const isValidSignature = await this.verifyPayloadSignature(token);
+        const isValidSignature = await this.verifyPayloadSignature(
+          token,
+          HmacType.UPDATE
+        );
 
         if (!isValidSignature) {
           return new Response(
@@ -1471,7 +1351,8 @@ export class TransferStatusServer {
         const result = await this.updateTransferStatus(
           transferRequestId,
           status,
-          details || `Updated to ${status}`
+          details || `Updated to ${status}`,
+          customerName
         );
 
         const websocket_url = generateWebSocketUrl(transferRequestId);
