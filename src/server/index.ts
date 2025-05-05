@@ -1278,7 +1278,7 @@ export class TransferStatusServer {
           customerName?: string;
         };
 
-        const { token, customerName } = body;
+        const { token } = body;
 
         // Require token
         if (!token) {
@@ -1312,7 +1312,7 @@ export class TransferStatusServer {
         }
 
         // Extract required fields from the payload
-        const { transferRequestId, merchantId, status, details } =
+        const { transferRequestId, merchantId, status, details, customerName } =
           decodedPayload;
 
         // Validate required fields
