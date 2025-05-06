@@ -19,6 +19,22 @@ const products: Product[] = [
     isNew: true,
   },
   {
+    _id: "20",
+    name: "RayBan Wayfarer",
+    brand: "RayBan",
+    slug: { _type: "slug", current: "rayban-wayfarer" },
+    description: "RayBan Wayfarer in black. Made in Italy.",
+    price: 1,
+    imageUrl:
+      "https://cdn-images.farfetch-contents.com/29/56/96/34/29569634_58557936_1000.jpg",
+    secondaryImageUrl:
+      "https://cdn-images.farfetch-contents.com/29/56/96/34/29569634_58557924_1000.jpg",
+    category: "accessories",
+    colors: [],
+    featured: true,
+    isNew: true,
+  },
+  {
     _id: "2",
     name: "Cotton bucket hat",
     brand: "Prada",
