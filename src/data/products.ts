@@ -31,6 +31,7 @@ const products: Product[] = [
       "https://www.finestresullarte.info/rivista/immagini/2023/2375/ray-ban-wayfarer-indossati.jpg",
     category: "accessories",
     colors: [],
+    sizes: ["One size"],
     featured: true,
     isNew: true,
   },
