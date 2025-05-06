@@ -23,7 +23,7 @@ const products: Product[] = [
     name: "RayBan Wayfarer",
     brand: "RayBan",
     slug: { _type: "slug", current: "rayban-wayfarer" },
-    description: "RayBan Wayfarer in black. Made in Italy.",
+    description: "RayBan Wayfarer in black.",
     price: 1,
     imageUrl:
       "https://images-na.ssl-images-amazon.com/images/I/41rNPPdCzqL._SLDPMOBCAROUSELAUTOCROP288221_MCnd_AC_SR462,693_.jpg",
