@@ -26,7 +26,7 @@ const products: Product[] = [
     description: "RayBan Wayfarer in black. Made in Italy.",
     price: 1,
     imageUrl:
-      "https://images.ray-ban.com/is/image/RayBan/805289126577_shad_qt.png?impolicy=SEO_16x9",
+      "https://www.gentlemansgazette.com/wp-content/uploads/2016/08/Wayfarers-work-for-many-face-shapes-900x900.jpg",
     secondaryImageUrl:
       "https://www.finestresullarte.info/rivista/immagini/2023/2375/ray-ban-wayfarer-indossati.jpg",
     category: "accessories",
