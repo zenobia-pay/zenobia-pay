@@ -24,12 +24,11 @@ const HomePage: Component = () => {
           <div class="w-1/2 flex items-center justify-center bg-white">
             <div class="max-w-[480px] px-16">
               <h1 class="text-[42px] leading-[1.1] font-light mb-6 font-farfetch">
-                The art of packing
+                The art of living
               </h1>
               <p class="text-[16px] leading-[1.5] mb-8 text-[#222] font-farfetch">
-                Just in time for vacation season, FARFETCH joins three New
-                York-based creatives as they edit their favorite pieces from the
-                Prada Days of Summer collection for the perfect getaway
+                Just in time for vacation season, get some incredible merch for
+                sale.
               </p>
               <button class="border border-black text-[13px] px-8 py-3 uppercase tracking-wider hover:bg-black hover:text-white transition-all duration-300">
                 Explore More
