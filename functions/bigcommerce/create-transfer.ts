@@ -11,12 +11,48 @@ interface BigCommerceStore {
   url_endpoint: string
 }
 
+// List of allowed BigCommerce domains
+const ALLOWED_ORIGINS = [
+  "https://*.mybigcommerce.com",
+  "https://*.bigcommerce.com",
+]
+
+function isAllowedOrigin(origin: string): boolean {
+  return ALLOWED_ORIGINS.some((pattern) => {
+    const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$")
+    return regex.test(origin)
+  })
+}
+
 export async function onRequest(context: EventContext<Env, string, unknown>) {
   const { request, env } = context
+  const origin = request.headers.get("Origin")
+
+  // Handle CORS preflight requests
+  if (request.method === "OPTIONS") {
+    if (!origin || !isAllowedOrigin(origin)) {
+      return new Response(null, { status: 403 })
+    }
+
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400",
+      },
+    })
+  }
 
   // Only allow POST requests
   if (request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 })
+  }
+
+  // Check origin for actual requests
+  if (!origin || !isAllowedOrigin(origin)) {
+    return new Response("Forbidden", { status: 403 })
   }
 
   try {
@@ -65,7 +101,10 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     // This will depend on your specific requirements for creating transfers
 
     return new Response(JSON.stringify({ success: true }), {
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": origin,
+      },
     })
   } catch (error) {
     console.error("Create transfer error:", error)
