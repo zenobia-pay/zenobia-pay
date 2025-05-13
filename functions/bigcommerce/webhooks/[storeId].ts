@@ -227,7 +227,7 @@ async function handleWebhook(
           },
           body: JSON.stringify({
             payment_method: "Zenobia",
-            status_id: 2,
+            status_id: 7,
           }),
         }
       )
