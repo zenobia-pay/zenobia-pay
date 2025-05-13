@@ -46,7 +46,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Store the store data in D1
     const now = Date.now()
-    await env.DB.prepare(
+    await env.MERCHANTS_OAUTH.prepare(
       `
       INSERT INTO bigcommerce_stores (
         store_hash,
