@@ -232,7 +232,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       // },
     }
 
-    console.log("Creating transfer request with body:", body)
+    console.log("Creating transfer request with body:", transferRequestBody)
 
     // Create transfer request with Zenobia Pay
     const transferResponse = await fetch(
@@ -246,8 +246,6 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         body: JSON.stringify(transferRequestBody),
       }
     )
-
-    console.log("Transfer response:", transferResponse)
 
     if (!transferResponse.ok) {
       const error = await transferResponse.text()
