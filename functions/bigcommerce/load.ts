@@ -21,6 +21,35 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   const { request, env } = context
   const url = new URL(request.url)
 
+  // Handle form submission
+  if (request.method === "POST") {
+    const formData = await request.formData()
+    const storeHash = formData.get("store_hash")
+    const zenobiaClientId = formData.get("zenobia_client_id")
+    const zenobiaClientSecret = formData.get("zenobia_client_secret")
+
+    if (!storeHash || !zenobiaClientId || !zenobiaClientSecret) {
+      return new Response("Missing required fields", { status: 400 })
+    }
+
+    try {
+      await env.MERCHANTS_OAUTH.prepare(
+        `UPDATE bigcommerce_stores
+         SET zenobia_client_id = ?,
+             zenobia_client_secret = ?,
+             updated_at = ?
+         WHERE store_hash = ?`
+      )
+        .bind(zenobiaClientId, zenobiaClientSecret, Date.now(), storeHash)
+        .run()
+
+      return new Response("Credentials updated successfully", { status: 200 })
+    } catch (error) {
+      console.error("Failed to update credentials:", error)
+      return new Response("Failed to update credentials", { status: 500 })
+    }
+  }
+
   const signedPayload = url.searchParams.get("signed_payload")
   const signedPayloadJwt = url.searchParams.get("signed_payload_jwt")
 
@@ -56,16 +85,105 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       <html>
         <head>
           <title>Zenobia Pay - BigCommerce Integration</title>
-          <script>
-            window.BIGCOMMERCE_STORE_CONTEXT = "${storeHash}";
-            window.BIGCOMMERCE_ACCESS_TOKEN = "${store.access_token}";
-            window.BIGCOMMERCE_USER = ${JSON.stringify(payload.user)};
-            window.BIGCOMMERCE_JWT = "${signedPayloadJwt}";
-          </script>
+          <style>
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              line-height: 1.5;
+              color: #333;
+              max-width: 600px;
+              margin: 40px auto;
+              padding: 0 20px;
+            }
+            .form-group {
+              margin-bottom: 20px;
+            }
+            label {
+              display: block;
+              margin-bottom: 5px;
+              font-weight: 500;
+            }
+            input {
+              width: 100%;
+              padding: 8px 12px;
+              border: 1px solid #ddd;
+              border-radius: 4px;
+              font-size: 16px;
+            }
+            button {
+              background-color: #0066cc;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 4px;
+              font-size: 16px;
+              cursor: pointer;
+            }
+            button:hover {
+              background-color: #0052a3;
+            }
+            .message {
+              padding: 10px;
+              border-radius: 4px;
+              margin-bottom: 20px;
+              display: none;
+            }
+            .success {
+              background-color: #d4edda;
+              color: #155724;
+              border: 1px solid #c3e6cb;
+            }
+            .error {
+              background-color: #f8d7da;
+              color: #721c24;
+              border: 1px solid #f5c6cb;
+            }
+          </style>
         </head>
         <body>
-          <div id="app"></div>
-          <script type="module" src="/src/main.tsx"></script>
+          <h1>Zenobia Pay Configuration</h1>
+          <div id="message" class="message"></div>
+          <form id="configForm">
+            <input type="hidden" name="store_hash" value="${storeHash}">
+            <div class="form-group">
+              <label for="zenobia_client_id">Zenobia Client ID</label>
+              <input type="text" id="zenobia_client_id" name="zenobia_client_id" value="${store.zenobia_client_id || ""}" required>
+            </div>
+            <div class="form-group">
+              <label for="zenobia_client_secret">Zenobia Client Secret</label>
+              <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" value="${store.zenobia_client_secret || ""}" required>
+            </div>
+            <button type="submit">Save Configuration</button>
+          </form>
+          <script>
+            const form = document.getElementById('configForm');
+            const message = document.getElementById('message');
+
+            form.addEventListener('submit', async (e) => {
+              e.preventDefault();
+              const formData = new FormData(form);
+
+              try {
+                const response = await fetch(window.location.href, {
+                  method: 'POST',
+                  body: formData
+                });
+
+                if (response.ok) {
+                  message.textContent = 'Configuration saved successfully!';
+                  message.className = 'message success';
+                } else {
+                  const error = await response.text();
+                  message.textContent = error || 'Failed to save configuration';
+                  message.className = 'message error';
+                }
+              } catch (error) {
+                message.textContent = 'An error occurred while saving the configuration';
+                message.className = 'message error';
+              }
+
+              message.style.display = 'block';
+            });
+          </script>
         </body>
       </html>`,
       { headers: { "Content-Type": "text/html" } }
@@ -112,7 +230,6 @@ async function verifySignedPayload(
 
   // if (!valid) {
   //   console.error("❌ Invalid HMAC verification")
-  //   console.error("expected signature:", signature)
   //   throw new Error("Invalid HMAC signature")
   // }
 
