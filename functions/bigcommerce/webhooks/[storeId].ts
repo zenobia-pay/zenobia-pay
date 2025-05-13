@@ -209,6 +209,8 @@ async function handleWebhook(
         return new Response("Failed to create order", { status: 500 })
       }
 
+      console.log("orderResponse", orderResponse)
+
       const orderData = await orderResponse.json()
       console.log("Order created successfully:", orderData)
     } else if (body.status === "COMPLETED") {
