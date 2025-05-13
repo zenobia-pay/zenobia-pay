@@ -9,6 +9,7 @@ export interface Env {
   ZENOBIA_CLIENT_SECRET: string
   ACCOUNTS_AUDIENCE: string
   API_DOMAIN: string
+  API_BASE_URL: string
 }
 
 export interface BigCommerceToken {

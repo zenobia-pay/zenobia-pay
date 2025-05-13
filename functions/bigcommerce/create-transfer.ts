@@ -220,7 +220,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Create transfer request with Zenobia Pay
     const transferResponse = await fetch(
-      `${env.API_DOMAIN}/create-transfer-request`,
+      `${env.API_BASE_URL}/create-transfer-request`,
       {
         method: "POST",
         headers: {
