@@ -39,26 +39,35 @@ async function verifyJWT(
 
   try {
     const token = authHeader.split(" ")[1]
+    console.log("Attempting to verify JWT token...")
 
-    const jwksResponse = await fetch(
-      "https://zenobiapay.com/.well-known/jwks.json"
-    )
-    if (!jwksResponse.ok) {
-      throw new Error(`Failed to fetch JWKS: ${jwksResponse.status}`)
-    }
-
-    const keyStore = jose.createRemoteJWKSet(
+    // Create the JWKS client
+    const jwksClient = jose.createRemoteJWKSet(
       new URL("https://zenobiapay.com/.well-known/jwks.json")
     )
 
-    // Verify the JWT
-    const result = await jose.jwtVerify(token, keyStore, {
-      algorithms: ["RS256"],
-    })
-
-    return result
+    // Verify the JWT with detailed error handling
+    try {
+      const result = await jose.jwtVerify(token, jwksClient, {
+        algorithms: ["RS256"],
+      })
+      console.log("JWT verification successful")
+      return result
+    } catch (verifyError) {
+      console.error("JWT verification failed with error:", verifyError)
+      if (verifyError instanceof jose.errors.JWTExpired) {
+        console.error("Token has expired")
+      } else if (verifyError instanceof jose.errors.JWTInvalid) {
+        console.error("Token is invalid")
+      } else if (
+        verifyError instanceof jose.errors.JWSSignatureVerificationFailed
+      ) {
+        console.error("Token signature verification failed")
+      }
+      return null
+    }
   } catch (error) {
-    console.error("JWT verification failed:", error)
+    console.error("Unexpected error during JWT verification:", error)
     return null
   }
 }
