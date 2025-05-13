@@ -1,4 +1,4 @@
-import { D1Database } from "@cloudflare/workers-types"
+import { D1Database, KVNamespace } from "@cloudflare/workers-types"
 
 export interface Env {
   BIGCOMMERCE_CLIENT_ID: string
@@ -10,6 +10,7 @@ export interface Env {
   ACCOUNTS_AUDIENCE: string
   API_DOMAIN: string
   API_BASE_URL: string
+  TRANSFER_MAPPINGS: KVNamespace
 }
 
 export interface BigCommerceToken {

@@ -151,6 +151,11 @@ async function handleWebhook(
 
     // Verify that the JWT payload matches the body content (transferRequestId)
     if (jwtVerification.payload.transferRequestId !== body.transferRequestId) {
+      console.log(
+        "JWT transferRequestId:",
+        jwtVerification.payload.transferRequestId
+      )
+      console.log("Body transferRequestId:", body.transferRequestId)
       console.error(
         "JWT transferRequestId doesn't match body transferRequestId"
       )
@@ -179,10 +184,14 @@ async function handleWebhook(
 
     // If the transfer is successful, create the order in BigCommerce
     if (body.status === "completed") {
-      // Get the checkout ID from the metadata
-      const checkoutId = jwtVerification.payload.checkoutId
+      // Get the checkout ID from KV storage
+      const checkoutId = await env.TRANSFER_MAPPINGS.get(body.transferRequestId)
       if (!checkoutId) {
-        return new Response("Missing checkout ID in token", { status: 400 })
+        console.error(
+          "No checkout ID found for transfer request:",
+          body.transferRequestId
+        )
+        return new Response("Checkout ID not found", { status: 400 })
       }
 
       // Create the order from the checkout
