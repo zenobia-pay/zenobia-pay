@@ -97,7 +97,7 @@ async function verifySignedPayload(
     ["verify"]
   )
 
-  const sigBytes = hexToBytes(signature) as BufferSource
+  const sigBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0))
   const dataBytes = new TextEncoder().encode(encodedData)
 
   console.log(
