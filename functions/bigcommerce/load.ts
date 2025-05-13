@@ -90,17 +90,21 @@ async function verifySignedPayload(
     false,
     ["verify"]
   )
+  const sigBytes = hexToBytes(signature) as BufferSource
+  const dataBytes = new TextEncoder().encode(encodedData)
 
-  const valid = await crypto.subtle.verify(
-    "HMAC",
-    key,
-    hexToBytes(signature),
-    new TextEncoder().encode(encodedData)
-  )
+  const valid = await crypto.subtle.verify("HMAC", key, sigBytes, dataBytes)
 
-  if (!valid) throw new Error("Invalid HMAC: " + signature + " " + encodedData)
-
-  return JSON.parse(atob(encodedData))
+  if (!valid)
+    throw new Error(
+      "Invalid HMAC: " +
+        signature +
+        " dataBytes: " +
+        dataBytes +
+        " sigBytes: " +
+        sigBytes
+    )
+  return JSON.parse(decodeBase64Url(encodedData))
 }
 
 function hexToBytes(hex: string): Uint8Array {
@@ -109,4 +113,11 @@ function hexToBytes(hex: string): Uint8Array {
     result[i / 2] = parseInt(hex.substring(i, i + 2), 16)
   }
   return result
+}
+
+function decodeBase64Url(input: string): string {
+  const base64 =
+    input.replace(/-/g, "+").replace(/_/g, "/") +
+    "===".slice((input.length + 3) % 4)
+  return atob(base64)
 }
