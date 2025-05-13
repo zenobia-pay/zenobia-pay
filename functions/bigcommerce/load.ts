@@ -87,7 +87,7 @@ async function verifySignedPayload(
   console.log("signedPayload:", signedPayload)
   console.log("clientSecret:", clientSecret)
   console.log("encodedData (base64url):", encodedData)
-  console.log("signature (hex):", signature)
+  console.log("signature (base64):", signature)
 
   const key = await crypto.subtle.importKey(
     "raw",
@@ -97,8 +97,8 @@ async function verifySignedPayload(
     ["verify"]
   )
 
-  // Convert hex signature to bytes
-  const sigBytes = new Uint8Array(hexToBytes(signature))
+  // Convert base64 signature to bytes
+  const sigBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0))
 
   // Get the raw payload data
   const decoded = decodeBase64Url(encodedData)
@@ -118,14 +118,6 @@ async function verifySignedPayload(
 
   console.log("✅ HMAC valid")
   return JSON.parse(decoded)
-}
-
-function hexToBytes(hex: string): number[] {
-  const result: number[] = []
-  for (let i = 0; i < hex.length; i += 2) {
-    result.push(parseInt(hex.substring(i, i + 2), 16))
-  }
-  return result
 }
 
 function decodeBase64Url(input: string): string {
