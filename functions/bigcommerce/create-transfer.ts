@@ -68,6 +68,48 @@ function normalizeHostname(origin: string): string {
   return hostname
 }
 
+async function getAccessToken(
+  env: Env,
+  clientId: string,
+  clientSecret: string
+): Promise<string> {
+  try {
+    const tokenUrl = `${env.ACCOUNTS_DOMAIN}/oauth/token`
+    const audience = env.ACCOUNTS_AUDIENCE || ""
+
+    if (!clientId || !clientSecret) {
+      console.warn("No Auth0 credentials provided, using test mode")
+      return "test_token"
+    }
+
+    const response = await fetch(tokenUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        audience: audience,
+        grant_type: "client_credentials",
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(
+        `Failed to get access token: ${response.status} ${errorText}`
+      )
+    }
+
+    const data = await response.json()
+    return data.access_token
+  } catch (err) {
+    console.error("Auth0 authentication error:", err)
+    throw new Error("Failed to authenticate with Auth0")
+  }
+}
+
 export async function onRequest(context: EventContext<Env, string, unknown>) {
   const { request, env } = context
   const origin = request.headers.get("Origin")
@@ -149,18 +191,45 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     const checkoutData = (await checkoutResponse.json()) as CheckoutData
     console.log("Checkout data:", checkoutData)
 
+    // Get Auth0 access token using store-specific credentials
+    const accessToken = await getAccessToken(
+      env,
+      store.zenobia_client_id,
+      store.zenobia_client_secret
+    )
+
+    // Create statement items from cart items
+    const statementItems = [
+      // Add physical items
+      ...checkoutData.data.cart.line_items.physical_items.map((item) => ({
+        name: `Item #${item.id}`,
+        amount: item.sale_price * item.quantity,
+      })),
+      // Add digital items
+      ...checkoutData.data.cart.line_items.digital_items.map((item) => ({
+        name: `Digital Item #${item.id}`,
+        amount: item.sale_price * item.quantity,
+      })),
+      // Add tax as a separate item
+      {
+        name: "Tax",
+        amount:
+          checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
+      },
+    ]
+
     // Create transfer request with Zenobia Pay
     const transferResponse = await fetch(
-      "https://api.zenobiapay.com/create-transfer-request",
+      `${env.API_DOMAIN}/create-transfer-request`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Basic ${btoa(`${store.zenobia_client_id}:${store.zenobia_client_secret}`)}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           amount: checkoutData.data.grand_total,
-          currency: checkoutData.data.cart.currency.code,
+          statementItems,
           metadata: {
             checkoutId: checkoutData.data.id,
             cartId: checkoutData.data.cart.id,
