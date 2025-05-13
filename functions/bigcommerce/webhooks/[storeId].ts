@@ -217,8 +217,9 @@ async function handleWebhook(
 }
 
 export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env, params } = context
-  const storeId = params.storeId as string
+  const { request, env } = context
+  const url = new URL(request.url)
+  const storeId = url.pathname.split("/").pop()
 
   if (!storeId) {
     return new Response("Store ID is required", { status: 400 })
