@@ -189,7 +189,6 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     }
 
     const checkoutData = (await checkoutResponse.json()) as CheckoutData
-    console.log("Checkout data:", checkoutData)
 
     // Get Auth0 access token using store-specific credentials
     const accessToken = await getAccessToken(
@@ -220,6 +219,21 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       },
     ]
 
+    const transferRequestBody = {
+      amount: Math.round(checkoutData.data.grand_total * 100),
+      statementItems,
+      // metadata: {
+      //   checkoutId: checkoutData.data.id,
+      //   cartId: checkoutData.data.cart.id,
+      //   storeHash: store.store_hash,
+      //   subtotal: checkoutData.data.subtotal_inc_tax,
+      //   tax:
+      //     checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
+      // },
+    }
+
+    console.log("Creating transfer request with body:", body)
+
     // Create transfer request with Zenobia Pay
     const transferResponse = await fetch(
       `${env.API_BASE_URL}/create-transfer-request`,
@@ -229,20 +243,11 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({
-          amount: Math.round(checkoutData.data.grand_total * 100),
-          statementItems,
-          // metadata: {
-          //   checkoutId: checkoutData.data.id,
-          //   cartId: checkoutData.data.cart.id,
-          //   storeHash: store.store_hash,
-          //   subtotal: checkoutData.data.subtotal_inc_tax,
-          //   tax:
-          //     checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
-          // },
-        }),
+        body: JSON.stringify(transferRequestBody),
       }
     )
+
+    console.log("Transfer response:", transferResponse)
 
     if (!transferResponse.ok) {
       const error = await transferResponse.text()
