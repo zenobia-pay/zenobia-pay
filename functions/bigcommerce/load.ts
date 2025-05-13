@@ -162,6 +162,9 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         </head>
         <body>
           <h1>Zenobia Pay Configuration</h1>
+          <div class="help-text" style="margin-bottom: 20px;">
+            Please make sure the webhook endpoint is set to dashboard.zenobiapay.com/bigcommerce/webhooks/${store.store_hash}
+          </div>
           <div id="message" class="message"></div>
           <form id="configForm">
             <input type="hidden" name="store_hash" value="${storeHash}">
