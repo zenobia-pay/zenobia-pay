@@ -9,6 +9,30 @@ interface BigCommerceStore {
   store_hash: string
   access_token: string
   url_endpoint: string
+  zenobia_client_id: string
+  zenobia_client_secret: string
+}
+
+interface CheckoutData {
+  id: string
+  cart: {
+    id: string
+    currency: {
+      code: string
+    }
+    line_items: {
+      physical_items: Array<{
+        id: string
+        quantity: number
+        list_price: number
+      }>
+      digital_items: Array<{
+        id: string
+        quantity: number
+        list_price: number
+      }>
+    }
+  }
 }
 
 // List of allowed BigCommerce domains
@@ -22,6 +46,15 @@ function isAllowedOrigin(origin: string): boolean {
     const regex = new RegExp("^" + pattern.replace(/\*/g, ".*") + "$")
     return regex.test(origin)
   })
+}
+
+function normalizeHostname(url: URL): string {
+  // Remove protocol, www, and trailing slash
+  let hostname = url.hostname.toLowerCase()
+  if (hostname.startsWith("www.")) {
+    hostname = hostname.substring(4)
+  }
+  return hostname
 }
 
 export async function onRequest(context: EventContext<Env, string, unknown>) {
@@ -66,14 +99,23 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Get the store based on the URL endpoint
     const url = new URL(request.url)
+    const normalizedHostname = normalizeHostname(url)
+    console.log("Looking up store with hostname:", normalizedHostname)
+
     const store = await env.MERCHANTS_OAUTH.prepare(
       `SELECT * FROM bigcommerce_stores WHERE url_endpoint = ?`
     )
-      .bind(url.hostname)
+      .bind(normalizedHostname)
       .first<BigCommerceStore>()
 
     if (!store) {
       return new Response("Store not found", { status: 404 })
+    }
+
+    if (!store.zenobia_client_id || !store.zenobia_client_secret) {
+      return new Response("Store not configured with Zenobia credentials", {
+        status: 400,
+      })
     }
 
     // Fetch checkout details from BigCommerce
@@ -94,13 +136,45 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       return new Response("Failed to fetch checkout details", { status: 500 })
     }
 
-    const checkoutData = await checkoutResponse.json()
+    const checkoutData = (await checkoutResponse.json()) as CheckoutData
     console.log("Checkout data:", checkoutData)
 
-    // TODO: Process the checkout data and create the transfer
-    // This will depend on your specific requirements for creating transfers
+    // Calculate total amount from line items
+    const totalAmount = [
+      ...checkoutData.cart.line_items.physical_items,
+      ...checkoutData.cart.line_items.digital_items,
+    ].reduce((sum, item) => sum + item.list_price * item.quantity, 0)
 
-    return new Response(JSON.stringify({ success: true }), {
+    // Create transfer request with Zenobia Pay
+    const transferResponse = await fetch(
+      "https://api.zenobiapay.com/create-transfer-request",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${btoa(`${store.zenobia_client_id}:${store.zenobia_client_secret}`)}`,
+        },
+        body: JSON.stringify({
+          amount: totalAmount,
+          currency: checkoutData.cart.currency.code,
+          metadata: {
+            checkoutId: checkoutData.id,
+            cartId: checkoutData.cart.id,
+            storeHash: store.store_hash,
+          },
+        }),
+      }
+    )
+
+    if (!transferResponse.ok) {
+      const error = await transferResponse.text()
+      console.error("Failed to create transfer:", error)
+      return new Response("Failed to create transfer", { status: 500 })
+    }
+
+    const transferData = await transferResponse.json()
+
+    return new Response(JSON.stringify(transferData), {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": origin,
