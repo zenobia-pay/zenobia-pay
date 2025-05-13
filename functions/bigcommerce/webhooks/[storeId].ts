@@ -40,14 +40,20 @@ async function verifyJWT(
   try {
     const token = authHeader.split(" ")[1]
 
-    // Create a JWKS instance
+    const jwksResponse = await fetch(
+      "https://zenobiapay.com/.well-known/jwks.json"
+    )
+    if (!jwksResponse.ok) {
+      throw new Error(`Failed to fetch JWKS: ${jwksResponse.status}`)
+    }
+
     const keyStore = jose.createRemoteJWKSet(
       new URL("https://zenobiapay.com/.well-known/jwks.json")
     )
 
     // Verify the JWT
     const result = await jose.jwtVerify(token, keyStore, {
-      algorithms: ["RS256"], // Ensure we're using the correct algorithm
+      algorithms: ["RS256"],
     })
 
     return result
