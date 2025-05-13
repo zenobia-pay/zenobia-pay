@@ -97,12 +97,14 @@ async function verifySignedPayload(
     ["verify"]
   )
 
-  // Convert base64 signature to bytes
-  const sigBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0))
+  // Convert double-base64 signature to bytes
+  const decodedSignature = atob(signature)
+  const sigBytes = Uint8Array.from(decodedSignature, (c) => c.charCodeAt(0))
 
   // Use the base64url-encoded data for verification
   const dataBytes = new TextEncoder().encode(encodedData)
 
+  console.log("decoded signature:", decodedSignature)
   console.log("sigBytes length:", sigBytes.length)
   console.log("dataBytes length:", dataBytes.length)
 
