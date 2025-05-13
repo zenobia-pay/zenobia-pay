@@ -114,11 +114,7 @@ async function handleWebhook(
     console.log("bodyText:", bodyText)
 
     try {
-      if (contentType && contentType.includes("application/json")) {
-        body = JSON.parse(bodyText)
-      } else {
-        body = bodyText as unknown as WebhookPayload
-      }
+      body = JSON.parse(bodyText)
     } catch (e) {
       console.error("Failed to parse JSON:", e)
       body = bodyText as unknown as WebhookPayload
