@@ -41,7 +41,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     const storeHash = payload.store_hash
 
-    const store = await env.DB.prepare(
+    const store = await env.MERCHANTS_OAUTH.prepare(
       `SELECT * FROM bigcommerce_stores WHERE store_hash = ?`
     )
       .bind(storeHash)
@@ -91,23 +91,22 @@ async function verifySignedPayload(
     ["verify"]
   )
 
-  const isValid = await crypto.subtle.verify(
+  const valid = await crypto.subtle.verify(
     "HMAC",
     key,
     hexToBytes(signature),
     new TextEncoder().encode(encodedData)
   )
 
-  if (!isValid) throw new Error("Invalid HMAC")
+  if (!valid) throw new Error("Invalid HMAC: " + signature + " " + encodedData)
 
-  const json = JSON.parse(atob(encodedData))
-  return json
+  return JSON.parse(atob(encodedData))
 }
 
 function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2)
+  const result = new Uint8Array(hex.length / 2)
   for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
+    result[i / 2] = parseInt(hex.substring(i, i + 2), 16)
   }
-  return new Uint8Array(bytes.buffer.slice(0))
+  return result
 }

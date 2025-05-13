@@ -3,7 +3,7 @@ import { D1Database } from "@cloudflare/workers-types"
 export interface Env {
   BIGCOMMERCE_CLIENT_ID: string
   BIGCOMMERCE_CLIENT_SECRET: string
-  DB: D1Database
+  MERCHANTS_OAUTH: D1Database
 }
 
 export interface BigCommerceToken {
