@@ -29,40 +29,37 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   }
 
   try {
-    // Verify the signed payload JWT
-    const secret = new TextEncoder().encode(env.BIGCOMMERCE_CLIENT_SECRET)
-    const { payload: decodedPayload } = await jwtVerify(signedPayload, secret)
+    // verify signed_payload (HMAC)
+    const payload = await verifySignedPayload(
+      signedPayload,
+      env.BIGCOMMERCE_CLIENT_SECRET
+    )
 
-    // Verify the JWT token (we don't need the payload, just verifying it's valid)
+    // verify signed_payload_jwt (JWT)
+    const secret = new TextEncoder().encode(env.BIGCOMMERCE_CLIENT_SECRET)
     await jwtVerify(signedPayloadJwt, secret)
 
-    // Type assertion for the payload
-    const storeData = decodedPayload as unknown as SignedPayload
+    const storeHash = payload.store_hash
 
-    // Get the store data from our database
     const store = await env.DB.prepare(
-      `
-      SELECT * FROM bigcommerce_stores
-      WHERE store_hash = ?
-    `
+      `SELECT * FROM bigcommerce_stores WHERE store_hash = ?`
     )
-      .bind(storeData.store_hash)
+      .bind(storeHash)
       .first()
 
     if (!store) {
       return new Response("Store not found", { status: 404 })
     }
 
-    // Return the app HTML with the necessary data
     return new Response(
       `<!DOCTYPE html>
       <html>
         <head>
           <title>Zenobia Pay - BigCommerce Integration</title>
           <script>
-            window.BIGCOMMERCE_STORE_CONTEXT = "${storeData.store_hash}";
+            window.BIGCOMMERCE_STORE_CONTEXT = "${storeHash}";
             window.BIGCOMMERCE_ACCESS_TOKEN = "${store.access_token}";
-            window.BIGCOMMERCE_USER = ${JSON.stringify(storeData.user)};
+            window.BIGCOMMERCE_USER = ${JSON.stringify(payload.user)};
             window.BIGCOMMERCE_JWT = "${signedPayloadJwt}";
           </script>
         </head>
@@ -71,14 +68,46 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
           <script type="module" src="/src/main.tsx"></script>
         </body>
       </html>`,
-      {
-        headers: {
-          "Content-Type": "text/html",
-        },
-      }
+      { headers: { "Content-Type": "text/html" } }
     )
   } catch (error) {
     console.error("Load error:", error)
     return new Response("Failed to load app", { status: 500 })
   }
+}
+
+async function verifySignedPayload(
+  signedPayload: string,
+  clientSecret: string
+): Promise<SignedPayload> {
+  const [encodedData, signature] = signedPayload.split(".")
+  if (!encodedData || !signature) throw new Error("Malformed signed_payload")
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(clientSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"]
+  )
+
+  const isValid = await crypto.subtle.verify(
+    "HMAC",
+    key,
+    hexToBytes(signature),
+    new TextEncoder().encode(encodedData)
+  )
+
+  if (!isValid) throw new Error("Invalid HMAC")
+
+  const json = JSON.parse(atob(encodedData))
+  return json
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const bytes = new Uint8Array(hex.length / 2)
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
+  }
+  return new Uint8Array(bytes.buffer.slice(0))
 }
