@@ -257,7 +257,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Store the transfer request ID to checkout ID mapping
     console.log("transferData", transferData)
-    await env.TRANSFER_MAPPINGS.put(transferData.id, checkoutId)
+    await env.TRANSFER_MAPPINGS.put(transferData.transferRequestId, checkoutId)
 
     return new Response(JSON.stringify(transferData), {
       headers: {
