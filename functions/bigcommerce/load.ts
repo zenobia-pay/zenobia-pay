@@ -100,11 +100,9 @@ async function verifySignedPayload(
   // Convert base64 signature to bytes
   const sigBytes = Uint8Array.from(atob(signature), (c) => c.charCodeAt(0))
 
-  // Get the raw payload data
-  const decoded = decodeBase64Url(encodedData)
-  const dataBytes = new TextEncoder().encode(decoded)
+  // Use the base64url-encoded data for verification
+  const dataBytes = new TextEncoder().encode(encodedData)
 
-  console.log("decoded payload:", decoded)
   console.log("sigBytes length:", sigBytes.length)
   console.log("dataBytes length:", dataBytes.length)
 
@@ -117,6 +115,8 @@ async function verifySignedPayload(
   }
 
   console.log("✅ HMAC valid")
+  const decoded = decodeBase64Url(encodedData)
+  console.log("decoded payload:", decoded)
   return JSON.parse(decoded)
 }
 
