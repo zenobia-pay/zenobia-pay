@@ -83,6 +83,12 @@ async function verifySignedPayload(
   const [encodedData, signature] = signedPayload.split(".")
   if (!encodedData || !signature) throw new Error("Malformed signed_payload")
 
+  console.log("🔐 verifying signed_payload")
+  console.log("signedPayload:", signedPayload)
+  console.log("clientSecret:", clientSecret)
+  console.log("encodedData (base64url):", encodedData)
+  console.log("signature (hex):", signature)
+
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(clientSecret),
@@ -90,21 +96,37 @@ async function verifySignedPayload(
     false,
     ["verify"]
   )
+
   const sigBytes = hexToBytes(signature) as BufferSource
   const dataBytes = new TextEncoder().encode(encodedData)
 
+  console.log(
+    "encodedData bytes:",
+    [...dataBytes].map((b) => b.toString(16).padStart(2, "0")).join("")
+  )
+  console.log("sigBytes length:", (sigBytes as Uint8Array).length)
+  console.log("dataBytes length:", dataBytes.length)
+
   const valid = await crypto.subtle.verify("HMAC", key, sigBytes, dataBytes)
 
-  if (!valid)
-    throw new Error(
-      "Invalid HMAC: " +
-        signature +
-        " dataBytes: " +
-        dataBytes +
-        " sigBytes: " +
-        sigBytes
+  if (!valid) {
+    console.error("❌ Invalid HMAC verification")
+    console.error("expected signature:", signature)
+    const expectedSig = await crypto.subtle.sign("HMAC", key, dataBytes)
+    console.error(
+      "calculated signature:",
+      [...new Uint8Array(expectedSig)]
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("")
     )
-  return JSON.parse(decodeBase64Url(encodedData))
+    throw new Error("Invalid HMAC signature")
+  }
+
+  console.log("✅ HMAC valid")
+  const decoded = decodeBase64Url(encodedData)
+  console.log("decoded payload:", decoded)
+
+  return JSON.parse(decoded)
 }
 
 function hexToBytes(hex: string): Uint8Array {
