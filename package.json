@@ -19,6 +19,7 @@
     "vite-plugin-solid": "^2.11.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250510.0",
     "@types/qrcode": "^1.5.5",
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
