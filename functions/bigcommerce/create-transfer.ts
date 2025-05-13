@@ -203,18 +203,20 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       // Add physical items
       ...checkoutData.data.cart.line_items.physical_items.map((item) => ({
         name: `Item #${item.id}`,
-        amount: item.sale_price * item.quantity,
+        amount: Math.round(item.sale_price * item.quantity * 100),
       })),
       // Add digital items
       ...checkoutData.data.cart.line_items.digital_items.map((item) => ({
         name: `Digital Item #${item.id}`,
-        amount: item.sale_price * item.quantity,
+        amount: Math.round(item.sale_price * item.quantity * 100),
       })),
       // Add tax as a separate item
       {
         name: "Tax",
-        amount:
-          checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
+        amount: Math.round(
+          (checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax) *
+            100
+        ),
       },
     ]
 
@@ -228,16 +230,16 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          amount: checkoutData.data.grand_total,
+          amount: Math.round(checkoutData.data.grand_total * 100),
           statementItems,
-          metadata: {
-            checkoutId: checkoutData.data.id,
-            cartId: checkoutData.data.cart.id,
-            storeHash: store.store_hash,
-            subtotal: checkoutData.data.subtotal_inc_tax,
-            tax:
-              checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
-          },
+          // metadata: {
+          //   checkoutId: checkoutData.data.id,
+          //   cartId: checkoutData.data.cart.id,
+          //   storeHash: store.store_hash,
+          //   subtotal: checkoutData.data.subtotal_inc_tax,
+          //   tax:
+          //     checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
+          // },
         }),
       }
     )
