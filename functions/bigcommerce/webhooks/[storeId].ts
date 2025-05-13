@@ -65,17 +65,16 @@ async function handleWebhook(
   // Handle CORS preflight requests
   if (request.method === "OPTIONS") {
     return new Response(null, {
-      status: 204, // No content
+      status: 204,
       headers: {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        "Access-Control-Max-Age": "86400", // 24 hours
+        "Access-Control-Max-Age": "86400",
       },
     })
   }
 
-  // We'll accept POST requests for webhooks
   if (request.method !== "POST") {
     const errorResponse = new Response("Method not allowed", { status: 405 })
     return addCorsHeaders(errorResponse)
@@ -96,6 +95,7 @@ async function handleWebhook(
     const contentType = clonedRequest.headers.get("content-type")
     const bodyText = await clonedRequest.text()
 
+    console.log("bodyText:", bodyText)
     try {
       if (contentType && contentType.includes("application/json")) {
         body = JSON.parse(bodyText)
@@ -222,6 +222,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   const storeId = url.pathname.split("/").pop()
 
   if (!storeId) {
+    console.error("Store ID is required")
     return new Response("Store ID is required", { status: 400 })
   }
 
