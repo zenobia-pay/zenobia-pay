@@ -57,24 +57,17 @@ export class TransferStatusServer {
     const isLocalhost =
       typeof location !== "undefined" && location.hostname === "localhost";
     // Check for Node.js environment without directly referencing process
-    const isNodeEnv = typeof window === "undefined";
-    this.isLocalDev = !this.kv || isLocalhost || isNodeEnv;
+    this.isLocalDev = !this.kv || isLocalhost;
     console.log(
       `Running in ${
         this.isLocalDev ? "development" : "production"
       } mode (KV available: ${!!this.kv}),
        and location typeof: ${typeof location}
        and typeof window: ${typeof window},
-       so isLocalhost: ${isLocalhost},
-       and isNodeEnv: ${isNodeEnv}`
+       so isLocalhost: ${isLocalhost}`
     );
 
-    console.log(
-      "this.kv, isLcoalhost, and isNodeEnv",
-      this.kv,
-      isLocalhost,
-      isNodeEnv
-    );
+    console.log("this.kv, isLcoalhost, and isNodeEnv", this.kv, isLocalhost);
     // Set up the Durable Object's fetch handler
     this.state.blockConcurrencyWhile(async () => {
       // Initialize any state that needs loading
