@@ -27,6 +27,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     const storeHash = formData.get("store_hash")
     const zenobiaClientId = formData.get("zenobia_client_id")
     const zenobiaClientSecret = formData.get("zenobia_client_secret")
+    const urlEndpoint = formData.get("url_endpoint")
 
     if (!storeHash || !zenobiaClientId) {
       return new Response("Missing required fields", { status: 400 })
@@ -37,20 +38,28 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       await env.MERCHANTS_OAUTH.prepare(
         `UPDATE bigcommerce_stores
          SET zenobia_client_id = ?,
+             url_endpoint = ?,
              updated_at = ?
          WHERE store_hash = ?`
       )
-        .bind(zenobiaClientId, Date.now(), storeHash)
+        .bind(zenobiaClientId, urlEndpoint, Date.now(), storeHash)
         .run()
     } else {
       await env.MERCHANTS_OAUTH.prepare(
         `UPDATE bigcommerce_stores
          SET zenobia_client_id = ?,
              zenobia_client_secret = ?,
+             url_endpoint = ?,
              updated_at = ?
          WHERE store_hash = ?`
       )
-        .bind(zenobiaClientId, zenobiaClientSecret, Date.now(), storeHash)
+        .bind(
+          zenobiaClientId,
+          zenobiaClientSecret,
+          urlEndpoint,
+          Date.now(),
+          storeHash
+        )
         .run()
     }
 
@@ -144,6 +153,11 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
               color: #721c24;
               border: 1px solid #f5c6cb;
             }
+            .help-text {
+              font-size: 14px;
+              color: #666;
+              margin-top: 4px;
+            }
           </style>
         </head>
         <body>
@@ -158,7 +172,12 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
             <div class="form-group">
               <label for="zenobia_client_secret">Zenobia Client Secret</label>
               <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" placeholder="${store.zenobia_client_secret ? "••••••••••••••••" : ""}" ${!store.zenobia_client_secret ? "required" : ""}>
-              ${store.zenobia_client_secret ? '<p class="text-sm text-gray-500 mt-1">Leave blank to keep existing secret</p>' : ""}
+              ${store.zenobia_client_secret ? '<p class="help-text">Leave blank to keep existing secret</p>' : ""}
+            </div>
+            <div class="form-group">
+              <label for="url_endpoint">Store URL</label>
+              <input type="text" id="url_endpoint" name="url_endpoint" value="${store.url_endpoint || ""}" placeholder="e.g., store.mybigcommerce.com" required>
+              <p class="help-text">Enter your store's domain without https:// or www. (e.g., store.mybigcommerce.com)</p>
             </div>
             <button type="submit">Save Configuration</button>
           </form>

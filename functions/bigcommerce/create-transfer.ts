@@ -14,24 +14,35 @@ interface BigCommerceStore {
 }
 
 interface CheckoutData {
-  id: string
-  cart: {
+  data: {
     id: string
-    currency: {
-      code: string
+    cart: {
+      id: string
+      currency: {
+        code: string
+      }
+      line_items: {
+        physical_items: Array<{
+          id: string
+          quantity: number
+          list_price: number
+          original_price: number
+          sale_price: number
+        }>
+        digital_items: Array<{
+          id: string
+          quantity: number
+          list_price: number
+          original_price: number
+          sale_price: number
+        }>
+      }
+      cart_amount_inc_tax: number
+      cart_amount_ex_tax: number
     }
-    line_items: {
-      physical_items: Array<{
-        id: string
-        quantity: number
-        list_price: number
-      }>
-      digital_items: Array<{
-        id: string
-        quantity: number
-        list_price: number
-      }>
-    }
+    grand_total: number
+    subtotal_inc_tax: number
+    subtotal_ex_tax: number
   }
 }
 
@@ -138,12 +149,6 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     const checkoutData = (await checkoutResponse.json()) as CheckoutData
     console.log("Checkout data:", checkoutData)
 
-    // Calculate total amount from line items
-    const totalAmount = [
-      ...checkoutData.cart.line_items.physical_items,
-      ...checkoutData.cart.line_items.digital_items,
-    ].reduce((sum, item) => sum + item.list_price * item.quantity, 0)
-
     // Create transfer request with Zenobia Pay
     const transferResponse = await fetch(
       "https://api.zenobiapay.com/create-transfer-request",
@@ -154,12 +159,15 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
           Authorization: `Basic ${btoa(`${store.zenobia_client_id}:${store.zenobia_client_secret}`)}`,
         },
         body: JSON.stringify({
-          amount: totalAmount,
-          currency: checkoutData.cart.currency.code,
+          amount: checkoutData.data.grand_total,
+          currency: checkoutData.data.cart.currency.code,
           metadata: {
-            checkoutId: checkoutData.id,
-            cartId: checkoutData.cart.id,
+            checkoutId: checkoutData.data.id,
+            cartId: checkoutData.data.cart.id,
             storeHash: store.store_hash,
+            subtotal: checkoutData.data.subtotal_inc_tax,
+            tax:
+              checkoutData.data.grand_total - checkoutData.data.subtotal_ex_tax,
           },
         }),
       }
