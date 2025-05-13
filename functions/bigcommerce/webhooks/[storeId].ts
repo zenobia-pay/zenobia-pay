@@ -178,8 +178,8 @@ async function handleWebhook(
       return new Response("Store not found", { status: 404 })
     }
 
-    // If the transfer is successful, create the order in BigCommerce
-    if (body.status === "completed") {
+    // In flight means to create the order in BigCommerce
+    if (body.status === "IN_FLIGHT") {
       // Get the checkout ID from KV storage
       const checkoutId = await env.TRANSFER_MAPPINGS.get(body.transferRequestId)
       if (!checkoutId) {
@@ -211,6 +211,9 @@ async function handleWebhook(
 
       const orderData = await orderResponse.json()
       console.log("Order created successfully:", orderData)
+    } else if (body.status === "COMPLETED") {
+      // TODO: Create the shipment and mark the order as shipped
+      console.log("Order completed:", body)
     }
 
     // Return a success response
