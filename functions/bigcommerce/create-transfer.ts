@@ -48,9 +48,9 @@ function isAllowedOrigin(origin: string): boolean {
   })
 }
 
-function normalizeHostname(url: URL): string {
-  // Remove protocol, www, and trailing slash
-  let hostname = url.hostname.toLowerCase()
+function normalizeHostname(origin: string): string {
+  // Remove protocol and www
+  let hostname = origin.replace(/^https?:\/\//, "").toLowerCase()
   if (hostname.startsWith("www.")) {
     hostname = hostname.substring(4)
   }
@@ -97,9 +97,8 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       return new Response("Missing checkoutId in request body", { status: 400 })
     }
 
-    // Get the store based on the URL endpoint
-    const url = new URL(request.url)
-    const normalizedHostname = normalizeHostname(url)
+    // Get the store based on the origin hostname
+    const normalizedHostname = normalizeHostname(origin)
     console.log("Looking up store with hostname:", normalizedHostname)
 
     const store = await env.MERCHANTS_OAUTH.prepare(
