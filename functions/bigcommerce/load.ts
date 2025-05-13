@@ -28,11 +28,21 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     const zenobiaClientId = formData.get("zenobia_client_id")
     const zenobiaClientSecret = formData.get("zenobia_client_secret")
 
-    if (!storeHash || !zenobiaClientId || !zenobiaClientSecret) {
+    if (!storeHash || !zenobiaClientId) {
       return new Response("Missing required fields", { status: 400 })
     }
 
-    try {
+    // If no new secret provided, keep the existing one
+    if (!zenobiaClientSecret) {
+      await env.MERCHANTS_OAUTH.prepare(
+        `UPDATE bigcommerce_stores
+         SET zenobia_client_id = ?,
+             updated_at = ?
+         WHERE store_hash = ?`
+      )
+        .bind(zenobiaClientId, Date.now(), storeHash)
+        .run()
+    } else {
       await env.MERCHANTS_OAUTH.prepare(
         `UPDATE bigcommerce_stores
          SET zenobia_client_id = ?,
@@ -42,12 +52,9 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       )
         .bind(zenobiaClientId, zenobiaClientSecret, Date.now(), storeHash)
         .run()
-
-      return new Response("Credentials updated successfully", { status: 200 })
-    } catch (error) {
-      console.error("Failed to update credentials:", error)
-      return new Response("Failed to update credentials", { status: 500 })
     }
+
+    return new Response("Credentials updated successfully", { status: 200 })
   }
 
   const signedPayload = url.searchParams.get("signed_payload")
@@ -150,7 +157,8 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
             </div>
             <div class="form-group">
               <label for="zenobia_client_secret">Zenobia Client Secret</label>
-              <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" value="${store.zenobia_client_secret || ""}" required>
+              <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" placeholder="${store.zenobia_client_secret ? "••••••••••••••••" : ""}" ${!store.zenobia_client_secret ? "required" : ""}>
+              ${store.zenobia_client_secret ? '<p class="text-sm text-gray-500 mt-1">Leave blank to keep existing secret</p>' : ""}
             </div>
             <button type="submit">Save Configuration</button>
           </form>
