@@ -112,13 +112,13 @@ async function verifySignedPayload(
   if (!valid) {
     console.error("❌ Invalid HMAC verification")
     console.error("expected signature:", signature)
-    const expectedSig = await crypto.subtle.sign("HMAC", key, dataBytes)
-    console.error(
-      "calculated signature:",
-      [...new Uint8Array(expectedSig)]
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("")
-    )
+
+    // console.error(
+    //   "calculated signature:",
+    //   [...new Uint8Array(expectedSig)]
+    //     .map((b) => b.toString(16).padStart(2, "0"))
+    //     .join("")
+    // )
     throw new Error("Invalid HMAC signature")
   }
 
