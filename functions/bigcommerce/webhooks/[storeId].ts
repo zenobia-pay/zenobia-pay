@@ -213,6 +213,32 @@ async function handleWebhook(
 
       const orderData = await orderResponse.json()
       console.log("Order created successfully:", orderData)
+
+      // Update the order with payment method and status
+      const orderId = orderData.data.id
+      const updateOrderResponse = await fetch(
+        `https://api.bigcommerce.com/stores/${store.store_hash}/v2/orders/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "X-Auth-Token": store.access_token,
+          },
+          body: JSON.stringify({
+            payment_method: "Zenobia",
+            status_id: 2,
+          }),
+        }
+      )
+
+      if (!updateOrderResponse.ok) {
+        const error = await updateOrderResponse.text()
+        console.error("Failed to update order:", error)
+        return new Response("Failed to update order", { status: 500 })
+      }
+
+      console.log("Order updated successfully")
     } else if (body.status === "COMPLETED") {
       // TODO: Create the shipment and mark the order as shipped
       console.log("Order completed:", body)
