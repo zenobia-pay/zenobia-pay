@@ -221,7 +221,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     const transferRequestBody = {
       amount: Math.round(checkoutData.data.grand_total * 100),
-      // statementItems,
+      statementItems,
       // metadata: {
       //   checkoutId: checkoutData.data.id,
       //   cartId: checkoutData.data.cart.id,
