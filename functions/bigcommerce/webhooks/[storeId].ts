@@ -95,15 +95,18 @@ async function handleWebhook(
     const contentType = clonedRequest.headers.get("content-type")
     const bodyText = await clonedRequest.text()
 
+    console.log("Content-Type:", contentType)
     console.log("bodyText:", bodyText)
+
     try {
       if (contentType && contentType.includes("application/json")) {
         body = JSON.parse(bodyText)
       } else {
-        throw new Error("Invalid content type")
+        body = bodyText as unknown as WebhookPayload
       }
-    } catch {
-      return new Response("Invalid JSON payload", { status: 400 })
+    } catch (e) {
+      console.error("Failed to parse JSON:", e)
+      body = bodyText as unknown as WebhookPayload
     }
 
     // Log the webhook details
