@@ -11,6 +11,7 @@ export interface Env {
   API_DOMAIN: string
   API_BASE_URL: string
   TRANSFER_MAPPINGS: KVNamespace
+  SUBSCRIBE_HMAC: string
 }
 
 export interface BigCommerceToken {
