@@ -183,6 +183,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         )
       }
 
+      console.log("payloadData", payloadData)
       // Get checkout ID from KV storage
       const checkoutId = await env.TRANSFER_MAPPINGS.get(
         payloadData.transferRequestId

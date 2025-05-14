@@ -28,6 +28,26 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     const zenobiaClientId = formData.get("zenobia_client_id")
     const zenobiaClientSecret = formData.get("zenobia_client_secret")
     const urlEndpoint = formData.get("url_endpoint")
+    const signedPayload = formData.get("signed_payload") as string | null
+    const signedPayloadJwt = formData.get("signed_payload_jwt") as string | null
+
+    if (!signedPayload || !signedPayloadJwt) {
+      return new Response("Missing signed payload for verification", {
+        status: 400,
+      })
+    }
+
+    try {
+      // Verify signed_payload (HMAC)
+      await verifySignedPayload(signedPayload, env.BIGCOMMERCE_CLIENT_SECRET)
+
+      // Verify signed_payload_jwt (JWT)
+      const secret = new TextEncoder().encode(env.BIGCOMMERCE_CLIENT_SECRET)
+      await jwtVerify(signedPayloadJwt, secret)
+    } catch (error) {
+      console.error("Verification failed:", error)
+      return new Response("Invalid request signature", { status: 403 })
+    }
 
     if (!storeHash || !zenobiaClientId) {
       return new Response("Missing required fields", { status: 400 })
@@ -101,47 +121,77 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       <html>
         <head>
           <title>Zenobia Pay - BigCommerce Integration</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com" />
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+          <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@200;300;400;600&display=swap" rel="stylesheet" />
           <style>
             body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-              line-height: 1.5;
+              font-family: "Source Sans Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+              line-height: 1.6;
               color: #333;
-              max-width: 600px;
+              max-width: 700px;
               margin: 40px auto;
               padding: 0 20px;
+            }
+            h1 {
+              font-weight: 600;
+              margin-bottom: 10px;
+            }
+            .subheader {
+              font-size: 16px;
+              color: #555;
+              margin-bottom: 30px;
+            }
+            .step {
+              margin-bottom: 30px;
+              padding: 20px;
+              border: 1px solid #eee;
+              border-radius: 8px;
+              background-color: #f9f9f9;
+            }
+            .step h2 {
+              font-size: 18px;
+              font-weight: 600;
+              margin-top: 0;
+              margin-bottom: 15px;
+              color: #0066cc;
             }
             .form-group {
               margin-bottom: 20px;
             }
             label {
               display: block;
-              margin-bottom: 5px;
-              font-weight: 500;
+              margin-bottom: 8px;
+              font-weight: 600;
+              font-size: 14px;
             }
-            input {
+            input[type="text"], input[type="password"] {
               width: 100%;
-              padding: 8px 12px;
+              padding: 10px 12px;
               border: 1px solid #ddd;
               border-radius: 4px;
               font-size: 16px;
+              box-sizing: border-box;
             }
             button {
               background-color: #0066cc;
               color: white;
               border: none;
-              padding: 10px 20px;
+              padding: 12px 24px;
               border-radius: 4px;
               font-size: 16px;
               cursor: pointer;
+              font-weight: 600;
             }
             button:hover {
               background-color: #0052a3;
             }
             .message {
-              padding: 10px;
+              padding: 12px;
               border-radius: 4px;
               margin-bottom: 20px;
               display: none;
+              font-size: 14px;
             }
             .success {
               background-color: #d4edda;
@@ -156,34 +206,63 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
             .help-text {
               font-size: 14px;
               color: #666;
-              margin-top: 4px;
+              margin-top: 5px;
+            }
+            a {
+              color: #0066cc;
+              text-decoration: none;
+            }
+            a:hover {
+              text-decoration: underline;
             }
           </style>
         </head>
         <body>
           <h1>Zenobia Pay Configuration</h1>
-          <div class="help-text" style="margin-bottom: 20px;">
-            Please make sure the webhook endpoint is set to https://dashboard.zenobiapay.com/bigcommerce/webhooks/${store.store_hash}
-          </div>
+          <p class="subheader">To configure Zenobia Pay and accept payments, <a href="https://dashboard.zenobiapay.com" target="_blank">signup for an account at dashboard.zenobiapay.com</a>.</p>
+
           <div id="message" class="message"></div>
+
           <form id="configForm">
             <input type="hidden" name="store_hash" value="${storeHash}">
-            <div class="form-group">
-              <label for="zenobia_client_id">Zenobia Client ID</label>
-              <input type="text" id="zenobia_client_id" name="zenobia_client_id" value="${store.zenobia_client_id || ""}" required>
+            <input type="hidden" name="signed_payload" value="${signedPayload}">
+            <input type="hidden" name="signed_payload_jwt" value="${signedPayloadJwt}">
+
+            <div class="step">
+              <h2>Step 1: Enter Your Zenobia Credentials</h2>
+              <p class="help-text">
+                Get your Client ID and Client Secret from the <a href="https://dashboard.zenobiapay.com/?tab=developers" target="_blank">Zenobia Pay Developer Dashboard</a>.
+                Click "Generate New Credentials" and paste the values below.
+              </p>
+              <div class="form-group">
+                <label for="zenobia_client_id">Zenobia Client ID</label>
+                <input type="text" id="zenobia_client_id" name="zenobia_client_id" value="${store.zenobia_client_id || ""}" required>
+              </div>
+              <div class="form-group">
+                <label for="zenobia_client_secret">Zenobia Client Secret</label>
+                <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" placeholder="${store.zenobia_client_secret ? "••••••••••••••••" : "Enter your Client Secret"}" ${!store.zenobia_client_secret ? "required" : ""}>
+                ${store.zenobia_client_secret ? '<p class="help-text">Leave blank to keep your existing secret.</p>' : ""}
+              </div>
+              <div class="form-group">
+                <label for="url_endpoint">Store URL</label>
+                <input type="text" id="url_endpoint" name="url_endpoint" value="${store.url_endpoint || ""}" placeholder="e.g., store.mybigcommerce.com" required>
+                <p class="help-text">Enter your store's domain without https:// or www. (e.g., store.mybigcommerce.com)</p>
+              </div>
+              <button type="submit">Save Configuration</button>
             </div>
-            <div class="form-group">
-              <label for="zenobia_client_secret">Zenobia Client Secret</label>
-              <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" placeholder="${store.zenobia_client_secret ? "••••••••••••••••" : ""}" ${!store.zenobia_client_secret ? "required" : ""}>
-              ${store.zenobia_client_secret ? '<p class="help-text">Leave blank to keep existing secret</p>' : ""}
-            </div>
-            <div class="form-group">
-              <label for="url_endpoint">Store URL</label>
-              <input type="text" id="url_endpoint" name="url_endpoint" value="${store.url_endpoint || ""}" placeholder="e.g., store.mybigcommerce.com" required>
-              <p class="help-text">Enter your store's domain without https:// or www. (e.g., store.mybigcommerce.com)</p>
-            </div>
-            <button type="submit">Save Configuration</button>
           </form>
+
+          <div class="step">
+            <h2>Step 2: Configure Your Webhook</h2>
+            <p class="help-text">
+              You need to set your webhook endpoint to: <br>
+              <code>https://dashboard.zenobiapay.com/bigcommerce/webhooks/${store.store_hash}</code>
+            </p>
+            <p class="help-text">
+              <a href="https://dashboard.zenobiapay.com/?tab=developers&subtab=webhooks&url=https://dashboard.zenobiapay.com/bigcommerce/webhooks/${store.store_hash}" target="_blank">Click here to set it in your Zenobia Pay Developer Dashboard.</a>
+            </p>
+          </div>
+
           <script>
             const form = document.getElementById('configForm');
             const message = document.getElementById('message');
