@@ -232,7 +232,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
               <h2>Step 1: Enter Your Zenobia Credentials</h2>
               <p class="help-text">
                 Get your Client ID and Client Secret from the <a href="https://dashboard.zenobiapay.com/?tab=developers" target="_blank">Zenobia Pay Developer Dashboard</a>.
-                Click "Generate New Credentials" and paste the values below.
+                Click "Generate New Credentials" and paste the values below. This is necessary for Zenobia Pay to be able to process payments for your store.
               </p>
               <div class="form-group">
                 <label for="zenobia_client_id">Zenobia Client ID</label>
@@ -240,7 +240,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
               </div>
               <div class="form-group">
                 <label for="zenobia_client_secret">Zenobia Client Secret</label>
-                <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" placeholder="${store.zenobia_client_secret ? "••••••••••••••••" : "Enter your Client Secret"}" ${!store.zenobia_client_secret ? "required" : ""}>
+                <input type="password" id="zenobia_client_secret" name="zenobia_client_secret" placeholder="${store.zenobia_client_secret ? "********" : "Enter your Client Secret"}" ${!store.zenobia_client_secret ? "required" : ""}>
                 ${store.zenobia_client_secret ? '<p class="help-text">Leave blank to keep your existing secret.</p>' : ""}
               </div>
               <div class="form-group">
