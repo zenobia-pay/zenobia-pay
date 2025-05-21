@@ -686,14 +686,17 @@ const CheckoutPage: Component = () => {
                     >
                       <ZenobiaPaymentButton
                         amount={calculateTotal()}
+                        metadata={{
+                          amount: calculateTotal(),
+                          statementItems: items().map((item) => ({
+                            name:
+                              item.product.name +
+                              (item.color ? ` - ${item.color}` : "") +
+                              (item.size ? ` - ${item.size}` : ""),
+                            amount: item.product.price * item.quantity,
+                          })),
+                        }}
                         url={`${window.location.origin}/create-transfer`}
-                        statementItems={items().map((item) => ({
-                          name:
-                            item.product.name +
-                            (item.color ? ` - ${item.color}` : "") +
-                            (item.size ? ` - ${item.size}` : ""),
-                          amount: item.product.price * item.quantity,
-                        }))}
                         buttonText="Pay with Zenobia"
                         buttonClass="w-full bg-black text-white p-4 text-sm hover:opacity-90"
                         onSuccess={handlePaymentSuccess}

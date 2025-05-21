@@ -45,7 +45,6 @@ async function verifyJWT(
   try {
     const token = authHeader.split(" ")[1];
 
-    // Fetch the JWKS (JSON Web Key Set) from Zenobia's well-known endpoint
     const jwksResponse = await fetch(
       "https://zenobiapay.com/.well-known/jwks.json"
     );
@@ -53,16 +52,13 @@ async function verifyJWT(
       throw new Error(`Failed to fetch JWKS: ${jwksResponse.status}`);
     }
 
-    const jwks = await jwksResponse.json();
-
-    // Create a JWKS instance
     const keyStore = jose.createRemoteJWKSet(
       new URL("https://zenobiapay.com/.well-known/jwks.json")
     );
 
     // Verify the JWT
     const result = await jose.jwtVerify(token, keyStore, {
-      algorithms: ["RS256"], // Ensure we're using the correct algorithm
+      algorithms: ["RS256"],
     });
 
     return result;
@@ -164,6 +160,7 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
       return addCorsHeaders(errorResponse);
     }
 
+    console.log("body", body);
     // Process payment status update if applicable
     if (typeof body === "object" && body !== null) {
       // Check if this is a transfer request status update webhook
