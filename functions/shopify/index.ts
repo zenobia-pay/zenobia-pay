@@ -1,10 +1,31 @@
 import { Env } from "../types"
 import { EventContext } from "@cloudflare/workers-types"
-import crypto from "crypto"
 
 // These will be replaced with actual values
 const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || ""
 const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET || ""
+
+async function generateHmac(message: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  )
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(message)
+  )
+
+  // Convert ArrayBuffer to hex string
+  return Array.from(new Uint8Array(signature))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+}
 
 export async function onRequest(context: EventContext<Env, string, unknown>) {
   const { request } = context
@@ -29,10 +50,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     .join("&")
 
   // Create HMAC
-  const generatedHmac = crypto
-    .createHmac("sha256", SHOPIFY_API_SECRET)
-    .update(sortedParams)
-    .digest("hex")
+  const generatedHmac = await generateHmac(sortedParams, SHOPIFY_API_SECRET)
 
   // Compare HMACs
   if (generatedHmac !== hmac) {
