@@ -114,6 +114,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         <head>
           <title>Zenobia Pay</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
+          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://admin.shopify.com">
           <style>
             body {
               margin: 0;
@@ -142,7 +143,11 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         headers: {
           "Content-Type": "text/html",
           "X-Frame-Options": "ALLOW-FROM https://*.myshopify.com",
-          "Content-Security-Policy": "frame-ancestors https://*.myshopify.com",
+          "Content-Security-Policy":
+            "frame-ancestors https://*.myshopify.com https://admin.shopify.com",
+          "Access-Control-Allow-Origin": "https://*.myshopify.com",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
         },
       }
     )
