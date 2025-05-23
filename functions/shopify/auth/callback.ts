@@ -74,8 +74,6 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     )
 
     if (!tokenResponse.ok) {
-      // log the whole response
-      console.log(await tokenResponse.json())
       throw new Error("Failed to exchange code for access token")
     }
 
