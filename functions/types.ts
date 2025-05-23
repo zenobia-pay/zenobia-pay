@@ -12,6 +12,8 @@ export interface Env {
   API_BASE_URL: string
   TRANSFER_MAPPINGS: KVNamespace
   SUBSCRIBE_HMAC: string
+  SHOPIFY_API_KEY: string
+  SHOPIFY_API_SECRET: string
 }
 
 export interface BigCommerceToken {

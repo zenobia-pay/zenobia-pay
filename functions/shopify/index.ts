@@ -1,10 +1,6 @@
 import { Env } from "../types"
 import { EventContext } from "@cloudflare/workers-types"
 
-// These will be replaced with actual values
-const SHOPIFY_API_KEY = process.env.SHOPIFY_API_KEY || ""
-const SHOPIFY_API_SECRET = process.env.SHOPIFY_API_SECRET || ""
-
 async function generateHmac(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
@@ -28,7 +24,7 @@ async function generateHmac(message: string, secret: string): Promise<string> {
 }
 
 export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request } = context
+  const { request, env } = context
   const url = new URL(request.url)
   const params = Object.fromEntries(url.searchParams)
 
@@ -50,7 +46,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     .join("&")
 
   // Create HMAC
-  const generatedHmac = await generateHmac(sortedParams, SHOPIFY_API_SECRET)
+  const generatedHmac = await generateHmac(sortedParams, env.SHOPIFY_API_SECRET)
 
   // Compare HMACs
   if (generatedHmac !== hmac) {
@@ -61,7 +57,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   const redirectUrl =
     `https://${shop}/admin/oauth/authorize?` +
     new URLSearchParams({
-      client_id: SHOPIFY_API_KEY,
+      client_id: env.SHOPIFY_API_KEY,
       scope: "write_payment_sessions,read_payment_sessions",
       redirect_uri: "https://dashboard.zenobiapay.com/shopify/auth/callback",
     }).toString()
