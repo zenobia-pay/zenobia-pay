@@ -111,18 +111,9 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         <head>
           <title>Zenobia Pay</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
-          <script src="https://unpkg.com/@shopify/app-bridge@3"></script>
         </head>
         <body>
-          <div id="app"></div>
-          <script>
-            // Initialize Shopify App Bridge
-            const app = createApp({
-              apiKey: "${env.SHOPIFY_CLIENT_ID}",
-              host: "${host}",
-              forceRedirect: true
-            });
-          </script>
+          <div id="app">hello</div>
         </body>
       </html>`,
       {
