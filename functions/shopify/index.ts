@@ -34,11 +34,13 @@ async function validateJwtToken(
 
     // Verify the token is for the correct shop
     if (payload.dest !== `https://${shop}`) {
+      console.log("Invalid token destination")
       return false
     }
 
     // Verify the token hasn't expired
     if (payload.exp < Date.now() / 1000) {
+      console.log("Token expired")
       return false
     }
 
@@ -57,7 +59,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   const url = new URL(request.url)
   const params = Object.fromEntries(url.searchParams)
 
-  const { hmac, shop, host, timestamp, embedded, id_token, session } = params
+  const { hmac, shop, host, timestamp } = params
 
   // Check if all required parameters are present
   if (!hmac || !shop || !host || !timestamp) {
@@ -85,81 +87,15 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     return new Response("Invalid HMAC", { status: 401 })
   }
 
-  // Handle embedded app request
-  if (embedded === "1") {
-    console.log("Is embedded")
-    console.log("Request headers:", Object.fromEntries(request.headers))
-    console.log("URL params:", params)
-
-    if (!id_token || !session) {
-      return new Response("Missing required embedded parameters", {
-        status: 400,
-      })
-    }
-
-    // Validate JWT token
-    // const isValidToken = await validateJwtToken(
-    //   id_token,
-    //   shop,
-    //   env.SHOPIFY_CLIENT_SECRET
-    // )
-    // if (!isValidToken) {
-    //   return new Response("Invalid JWT token", { status: 401 })
-    // }
-
-    // Return HTML that will be loaded in the Shopify admin iframe
-    return new Response(
-      `<!DOCTYPE html>
-      <html>
-        <head>
-          <title>Zenobia Pay</title>
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <meta http-equiv="Content-Security-Policy" content="frame-ancestors https://*.myshopify.com https://admin.shopify.com">
-          <style>
-            body {
-              margin: 0;
-              padding: 20px;
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            }
-            #app {
-              max-width: 1200px;
-              margin: 0 auto;
-            }
-          </style>
-        </head>
-        <body>
-          <div id="app">
-            <h1>Zenobia Pay</h1>
-            <p>Loading your payment settings...</p>
-            <pre>Debug Info:
-              Host: ${host}
-              Shop: ${shop}
-              Embedded: ${embedded}
-            </pre>
-          </div>
-        </body>
-      </html>`,
-      {
-        headers: {
-          "Content-Type": "text/html",
-          "X-Frame-Options": "ALLOW-FROM https://*.myshopify.com",
-          "Content-Security-Policy":
-            "frame-ancestors https://*.myshopify.com https://admin.shopify.com",
-          "Access-Control-Allow-Origin": "https://*.myshopify.com",
-          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
-        },
-      }
-    )
-  }
-
-  // Handle regular OAuth flow
+  // Construct OAuth URL with payment-specific scopes
   const redirectUrl =
     `https://${shop}/admin/oauth/authorize?` +
     new URLSearchParams({
       client_id: env.SHOPIFY_CLIENT_ID,
-      scope: "write_payment_sessions,read_payment_sessions",
+      scope:
+        "write_payment_sessions,read_payment_sessions,write_payment_gateways,read_payment_gateways",
       redirect_uri: "https://dashboard.zenobiapay.com/shopify/auth/callback",
+      "grant_options[]": "per-user",
     }).toString()
 
   // Redirect to Shopify OAuth
