@@ -111,9 +111,23 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         <head>
           <title>Zenobia Pay</title>
           <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            body {
+              margin: 0;
+              padding: 20px;
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            }
+            #app {
+              max-width: 1200px;
+              margin: 0 auto;
+            }
+          </style>
         </head>
         <body>
-          <div id="app">hello</div>
+          <div id="app">
+            <h1>Zenobia Pay</h1>
+            <p>Loading your payment settings...</p>
+          </div>
         </body>
       </html>`,
       {
