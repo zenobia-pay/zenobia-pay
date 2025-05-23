@@ -11,10 +11,24 @@ export async function encrypt(
   // Generate a random IV
   const iv = crypto.getRandomValues(new Uint8Array(12))
 
-  // Import the encryption key
-  const key = await crypto.subtle.importKey(
+  // Derive a proper length key using PBKDF2
+  const salt = new TextEncoder().encode("ZenobiaPaySalt") // Fixed salt for key derivation
+  const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(encryptionKey),
+    "PBKDF2",
+    false,
+    ["deriveBits", "deriveKey"]
+  )
+
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
     { name: "AES-GCM", length: 256 },
     false,
     ["encrypt"]
@@ -57,10 +71,24 @@ export async function decrypt(
   const iv = encryptedArray.slice(0, 12)
   const data = encryptedArray.slice(12)
 
-  // Import the encryption key
-  const key = await crypto.subtle.importKey(
+  // Derive the same key using PBKDF2
+  const salt = new TextEncoder().encode("ZenobiaPaySalt")
+  const keyMaterial = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(encryptionKey),
+    "PBKDF2",
+    false,
+    ["deriveBits", "deriveKey"]
+  )
+
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 100000,
+      hash: "SHA-256",
+    },
+    keyMaterial,
     { name: "AES-GCM", length: 256 },
     false,
     ["decrypt"]
