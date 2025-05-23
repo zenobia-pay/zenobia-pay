@@ -87,6 +87,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
   // Handle embedded app request
   if (embedded === "1") {
+    console.log("Is embedded")
     if (!id_token || !session) {
       return new Response("Missing required embedded parameters", {
         status: 400,
@@ -94,14 +95,14 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     }
 
     // Validate JWT token
-    const isValidToken = await validateJwtToken(
-      id_token,
-      shop,
-      env.SHOPIFY_CLIENT_SECRET
-    )
-    if (!isValidToken) {
-      return new Response("Invalid JWT token", { status: 401 })
-    }
+    // const isValidToken = await validateJwtToken(
+    //   id_token,
+    //   shop,
+    //   env.SHOPIFY_CLIENT_SECRET
+    // )
+    // if (!isValidToken) {
+    //   return new Response("Invalid JWT token", { status: 401 })
+    // }
 
     // Return HTML that will be loaded in the Shopify admin iframe
     return new Response(
