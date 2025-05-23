@@ -14,6 +14,7 @@ export interface Env {
   SUBSCRIBE_HMAC: string
   SHOPIFY_CLIENT_ID: string
   SHOPIFY_CLIENT_SECRET: string
+  SHOPIFY_ENCRYPTION_KEY: string
 }
 
 export interface BigCommerceToken {
