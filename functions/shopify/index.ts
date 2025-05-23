@@ -46,7 +46,10 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     .join("&")
 
   // Create HMAC
-  const generatedHmac = await generateHmac(sortedParams, env.SHOPIFY_API_SECRET)
+  const generatedHmac = await generateHmac(
+    sortedParams,
+    env.SHOPIFY_CLIENT_SECRET
+  )
 
   // Compare HMACs
   if (generatedHmac !== hmac) {
@@ -57,7 +60,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   const redirectUrl =
     `https://${shop}/admin/oauth/authorize?` +
     new URLSearchParams({
-      client_id: env.SHOPIFY_API_KEY,
+      client_id: env.SHOPIFY_CLIENT_ID,
       scope: "write_payment_sessions,read_payment_sessions",
       redirect_uri: "https://dashboard.zenobiapay.com/shopify/auth/callback",
     }).toString()
