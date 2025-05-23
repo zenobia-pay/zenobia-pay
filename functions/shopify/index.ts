@@ -88,6 +88,9 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   // Handle embedded app request
   if (embedded === "1") {
     console.log("Is embedded")
+    console.log("Request headers:", Object.fromEntries(request.headers))
+    console.log("URL params:", params)
+
     if (!id_token || !session) {
       return new Response("Missing required embedded parameters", {
         status: 400,
@@ -127,12 +130,19 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
           <div id="app">
             <h1>Zenobia Pay</h1>
             <p>Loading your payment settings...</p>
+            <pre>Debug Info:
+              Host: ${host}
+              Shop: ${shop}
+              Embedded: ${embedded}
+            </pre>
           </div>
         </body>
       </html>`,
       {
         headers: {
           "Content-Type": "text/html",
+          "X-Frame-Options": "ALLOW-FROM https://*.myshopify.com",
+          "Content-Security-Policy": "frame-ancestors https://*.myshopify.com",
         },
       }
     )
