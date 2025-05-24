@@ -107,10 +107,11 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     // Call paymentsAppConfigure to mark the provider as ready
     console.log("Shop:", shop)
     console.log("Request details:", {
-      url: `https://${shop}/payments_apps/api/2025-04/graphql.json`,
+      url: `https://v0-simple-proxy-server.vercel.app/api/proxy`,
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Access-Token": access_token.substring(0, 10) + "...", // Only log part of the token for security
+        Authorization: env.SHOPIFY_PROXY_SECRET,
       },
       body: {
         query: `
@@ -134,12 +135,14 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     })
 
     const configureResponse = await fetch(
-      `https://${shop}/payments_apps/api/2025-04/graphql.json`,
+      "https://v0-simple-proxy-server.vercel.app/api/proxy",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "X-Shopify-Access-Token": access_token,
+          Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
+          "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
         },
         body: JSON.stringify({
           query: `

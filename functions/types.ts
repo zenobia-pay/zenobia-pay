@@ -15,6 +15,7 @@ export interface Env {
   SHOPIFY_CLIENT_ID: string
   SHOPIFY_CLIENT_SECRET: string
   SHOPIFY_ENCRYPTION_KEY: string
+  SHOPIFY_PROXY_SECRET: string
 }
 
 export interface BigCommerceToken {
