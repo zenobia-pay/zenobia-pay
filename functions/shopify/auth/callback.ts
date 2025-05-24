@@ -114,21 +114,18 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         },
         body: JSON.stringify({
           query: `
-          mutation paymentsAppConfigure($ready: Boolean!) {
-            paymentsAppConfigure(ready: $ready) {
-              paymentsAppConfiguration {
-                externalHandle
-              }
-              userErrors {
-                field
-                message
+            mutation {
+              paymentsAppConfigure(ready: true) {
+                paymentsAppConfiguration {
+                  externalHandle
+                }
+                userErrors {
+                  field
+                  message
+                }
               }
             }
-          }
-        `,
-          variables: {
-            ready: true,
-          },
+          `,
         }),
       }
     )
