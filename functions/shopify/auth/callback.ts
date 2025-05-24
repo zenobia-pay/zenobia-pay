@@ -105,7 +105,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Call paymentsAppConfigure to mark the provider as ready
     const configureResponse = await fetch(
-      `https://${shop}/admin/api/2025-04/graphql.json`,
+      `https://${shop}/payments_apps/api/2025-04/graphql.json`,
       {
         method: "POST",
         headers: {
