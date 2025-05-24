@@ -114,8 +114,8 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
         },
         body: JSON.stringify({
           query: `
-            mutation {
-              paymentsAppConfigure(ready: true) {
+            mutation paymentsAppConfigure($externalHandle: String, $ready: Boolean!) {
+              paymentsAppConfigure(externalHandle: $externalHandle, ready: $ready) {
                 paymentsAppConfiguration {
                   externalHandle
                 }
@@ -126,9 +126,24 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
               }
             }
           `,
+          variables: {
+            externalHandle: "zenobia-pay",
+            ready: true,
+          },
         }),
       }
     )
+
+    if (!configureResponse.ok) {
+      const errorText = await configureResponse.text()
+      console.error("PaymentsAppConfigure failed:", {
+        status: configureResponse.status,
+        statusText: configureResponse.statusText,
+        headers: Object.fromEntries(configureResponse.headers.entries()),
+        body: errorText,
+      })
+      throw new Error(`Failed to configure payments app: ${errorText}`)
+    }
 
     const configureResult = await configureResponse.json()
     console.log("PaymentsAppConfigure Response:", {
@@ -137,10 +152,6 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       headers: Object.fromEntries(configureResponse.headers.entries()),
       result: configureResult,
     })
-
-    if (!configureResponse.ok) {
-      throw new Error("Failed to configure payments app")
-    }
 
     if (configureResult.data?.paymentsAppConfigure?.userErrors?.length > 0) {
       throw new Error(
