@@ -103,13 +103,50 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       .bind(shop, encryptedToken, now, now)
       .run()
 
-    // Return success response instead of redirecting
-    return new Response(JSON.stringify({ success: true, shop }), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-      },
-    })
+    // Call paymentsAppConfigure to mark the provider as ready
+    const configureResponse = await fetch(
+      `https://${shop}/admin/api/2025-04/graphql.json`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Shopify-Access-Token": access_token,
+        },
+        body: JSON.stringify({
+          query: `
+          mutation paymentsAppConfigure($ready: Boolean!) {
+            paymentsAppConfigure(ready: $ready) {
+              paymentsAppConfiguration {
+                externalHandle
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `,
+          variables: {
+            ready: true,
+          },
+        }),
+      }
+    )
+
+    if (!configureResponse.ok) {
+      throw new Error("Failed to configure payments app")
+    }
+
+    const configureResult = await configureResponse.json()
+    if (configureResult.data?.paymentsAppConfigure?.userErrors?.length > 0) {
+      throw new Error(
+        `Configuration errors: ${JSON.stringify(configureResult.data.paymentsAppConfigure.userErrors)}`
+      )
+    }
+
+    // Redirect back to Shopify admin with the proper URL format
+    const redirectUrl = `https://${shop}/admin/settings/payments?activate_payment_method=zenobiapay`
+    return Response.redirect(redirectUrl)
   } catch (error) {
     console.error("Error during OAuth callback:", error)
     return new Response("Error processing OAuth callback", { status: 500 })
