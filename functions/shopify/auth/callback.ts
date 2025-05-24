@@ -79,6 +79,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     const { access_token } = await tokenResponse.json()
 
+    console.log("Access token:", access_token)
     // Encrypt the access token
     const encryptedToken = await encrypt(
       access_token,
