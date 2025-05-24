@@ -104,6 +104,34 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       .run()
 
     // Call paymentsAppConfigure to mark the provider as ready
+    console.log("Shop:", shop)
+    console.log("Request details:", {
+      url: `https://${shop}/payments_apps/api/2025-04/graphql.json`,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": access_token.substring(0, 10) + "...", // Only log part of the token for security
+      },
+      body: {
+        query: `
+          mutation paymentsAppConfigure($externalHandle: String, $ready: Boolean!) {
+            paymentsAppConfigure(externalHandle: $externalHandle, ready: $ready) {
+              paymentsAppConfiguration {
+                externalHandle
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `,
+        variables: {
+          externalHandle: "zenobia-pay",
+          ready: true,
+        },
+      },
+    })
+
     const configureResponse = await fetch(
       `https://${shop}/payments_apps/api/2025-04/graphql.json`,
       {
