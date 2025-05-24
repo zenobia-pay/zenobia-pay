@@ -30,48 +30,62 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
   const { code, hmac, shop, host, timestamp } = params
 
+  // Check if all required parameters are present
   if (!code || !hmac || !shop || !host || !timestamp) {
     return new Response("Missing required parameters", { status: 400 })
   }
 
+  // Verify HMAC
   const queryParams = new URLSearchParams(params)
-  queryParams.delete("hmac")
+  queryParams.delete("hmac") // Remove hmac from the parameters
 
+  // Sort parameters alphabetically
   const sortedParams = Array.from(queryParams.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => `${key}=${value}`)
     .join("&")
 
+  // Create HMAC
   const generatedHmac = await generateHmac(
     sortedParams,
     env.SHOPIFY_CLIENT_SECRET
   )
 
+  // Compare HMACs
   if (generatedHmac !== hmac) {
     return new Response("Invalid HMAC", { status: 401 })
   }
 
   try {
-    // exchange code for access token
-    const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        client_id: env.SHOPIFY_CLIENT_ID,
-        client_secret: env.SHOPIFY_CLIENT_SECRET,
-        code,
-      }),
-    })
+    // Exchange code for access token
+    const tokenResponse = await fetch(
+      `https://${shop}/admin/oauth/access_token`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          client_id: env.SHOPIFY_CLIENT_ID,
+          client_secret: env.SHOPIFY_CLIENT_SECRET,
+          code,
+        }),
+      }
+    )
 
-    if (!tokenRes.ok) throw new Error("Token exchange failed")
+    if (!tokenResponse.ok) {
+      throw new Error("Failed to exchange code for access token")
+    }
 
-    const { access_token } = await tokenRes.json()
+    const { access_token } = await tokenResponse.json()
+
+    // Encrypt the access token
     const encryptedToken = await encrypt(
       access_token,
       env.SHOPIFY_ENCRYPTION_KEY
     )
 
-    // store token
+    // Store the store data in D1
     const now = Date.now()
     await env.MERCHANTS_OAUTH.prepare(
       `
@@ -89,62 +103,15 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       .bind(shop, encryptedToken, now, now)
       .run()
 
-    // fetch shop id
-    const shopQuery = await fetch(
-      `https://${shop}/admin/api/2023-10/graphql.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": access_token,
-        },
-        body: JSON.stringify({ query: `{ shop { id } }` }),
-      }
-    )
-
-    const shopData = await shopQuery.json()
-    const shopId = shopData?.data?.shop?.id
-    if (!shopId) throw new Error("Could not retrieve shop ID")
-
-    // configure payments app
-    const configRes = await fetch(
-      `https://${shop}/admin/api/2023-10/graphql.json`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Shopify-Access-Token": access_token,
-        },
-        body: JSON.stringify({
-          query: `
-          mutation {
-            paymentsAppConfigure(
-              shopId: "${shopId}"
-              configuration: {
-                name: "Zenobia Pay",
-                url: "https://yourapp.com/api/shopify/payment-session",
-                enabled: true,
-                ready: true
-              }
-            ) {
-              paymentsAppConfiguration { id }
-              userErrors { field message }
-            }
-          }
-        `,
-        }),
-      }
-    )
-
-    const configResult = await configRes.json()
-    console.log("paymentsAppConfigure result:", JSON.stringify(configResult))
-
-    // done, redirect merchant to your dashboard
-    return Response.redirect(
-      `https://dashboard.zenobiapay.com/shopify?shop=${shop}`
-    )
-  } catch (err) {
-    console.error("OAuth flow error:", err)
-    return new Response("Internal error", { status: 500 })
+    // Return success response instead of redirecting
+    return new Response(JSON.stringify({ success: true, shop }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+  } catch (error) {
+    console.error("Error during OAuth callback:", error)
+    return new Response("Error processing OAuth callback", { status: 500 })
   }
 }
