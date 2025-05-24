@@ -130,10 +130,6 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       }
     )
 
-    if (!configureResponse.ok) {
-      throw new Error("Failed to configure payments app")
-    }
-
     const configureResult = await configureResponse.json()
     console.log("PaymentsAppConfigure Response:", {
       status: configureResponse.status,
@@ -141,6 +137,10 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       headers: Object.fromEntries(configureResponse.headers.entries()),
       result: configureResult,
     })
+
+    if (!configureResponse.ok) {
+      throw new Error("Failed to configure payments app")
+    }
 
     if (configureResult.data?.paymentsAppConfigure?.userErrors?.length > 0) {
       throw new Error(
