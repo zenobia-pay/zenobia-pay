@@ -144,8 +144,8 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       )
     }
 
-    // Redirect back to Shopify admin with the proper URL format
-    const redirectUrl = `https://${shop}/admin/settings/payments?activate_payment_method=zenobiapay`
+    // Redirect back to Shopify admin with the proper payments partner gateway settings URL
+    const redirectUrl = `https://${shop}/services/payments_partners/gateways/${env.SHOPIFY_CLIENT_ID}/settings`
     return Response.redirect(redirectUrl)
   } catch (error) {
     console.error("Error during OAuth callback:", error)
