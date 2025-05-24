@@ -138,6 +138,13 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     }
 
     const configureResult = await configureResponse.json()
+    console.log("PaymentsAppConfigure Response:", {
+      status: configureResponse.status,
+      statusText: configureResponse.statusText,
+      headers: Object.fromEntries(configureResponse.headers.entries()),
+      result: configureResult,
+    })
+
     if (configureResult.data?.paymentsAppConfigure?.userErrors?.length > 0) {
       throw new Error(
         `Configuration errors: ${JSON.stringify(configureResult.data.paymentsAppConfigure.userErrors)}`
