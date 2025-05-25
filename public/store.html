@@ -37,6 +37,11 @@
     ZenobiaPay.init({
       target: '#zenobia-pay-button',
       amount: session.amount,
+      metadata: {
+        sessionId: sessionId,
+        shop: session.shop,
+        returnUrl: session.returnUrl,
+      },
       url: '/shopify/create-transfer',
       statementItems: [{
         name: 'Payment',
