@@ -19,6 +19,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
   console.log("Request", request)
   try {
     const body = (await request.json()) as PaymentSessionRequest
+    console.log("Body", body)
     const { shop, paymentSessionId, returnUrl } = body
 
     if (!shop || !paymentSessionId || !returnUrl) {
