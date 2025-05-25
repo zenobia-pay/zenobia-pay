@@ -6,10 +6,8 @@ interface CreateTransferRequest {
 }
 
 interface ShopifyStore {
-  shop: string
+  shop_domain: string
   access_token: string
-  zenobia_client_id: string
-  zenobia_client_secret: string
 }
 
 interface CheckoutSession {
@@ -103,7 +101,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Get the store based on the shop domain
     const store = await env.MERCHANTS_OAUTH.prepare(
-      `SELECT * FROM shopify_stores WHERE shop = ?`
+      `SELECT shop_domain, access_token FROM shopify_stores WHERE shop_domain = ?`
     )
       .bind(session.shop)
       .first<ShopifyStore>()
@@ -112,17 +110,11 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       return new Response("Store not found", { status: 404 })
     }
 
-    if (!store.zenobia_client_id || !store.zenobia_client_secret) {
-      return new Response("Store not configured with Zenobia credentials", {
-        status: 400,
-      })
-    }
-
-    // Get Auth0 access token using store-specific credentials
+    // Get Auth0 access token using global credentials
     const accessToken = await getAccessToken(
       env,
-      store.zenobia_client_id,
-      store.zenobia_client_secret
+      env.ZENOBIA_CLIENT_ID,
+      env.ZENOBIA_CLIENT_SECRET
     )
 
     const transferRequestBody = {
