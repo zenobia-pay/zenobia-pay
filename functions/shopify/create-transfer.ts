@@ -1,5 +1,6 @@
 import { Env } from "../types"
 import { EventContext } from "@cloudflare/workers-types"
+import { decrypt } from "../../utils/encryption"
 
 interface CreateTransferRequest {
   sessionId: string
@@ -8,6 +9,8 @@ interface CreateTransferRequest {
 interface ShopifyStore {
   shop_domain: string
   access_token: string
+  zenobia_client_id: string
+  zenobia_client_secret: string
 }
 
 interface CheckoutSession {
@@ -22,16 +25,22 @@ interface CheckoutSession {
 async function getAccessToken(
   env: Env,
   clientId: string,
-  clientSecret: string
+  encryptedClientSecret: string
 ): Promise<string> {
   try {
     const tokenUrl = `${env.ACCOUNTS_DOMAIN}/oauth/token`
     const audience = env.ACCOUNTS_AUDIENCE || ""
 
-    if (!clientId || !clientSecret) {
+    if (!clientId || !encryptedClientSecret) {
       console.warn("No Auth0 credentials provided, using test mode")
       return "test_token"
     }
+
+    // Decrypt the client secret
+    const clientSecret = await decrypt(
+      encryptedClientSecret,
+      env.SHOPIFY_ENCRYPTION_KEY
+    )
 
     const response = await fetch(tokenUrl, {
       method: "POST",
@@ -101,7 +110,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
 
     // Get the store based on the shop domain
     const store = await env.MERCHANTS_OAUTH.prepare(
-      `SELECT shop_domain, access_token FROM shopify_stores WHERE shop_domain = ?`
+      `SELECT shop_domain, access_token, zenobia_client_id, zenobia_client_secret FROM shopify_stores WHERE shop_domain = ?`
     )
       .bind(session.shop)
       .first<ShopifyStore>()
@@ -110,11 +119,17 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       return new Response("Store not found", { status: 404 })
     }
 
-    // Get Auth0 access token using global credentials
+    if (!store.zenobia_client_id || !store.zenobia_client_secret) {
+      return new Response("Store not configured with Zenobia credentials", {
+        status: 400,
+      })
+    }
+
+    // Get Auth0 access token using store-specific credentials
     const accessToken = await getAccessToken(
       env,
-      env.ZENOBIA_CLIENT_ID,
-      env.ZENOBIA_CLIENT_SECRET
+      store.zenobia_client_id,
+      store.zenobia_client_secret
     )
 
     const transferRequestBody = {
