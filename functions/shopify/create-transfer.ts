@@ -71,6 +71,77 @@ async function getAccessToken(
   }
 }
 
+async function getOrderDetails(
+  env: Env,
+  shop: string,
+  accessToken: string,
+  sessionId: string
+): Promise<any> {
+  const response = await fetch(
+    "https://v0-simple-proxy-server.vercel.app/api/proxy",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Access-Token": accessToken,
+        Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
+        "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
+      },
+      body: JSON.stringify({
+        query: `
+          query getPaymentSession($id: ID!) {
+            paymentSession(id: $id) {
+              id
+              state
+              amount {
+                amount
+                currencyCode
+              }
+              returnUrl
+              order {
+                id
+                name
+                email
+                totalPriceSet {
+                  shopMoney {
+                    amount
+                    currencyCode
+                  }
+                }
+                lineItems(first: 10) {
+                  edges {
+                    node {
+                      title
+                      quantity
+                      variant {
+                        price
+                        title
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        `,
+        variables: {
+          id: sessionId,
+        },
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error("Failed to fetch order details:", error)
+    throw new Error("Failed to fetch order details")
+  }
+
+  const data = await response.json()
+  console.log("Order details:", JSON.stringify(data, null, 2))
+  return data.data?.paymentSession?.order
+}
+
 export async function onRequest(context: EventContext<Env, string, unknown>) {
   const { request, env } = context
 
@@ -133,6 +204,15 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       store.zenobia_client_secret
     )
 
+    // Get order details from Shopify
+    const orderDetails = await getOrderDetails(
+      env,
+      session.shop,
+      store.access_token,
+      sessionId
+    )
+
+    console.log("Order details:", JSON.stringify(orderDetails, null, 2))
     const transferRequestBody = {
       amount: Math.round(parseFloat(session.amount || "0") * 100),
       statementItems: [
@@ -144,12 +224,24 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       // metadata: {
       //   sessionId: sessionId,
       //   shop: session.shop,
-      //   email: session.email,
-      //   currency: session.currency,
+      //   orderId: orderDetails?.id,
+      //   orderName: orderDetails?.name,
+      //   orderEmail: orderDetails?.email,
+      //   orderTotal: orderDetails?.totalPriceSet?.shopMoney?.amount,
+      //   orderCurrency: orderDetails?.totalPriceSet?.shopMoney?.currencyCode,
+      //   lineItems: orderDetails?.lineItems?.edges?.map((edge: any) => ({
+      //     title: edge.node.title,
+      //     quantity: edge.node.quantity,
+      //     price: edge.node.variant?.price,
+      //     variant: edge.node.variant?.title,
+      //   })),
       // },
     }
 
-    console.log("Creating transfer request with body:", transferRequestBody)
+    console.log(
+      "Creating transfer request with body:",
+      JSON.stringify(transferRequestBody, null, 2)
+    )
 
     // Create transfer request with Zenobia Pay
     const transferResponse = await fetch(
