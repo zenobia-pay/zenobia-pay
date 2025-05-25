@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Checkout - {{shop}}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://zenobiapay.com/zenobia-pay.js"></script>
 </head>
 
 <body>
@@ -17,45 +18,11 @@
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600" id="amount"></p>
       </div>
-      <form class="mt-8 space-y-6" id="checkoutForm">
-        <div class="rounded-md shadow-sm -space-y-px">
-          <div>
-            <label for="cardNumber" class="sr-only">Card Number</label>
-            <input id="cardNumber" name="cardNumber" type="text" required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="Card Number" />
-          </div>
-          <div class="flex">
-            <div class="w-1/2">
-              <label for="expiryMonth" class="sr-only">Month</label>
-              <input id="expiryMonth" name="expiryMonth" type="text" required
-                class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="MM" />
-            </div>
-            <div class="w-1/2">
-              <label for="expiryYear" class="sr-only">Year</label>
-              <input id="expiryYear" name="expiryYear" type="text" required
-                class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="YY" />
-            </div>
-          </div>
-          <div>
-            <label for="cvv" class="sr-only">CVV</label>
-            <input id="cvv" name="cvv" type="text" required
-              class="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-              placeholder="CVV" />
-          </div>
-        </div>
 
+      <div class="mt-8 space-y-6">
         <div id="error" class="text-red-500 text-sm text-center hidden"></div>
-
-        <div>
-          <button type="submit" id="submitButton"
-            class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50">
-            Pay Now
-          </button>
-        </div>
-      </form>
+        <div id="zenobia-pay-button"></div>
+      </div>
     </div>
   </div>
 
@@ -66,46 +33,25 @@
     // Display amount
     document.getElementById('amount').textContent = `${session.amount} ${session.currency}`;
 
-    const form = document.getElementById('checkoutForm');
-    const errorDiv = document.getElementById('error');
-    const submitButton = document.getElementById('submitButton');
-
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-
-      // Show loading state
-      submitButton.disabled = true;
-      submitButton.textContent = 'Processing...';
-      errorDiv.classList.add('hidden');
-
-      try {
-        const formData = new FormData(form);
-        const response = await fetch('/api/shopify/process-payment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sessionId,
-            cardNumber: formData.get('cardNumber'),
-            expiryMonth: formData.get('expiryMonth'),
-            expiryYear: formData.get('expiryYear'),
-            cvv: formData.get('cvv'),
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error('Payment failed');
-        }
-
-        const data = await response.json();
-        window.location.href = data.redirectUrl;
-      } catch (err) {
-        errorDiv.textContent = err.message;
+    // Initialize Zenobia Pay
+    ZenobiaPay.init({
+      target: '#zenobia-pay-button',
+      amount: session.amount,
+      url: '/api/shopify/create-transfer',
+      statementItems: [{
+        name: 'Payment',
+        amount: session.amount
+      }],
+      onSuccess: (result) => {
+        window.location.href = session.returnUrl;
+      },
+      onError: (error) => {
+        const errorDiv = document.getElementById('error');
+        errorDiv.textContent = error.message;
         errorDiv.classList.remove('hidden');
-      } finally {
-        submitButton.disabled = false;
-        submitButton.textContent = 'Pay Now';
+      },
+      onStatusChange: (status) => {
+        console.log('Payment status:', status);
       }
     });
   </script>
