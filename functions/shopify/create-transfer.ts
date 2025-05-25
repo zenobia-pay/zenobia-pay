@@ -74,9 +74,16 @@ async function getAccessToken(
 async function getOrderDetails(
   env: Env,
   shop: string,
-  accessToken: string,
+  encryptedAccessToken: string,
   sessionId: string
 ): Promise<any> {
+  // Decrypt the access token
+  const accessToken = await decrypt(
+    encryptedAccessToken,
+    env.SHOPIFY_ENCRYPTION_KEY
+  )
+  console.log("Decrypted access token:", accessToken)
+
   const response = await fetch(
     "https://v0-simple-proxy-server.vercel.app/api/proxy",
     {
@@ -205,14 +212,26 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     )
 
     // Get order details from Shopify
-    const orderDetails = await getOrderDetails(
-      env,
-      session.shop,
-      store.access_token,
-      sessionId
-    )
+    let orderDetails
+    try {
+      orderDetails = await getOrderDetails(
+        env,
+        session.shop,
+        store.access_token,
+        sessionId
+      )
+      console.log(
+        "Successfully fetched order details:",
+        JSON.stringify(orderDetails, null, 2)
+      )
+    } catch (error) {
+      console.error(
+        "Failed to fetch order details, continuing with empty details:",
+        error
+      )
+      orderDetails = null
+    }
 
-    console.log("Order details:", JSON.stringify(orderDetails, null, 2))
     const transferRequestBody = {
       amount: Math.round(parseFloat(session.amount || "0") * 100),
       statementItems: [
@@ -224,17 +243,19 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       // metadata: {
       //   sessionId: sessionId,
       //   shop: session.shop,
-      //   orderId: orderDetails?.id,
-      //   orderName: orderDetails?.name,
-      //   orderEmail: orderDetails?.email,
-      //   orderTotal: orderDetails?.totalPriceSet?.shopMoney?.amount,
-      //   orderCurrency: orderDetails?.totalPriceSet?.shopMoney?.currencyCode,
-      //   lineItems: orderDetails?.lineItems?.edges?.map((edge: any) => ({
-      //     title: edge.node.title,
-      //     quantity: edge.node.quantity,
-      //     price: edge.node.variant?.price,
-      //     variant: edge.node.variant?.title,
-      //   })),
+      //   orderId: orderDetails?.id || null,
+      //   orderName: orderDetails?.name || null,
+      //   orderEmail: orderDetails?.email || null,
+      //   orderTotal: orderDetails?.totalPriceSet?.shopMoney?.amount || null,
+      //   orderCurrency:
+      //     orderDetails?.totalPriceSet?.shopMoney?.currencyCode || null,
+      //   lineItems:
+      //     orderDetails?.lineItems?.edges?.map((edge: any) => ({
+      //       title: edge.node.title,
+      //       quantity: edge.node.quantity,
+      //       price: edge.node.variant?.price,
+      //       variant: edge.node.variant?.title,
+      //     })) || [],
       // },
     }
 
