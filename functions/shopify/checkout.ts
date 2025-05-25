@@ -16,11 +16,17 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     return new Response("Method not allowed", { status: 405 })
   }
 
+  console.log("Request", request)
   try {
     const body = (await request.json()) as PaymentSessionRequest
     const { shop, paymentSessionId, returnUrl } = body
 
     if (!shop || !paymentSessionId || !returnUrl) {
+      console.log("Missing required parameters", {
+        shop,
+        paymentSessionId,
+        returnUrl,
+      })
       return new Response("Missing required parameters", { status: 400 })
     }
 
