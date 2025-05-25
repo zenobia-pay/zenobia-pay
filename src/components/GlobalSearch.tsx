@@ -1,20 +1,24 @@
-import { Component, createSignal, onMount, onCleanup, Show } from "solid-js"
+import {
+  Component,
+  createSignal,
+  onMount,
+  onCleanup,
+  Show,
+  createEffect,
+} from "solid-js"
 import { useNavigate } from "@solidjs/router"
 
 interface SearchItem {
-  id: number
+  id: string
   name: string
   description: string
+  path: string
+  category: string
 }
 
 interface SearchCategory {
   category: string
   items: SearchItem[]
-}
-
-interface SearchCategoryOption {
-  name: string
-  icon: string
 }
 
 export const GlobalSearch: Component = () => {
@@ -25,63 +29,77 @@ export const GlobalSearch: Component = () => {
   const [selectedResultIndex, setSelectedResultIndex] = createSignal(-1)
   const [recentSearches, setRecentSearches] = createSignal<string[]>([])
 
-  // Mock categories for search results
-  const searchCategories: SearchCategoryOption[] = [
-    { name: "Merchants", icon: "👥" },
-    { name: "Payments", icon: "💰" },
-    { name: "Settings", icon: "⚙️" },
-    { name: "Documents", icon: "📄" },
+  // Real search data
+  const searchableItems: SearchItem[] = [
+    {
+      id: "webhooks",
+      name: "Webhooks",
+      description: "Configure webhook endpoints and event notifications",
+      path: "?tab=developers&subtab=webhooks",
+      category: "Developers",
+    },
+    {
+      id: "documentation",
+      name: "Documentation",
+      description: "API reference and integration guides",
+      path: "?tab=developers&subtab=docs",
+      category: "Developers",
+    },
+    {
+      id: "m2m-credentials",
+      name: "M2M Credentials",
+      description: "Manage machine-to-machine API credentials",
+      path: "?tab=developers&subtab=m2m-credentials",
+      category: "Developers",
+    },
+    {
+      id: "transactions",
+      name: "Transactions",
+      description: "View and manage payment transactions",
+      path: "?tab=transactions",
+      category: "Payments",
+    },
+    {
+      id: "settings",
+      name: "Settings",
+      description: "Manage account settings and preferences",
+      path: "?tab=settings",
+      category: "Settings",
+    },
+    {
+      id: "overview",
+      name: "Overview",
+      description: "Dashboard and key metrics",
+      path: "?tab=overview",
+      category: "Core",
+    },
   ]
 
-  // Mock search results
-  const mockSearch = (query: string) => {
+  // Real search implementation
+  const performSearch = (query: string) => {
     if (!query.trim()) {
       setSearchResults([])
       return
     }
 
-    // In a real app, this would be an API call
-    const results = [
-      {
-        category: "Merchants",
-        items: [
-          { id: 1, name: "Acme Inc", description: "Merchant ID: ACM12345" },
-          { id: 2, name: "Beta Corp", description: "Merchant ID: BET67890" },
-        ],
-      },
-      {
-        category: "Payments",
-        items: [
-          {
-            id: 3,
-            name: "Payment #12345",
-            description: "$1,234.56 - Completed",
-          },
-          { id: 4, name: "Payment #67890", description: "$2,345.67 - Pending" },
-        ],
-      },
-      {
-        category: "Settings",
-        items: [
-          {
-            id: 5,
-            name: "API Keys",
-            description: "Manage your API credentials",
-          },
-          {
-            id: 6,
-            name: "Webhook Settings",
-            description: "Configure webhook endpoints",
-          },
-        ],
-      },
-    ].filter((category) =>
-      category.items.some(
+    const results = searchableItems
+      .filter(
         (item) =>
           item.name.toLowerCase().includes(query.toLowerCase()) ||
           item.description.toLowerCase().includes(query.toLowerCase())
       )
-    )
+      .reduce((acc: SearchCategory[], item) => {
+        const category = acc.find((cat) => cat.category === item.category)
+        if (category) {
+          category.items.push(item)
+        } else {
+          acc.push({
+            category: item.category,
+            items: [item],
+          })
+        }
+        return acc
+      }, [])
 
     setSearchResults(results)
   }
@@ -141,23 +159,9 @@ export const GlobalSearch: Component = () => {
       return newSearches
     })
 
-    // Navigate based on result type
-    // This would be implemented based on your app's routing structure
-    let path = ""
-
-    if (result.name.includes("Payment")) {
-      path = "/transactions"
-    } else if (result.name.includes("Merchant")) {
-      path = "/merchants"
-    } else if (result.name.includes("API")) {
-      path = "/settings"
-    } else {
-      path = "/"
-    }
-
     setIsSearchOpen(false)
     setSearchQuery("")
-    navigate(path)
+    navigate(result.path)
   }
 
   // Handle search input changes
@@ -165,7 +169,7 @@ export const GlobalSearch: Component = () => {
     const input = e.target as HTMLInputElement
     const query = input.value
     setSearchQuery(query)
-    mockSearch(query)
+    performSearch(query)
     setSelectedResultIndex(-1)
   }
 
@@ -176,6 +180,24 @@ export const GlobalSearch: Component = () => {
       setIsSearchOpen(false)
     }
   }
+
+  // Function to focus the search input
+  const focusSearchInput = () => {
+    const input = document.querySelector(
+      "#search-modal input"
+    ) as HTMLInputElement
+    if (input) {
+      input.focus()
+    }
+  }
+
+  // Focus input when search opens
+  createEffect(() => {
+    if (isSearchOpen()) {
+      // Small delay to ensure the modal is rendered
+      setTimeout(focusSearchInput, 0)
+    }
+  })
 
   // Initialize event listeners
   onMount(() => {
@@ -280,7 +302,7 @@ export const GlobalSearch: Component = () => {
                         class="p-2 hover:bg-gray-50 rounded transition-colors flex items-center cursor-pointer"
                         onClick={() => {
                           setSearchQuery(search)
-                          mockSearch(search)
+                          performSearch(search)
                         }}
                       >
                         <svg
@@ -339,26 +361,25 @@ export const GlobalSearch: Component = () => {
                     </div>
                   ))}
                 </div>
-              ) : searchQuery() !== "" ? (
+              ) : searchQuery() ? (
                 <div class="py-8 text-center text-gray-500">
                   <p>No results found for "{searchQuery()}"</p>
                 </div>
               ) : (
                 <div class="p-4">
                   <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                    Search Categories
+                    Quick Links
                   </h3>
                   <div class="grid grid-cols-2 gap-2">
-                    {searchCategories.map((category) => (
+                    {searchableItems.map((item) => (
                       <div
-                        class="p-3 bg-gray-50 hover:bg-gray-100 rounded transition-colors cursor-pointer flex items-center"
-                        onClick={() => {
-                          setSearchQuery(category.name)
-                          mockSearch(category.name)
-                        }}
+                        class="p-3 bg-gray-50 hover:bg-gray-100 rounded transition-colors cursor-pointer"
+                        onClick={() => handleResultSelect(item)}
                       >
-                        <span class="text-xl mr-2">{category.icon}</span>
-                        <span class="text-sm font-medium">{category.name}</span>
+                        <div class="text-sm font-medium">{item.name}</div>
+                        <div class="text-xs text-gray-500 mt-1">
+                          {item.description}
+                        </div>
                       </div>
                     ))}
                   </div>

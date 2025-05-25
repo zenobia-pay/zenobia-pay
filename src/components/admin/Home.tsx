@@ -1,10 +1,10 @@
-import { createMemo, createResource, createSignal } from "solid-js"
-
+import { createMemo, createSignal } from "solid-js"
 import { Show } from "solid-js"
-import { api } from "../../services/api"
 import { TransferStatus } from "../../types/api"
+import { useMerchant } from "../../context/MerchantContext"
 
 export const Home = () => {
+  const merchant = useMerchant()
   // Create data resources used in the overview tab
   const [period, setPeriod] = createSignal("Last 30 days")
   const [showPeriodDropdown, setShowPeriodDropdown] = createSignal(false)
@@ -21,24 +21,13 @@ export const Home = () => {
     return cents / 100
   }
 
-  // Fetch merchant transfers for overview tab
-  const [merchantTransfers] = createResource(async () => {
-    try {
-      const response = await api.listMerchantTransfers()
-      return response
-    } catch (error) {
-      console.error("Error fetching merchant transfers:", error)
-      return { items: [] }
-    }
-  })
-
   // Filter transfers based on period for overview tab
   const filteredTransfers = createMemo(() => {
-    if (!merchantTransfers() || !merchantTransfers()?.items) {
+    if (!merchant.merchantTransfers() || !merchant.merchantTransfers()?.items) {
       return []
     }
 
-    const transfers = merchantTransfers()?.items ?? []
+    const transfers = merchant.merchantTransfers()?.items ?? []
 
     // If "All time" is selected, return all transfers
     if (period() === "All time") {
@@ -84,7 +73,7 @@ export const Home = () => {
 
   // Metrics calculations for overview tab
   const metrics = createMemo(() => {
-    if (merchantTransfers.loading || !merchantTransfers()) {
+    if (merchant.merchantTransfersLoading() || !merchant.merchantTransfers()) {
       return {
         totalRevenue: 0,
         processingVolume: 0,
@@ -92,8 +81,8 @@ export const Home = () => {
         failedTransactions: 0,
         topTransactions: [],
         failedPayments: [],
-        revenueChange: 0,
-        volumeChange: 0,
+        revenueChange: undefined as number | undefined,
+        volumeChange: undefined as number | undefined,
       }
     }
 
@@ -130,10 +119,9 @@ export const Home = () => {
       (transfer) => transfer.status === TransferStatus.FAILED
     )
 
-    // Calculate changes (mock data for now as we don't have previous period)
-    // In a real app, you would compare with previous period data
-    const revenueChange = totalRevenue > 0 ? 5.2 : 0 // 5.2% increase
-    const volumeChange = processingVolume > 0 ? 3.8 : 0 // 3.8% increase
+    // Calculate changes - only show if we have data
+    const revenueChange = undefined as number | undefined // We don't have previous period data yet
+    const volumeChange = undefined as number | undefined // We don't have previous period data yet
 
     return {
       totalRevenue,
@@ -165,16 +153,11 @@ export const Home = () => {
     })
   }
 
-  // Get current time for "Updated at" text
-  const getCurrentTime = () => {
-    const now = new Date()
-    return now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-  }
   return (
     <div class="space-y-8">
       {/* Page Header */}
       <div>
-        <h1 class="text-2xl font-semibold text-gray-900">Your overview</h1>
+        <h1 class="text-2xl font-semibold text-gray-900">Overview</h1>
         <div class="mt-4 flex flex-wrap items-center justify-between gap-4">
           <div class="flex flex-wrap items-center gap-2">
             <div class="relative">
@@ -218,14 +201,22 @@ export const Home = () => {
             </div>
           </div>
 
-          <button class="p-2 text-gray-500 rounded-full hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <button
+            onClick={() => merchant.refetchMerchantTransfers()}
+            class="p-2 text-gray-500 rounded-full hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            title="Refresh data"
+          >
             <svg
               class="w-5 h-5"
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
-              <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+              <path
+                fill-rule="evenodd"
+                d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                clip-rule="evenodd"
+              />
             </svg>
           </button>
         </div>
@@ -255,16 +246,18 @@ export const Home = () => {
                   />
                 </svg>
               </div>
-              <div class="ml-auto">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  +{metrics().revenueChange.toFixed(1)}%
-                </span>
-              </div>
+              <Show when={metrics().revenueChange !== undefined}>
+                <div class="ml-auto">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    +{metrics().revenueChange?.toFixed(1)}%
+                  </span>
+                </div>
+              </Show>
             </div>
 
             <div class="mt-2">
               <Show
-                when={!merchantTransfers.loading}
+                when={!merchant.merchantTransfersLoading()}
                 fallback={
                   <div class="flex justify-center items-center py-4">
                     <svg
@@ -324,16 +317,18 @@ export const Home = () => {
                   />
                 </svg>
               </div>
-              <div class="ml-auto">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  +{metrics().volumeChange.toFixed(1)}%
-                </span>
-              </div>
+              <Show when={metrics().volumeChange !== undefined}>
+                <div class="ml-auto">
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    +{metrics().volumeChange?.toFixed(1)}%
+                  </span>
+                </div>
+              </Show>
             </div>
 
             <div class="mt-2">
               <Show
-                when={!merchantTransfers.loading}
+                when={!merchant.merchantTransfersLoading()}
                 fallback={
                   <div class="flex justify-center items-center py-4">
                     <svg
@@ -371,123 +366,43 @@ export const Home = () => {
       </div>
 
       {/* Additional Metrics */}
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Transaction Success Rate */}
-        <div class="overflow-hidden bg-white rounded-lg shadow">
-          <div class="p-6">
-            <div class="flex items-center">
-              <h3 class="text-sm font-medium text-gray-900">
-                Transaction Success
-              </h3>
-              <div
-                class="ml-2"
-                title="Successful transactions vs failed transactions"
-              >
-                <svg
-                  class="w-4 h-4 text-gray-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div class="ml-auto">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  0.0%
-                </span>
-              </div>
-            </div>
-
-            <div class="mt-2">
-              <Show
-                when={!merchantTransfers.loading}
-                fallback={
-                  <div class="flex justify-center items-center py-4">
-                    <svg
-                      class="animate-spin h-5 w-5 text-indigo-600"
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                    >
-                      <circle
-                        class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4"
-                      ></circle>
-                      <path
-                        class="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                  </div>
-                }
-              >
-                <div class="flex items-baseline">
-                  <span class="text-3xl font-semibold text-gray-900">
-                    {metrics().successfulTransactions}
-                    <span class="text-lg font-normal text-gray-500">
-                      {" "}
-                      /{" "}
-                      {metrics().successfulTransactions +
-                        metrics().failedTransactions}
-                    </span>
-                  </span>
-                  <span class="ml-2 text-sm text-gray-500">
-                    {metrics().successfulTransactions > 0 &&
-                    metrics().successfulTransactions +
-                      metrics().failedTransactions >
-                      0
-                      ? (
-                          (metrics().successfulTransactions /
-                            (metrics().successfulTransactions +
-                              metrics().failedTransactions)) *
-                          100
-                        ).toFixed(1) + "%"
-                      : "0%"}{" "}
-                    success rate
-                  </span>
-                </div>
-              </Show>
-            </div>
-          </div>
-        </div>
-
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-1">
         {/* Top Transactions */}
         <div class="overflow-hidden bg-white rounded-lg shadow">
           <div class="p-6">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <h3 class="text-sm font-medium text-gray-900">
-                  Top Transactions
-                </h3>
-                <div
-                  class="ml-2"
-                  title="Largest transactions in the selected period"
-                >
-                  <svg
-                    class="w-4 h-4 text-gray-400"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
+            <div class="border-b border-gray-200 pb-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="text-sm font-medium text-gray-900">
+                      Top Transactions
+                    </h3>
+                    <div
+                      class="text-gray-400"
+                      title="Largest transactions in the selected period"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <a
+                    href="?tab=transactions"
+                    class="mt-1 text-sm text-gray-500 hover:text-gray-700"
                   >
-                    <path
-                      fill-rule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
+                    View all transactions
+                  </a>
                 </div>
               </div>
-              <div class="text-xs text-gray-500">{period()}</div>
             </div>
 
             <Show
@@ -498,7 +413,7 @@ export const Home = () => {
                 </div>
               }
             >
-              <div class="mt-4 space-y-3">
+              <div class="mt-4 divide-y divide-gray-200">
                 {metrics().topTransactions.map((transaction, index) => {
                   // Create estimated creation date for display purposes
                   const today = new Date()
@@ -506,18 +421,32 @@ export const Home = () => {
                   estimatedDate.setDate(today.getDate() - index * 2)
 
                   return (
-                    <div class="flex items-center justify-between">
-                      <div>
-                        <span class="text-sm font-medium text-gray-900">
-                          {transaction.transferRequestId.substring(0, 8)}...
-                        </span>
-                        <p class="text-xs text-gray-500">
-                          {formatDate(estimatedDate)}
-                        </p>
+                    <div class="py-3 first:pt-0 last:pb-0">
+                      <div class="flex items-center justify-between">
+                        <div class="min-w-0 flex-1">
+                          <div class="flex items-center justify-between">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                              {transaction.transferRequestId}
+                            </p>
+                            <div class="ml-4 flex-shrink-0 flex items-center gap-4">
+                              <span class="text-sm text-gray-500">
+                                {formatCurrency(
+                                  centsToDollars(transaction.amount)
+                                )}
+                              </span>
+                              <a
+                                href={`?tab=transactions&subtab=details&transactionId=${transaction.transferRequestId}`}
+                                class="text-sm font-medium text-indigo-600 hover:text-indigo-900"
+                              >
+                                View details
+                              </a>
+                            </div>
+                          </div>
+                          <p class="mt-1 text-xs text-gray-500">
+                            {formatDate(estimatedDate)}
+                          </p>
+                        </div>
                       </div>
-                      <span class="text-sm text-gray-500">
-                        {formatCurrency(centsToDollars(transaction.amount))}
-                      </span>
                     </div>
                   )
                 })}

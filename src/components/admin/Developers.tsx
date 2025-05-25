@@ -1,27 +1,14 @@
-import {
-  Component,
-  createSignal,
-  For,
-  Show,
-  createEffect,
-  createResource,
-} from "solid-js"
+import { Component, createSignal, For, Show, createEffect } from "solid-js"
 import { api } from "../../services/api"
 import { toast } from "solid-toast"
 import { useLocation, useNavigate } from "@solidjs/router"
-import type {
-  GetMerchantConfigResponse,
-  UpdateMerchantRequest,
-} from "../../types/api"
+import type { UpdateMerchantRequest } from "../../types/api"
+import { useMerchant } from "../../context/MerchantContext"
 
 // This defines the structure for webhooks in the UI
 interface WebhookDisplay {
   id: string
   url: string
-  events: string[]
-  active: boolean
-  created: string
-  lastFailed: string | null
 }
 
 // Add interface for M2M credentials
@@ -33,6 +20,7 @@ interface M2mCredential {
 const Developers: Component = () => {
   const location = useLocation()
   const navigate = useNavigate()
+  const merchant = useMerchant()
 
   const activeSubtab = () => {
     const searchParams = new URLSearchParams(location.search)
@@ -50,16 +38,11 @@ const Developers: Component = () => {
 
   const [isGeneratingCredentials, setIsGeneratingCredentials] =
     createSignal(false)
-  const [generatedCredentials, setGeneratedCredentials] = createSignal<{
+  const [newCredentials, setNewCredentials] = createSignal<{
     clientId: string
     clientSecret: string
   } | null>(null)
-  const [m2mCredentials, setM2mCredentials] = createSignal<M2mCredential[]>([])
-  const [isLoadingCredentials, setIsLoadingCredentials] = createSignal(false)
-  const [isDeletingCredential, setIsDeletingCredential] = createSignal(false)
-  const [showDeleteConfirmation, setShowDeleteConfirmation] =
-    createSignal(false)
-  const [confirmCredentialId, setConfirmCredentialId] = createSignal<
+  const [isDeletingCredentials, setIsDeletingCredentials] = createSignal<
     string | null
   >(null)
 
@@ -67,97 +50,35 @@ const Developers: Component = () => {
   const [webhookUrl, setWebhookUrl] = createSignal("")
   const [isEditingWebhook, setIsEditingWebhook] = createSignal(false)
   const [isSavingWebhook, setIsSavingWebhook] = createSignal(false)
-  const [webhookEvents] = createSignal([
-    "payment.completed",
-    "payment.failed",
-    "transfer.created",
-    "transfer.completed",
-  ])
 
-  // Fetch merchant config for webhook data
-  const [merchantConfig, { refetch: refetchMerchantConfig }] =
-    createResource<GetMerchantConfigResponse>(async () => {
-      try {
-        const result = await api.getMerchantConfig()
-
-        // Update webhook URL from merchant config
-        if (result.webhookUrl) {
-          setWebhookUrl(result.webhookUrl)
-        }
-
-        return result
-      } catch (err) {
-        console.error("Error fetching merchant config:", err)
-        toast.error("Failed to load webhook configuration")
-        return {} as GetMerchantConfigResponse
-      }
-    })
-
-  // Load required data based on active subtab
+  // Update webhook URL when merchant config changes
   createEffect(() => {
-    if (activeSubtab() === "m2m-credentials") {
-      loadM2mCredentials()
-    } else if (activeSubtab() === "webhooks") {
-      refetchMerchantConfig()
+    const config = merchant.merchantConfig()
+    if (config?.webhookUrl) {
+      setWebhookUrl(config.webhookUrl)
     }
   })
 
-  const loadM2mCredentials = async () => {
+  const handleGenerateCredentials = async () => {
+    setIsGeneratingCredentials(true)
     try {
-      setIsLoadingCredentials(true)
-      const response = await api.listM2mCredentials()
-      setM2mCredentials(response.credentials)
-    } catch (error) {
-      console.error("Error loading M2M credentials:", error)
-      toast.error("Failed to load M2M credentials")
-    } finally {
-      setIsLoadingCredentials(false)
-    }
-  }
-
-  const generateM2mCredentials = async () => {
-    try {
-      setIsGeneratingCredentials(true)
-      const credentials = await api.createM2mCredentials()
-      setGeneratedCredentials(credentials)
-      toast.success("M2M credentials generated successfully")
-      // Refresh the list of credentials
-      loadM2mCredentials()
-    } catch (error) {
-      console.error("Error generating M2M credentials:", error)
-      toast.error("Failed to generate M2M credentials")
+      const credentials = await merchant.generateM2mCredentials()
+      setNewCredentials(credentials)
+    } catch (err) {
+      console.error("Error generating credentials:", err)
     } finally {
       setIsGeneratingCredentials(false)
     }
   }
 
-  const confirmDeleteCredential = (clientId: string) => {
-    setConfirmCredentialId(clientId)
-    setShowDeleteConfirmation(true)
-  }
-
-  const cancelDeleteCredential = () => {
-    setShowDeleteConfirmation(false)
-    setConfirmCredentialId(null)
-  }
-
-  const proceedWithDelete = async () => {
-    const clientId = confirmCredentialId()
-    if (!clientId) return
-
+  const handleDeleteCredentials = async (clientId: string) => {
+    setIsDeletingCredentials(clientId)
     try {
-      setIsDeletingCredential(true)
-      await api.deleteM2mCredentials(clientId)
-      toast.success("M2M credentials deleted successfully")
-      // Refresh the list of credentials
-      loadM2mCredentials()
-    } catch (error) {
-      console.error("Error deleting M2M credentials:", error)
-      toast.error("Failed to delete M2M credentials")
+      await merchant.deleteM2mCredentials(clientId)
+    } catch (err) {
+      console.error("Error deleting credentials:", err)
     } finally {
-      setIsDeletingCredential(false)
-      setShowDeleteConfirmation(false)
-      setConfirmCredentialId(null)
+      setIsDeletingCredentials(null)
     }
   }
 
@@ -167,6 +88,9 @@ const Developers: Component = () => {
       setIsSavingWebhook(true)
 
       const updateRequest: UpdateMerchantRequest = {
+        bankAccountId: merchant.merchantConfig()?.bankAccountId || "",
+        merchantDisplayName:
+          merchant.merchantConfig()?.merchantDisplayName || "",
         webhookUrl: webhookUrl(),
       }
 
@@ -175,7 +99,7 @@ const Developers: Component = () => {
       setIsEditingWebhook(false)
 
       // Refetch to ensure we have the latest data
-      refetchMerchantConfig()
+      await merchant.refetchMerchantConfig()
     } catch (error) {
       console.error("Error updating webhook URL:", error)
       toast.error("Failed to update webhook URL")
@@ -186,7 +110,7 @@ const Developers: Component = () => {
 
   const cancelWebhookEdit = () => {
     // Reset to original value from merchant config
-    const configWebhookUrl = merchantConfig()?.webhookUrl
+    const configWebhookUrl = merchant.merchantConfig()?.webhookUrl
     if (configWebhookUrl) {
       setWebhookUrl(configWebhookUrl)
     } else {
@@ -203,12 +127,6 @@ const Developers: Component = () => {
       {
         id: "wh_main",
         url: webhookUrl(),
-        events: webhookEvents(),
-        active: true,
-        created: merchantConfig()?.webhookUrl
-          ? "Already configured"
-          : "Just now",
-        lastFailed: null,
       },
     ] as WebhookDisplay[]
   }
@@ -258,75 +176,6 @@ const Developers: Component = () => {
         </nav>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      <Show when={showDeleteConfirmation()}>
-        <div class="fixed z-10 inset-0 overflow-y-auto">
-          <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-              <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
-            </div>
-
-            <span
-              class="hidden sm:inline-block sm:align-middle sm:h-screen"
-              aria-hidden="true"
-            >
-              &#8203;
-            </span>
-
-            <div class="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <div>
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                  <svg
-                    class="h-6 w-6 text-red-600"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    aria-hidden="true"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                    />
-                  </svg>
-                </div>
-                <div class="mt-3 text-center sm:mt-5">
-                  <h3 class="text-lg leading-6 font-medium text-gray-900">
-                    Delete M2M Credential
-                  </h3>
-                  <div class="mt-2">
-                    <p class="text-sm text-gray-500">
-                      Are you sure you want to delete this credential? Any
-                      applications using it will no longer be able to
-                      authenticate.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
-                <button
-                  type="button"
-                  onClick={proceedWithDelete}
-                  disabled={isDeletingCredential()}
-                  class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:col-start-2 sm:text-sm disabled:bg-red-400"
-                >
-                  {isDeletingCredential() ? "Deleting..." : "Delete"}
-                </button>
-                <button
-                  type="button"
-                  onClick={cancelDeleteCredential}
-                  class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:col-start-1 sm:text-sm"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Show>
-
       {/* M2M Credentials Tab */}
       <Show when={activeSubtab() === "m2m-credentials"}>
         <div class="space-y-6">
@@ -335,7 +184,7 @@ const Developers: Component = () => {
               Machine-to-Machine Credentials
             </h2>
             <button
-              onClick={generateM2mCredentials}
+              onClick={handleGenerateCredentials}
               disabled={isGeneratingCredentials()}
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none disabled:bg-indigo-300"
             >
@@ -374,14 +223,19 @@ const Developers: Component = () => {
                 authentication.
               </p>
             </div>
-            <Show when={isLoadingCredentials()}>
+            <Show when={isGeneratingCredentials()}>
               <div class="p-6 text-center">
                 <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                <p class="mt-2 text-sm text-gray-500">Loading credentials...</p>
+                <p class="mt-2 text-sm text-gray-500">
+                  Generating credentials...
+                </p>
               </div>
             </Show>
             <Show
-              when={!isLoadingCredentials() && m2mCredentials().length === 0}
+              when={
+                !merchant.m2mCredentialsLoading() &&
+                merchant.m2mCredentials().length === 0
+              }
             >
               <div class="p-6 text-center">
                 <p class="text-sm text-gray-500">
@@ -390,9 +244,14 @@ const Developers: Component = () => {
                 </p>
               </div>
             </Show>
-            <Show when={!isLoadingCredentials() && m2mCredentials().length > 0}>
+            <Show
+              when={
+                !merchant.m2mCredentialsLoading() &&
+                merchant.m2mCredentials().length > 0
+              }
+            >
               <ul class="divide-y divide-gray-200">
-                <For each={m2mCredentials()}>
+                <For each={merchant.m2mCredentials()}>
                   {(credential) => (
                     <li class="px-4 py-4 sm:px-6">
                       <div class="flex items-center justify-between">
@@ -435,7 +294,7 @@ const Developers: Component = () => {
                           )}
                           <button
                             onClick={() =>
-                              confirmDeleteCredential(credential.clientId)
+                              handleDeleteCredentials(credential.clientId)
                             }
                             class="text-red-400 hover:text-red-500"
                             title="Delete credential"
@@ -464,7 +323,7 @@ const Developers: Component = () => {
             </Show>
           </div>
 
-          <Show when={generatedCredentials()}>
+          <Show when={newCredentials()}>
             <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
               <div class="space-y-4">
                 <div>
@@ -511,14 +370,14 @@ const Developers: Component = () => {
                     <input
                       type="text"
                       readonly
-                      value={generatedCredentials()?.clientId}
+                      value={newCredentials()?.clientId}
                       class="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          generatedCredentials()?.clientId || ""
+                          newCredentials()?.clientId || ""
                         )
                         toast.success("Client ID copied to clipboard")
                       }}
@@ -550,14 +409,14 @@ const Developers: Component = () => {
                     <input
                       type="text"
                       readonly
-                      value={generatedCredentials()?.clientSecret}
+                      value={newCredentials()?.clientSecret}
                       class="flex-1 min-w-0 block w-full px-3 py-2 rounded-md border border-gray-300 bg-gray-50 text-gray-500 sm:text-sm"
                     />
                     <button
                       type="button"
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          generatedCredentials()?.clientSecret || ""
+                          newCredentials()?.clientSecret || ""
                         )
                         toast.success("Client Secret copied to clipboard")
                       }}
@@ -604,26 +463,59 @@ const Developers: Component = () => {
           <div class="bg-gray-50 p-6 rounded-lg border border-gray-200">
             <h3 class="text-md font-medium text-gray-900">About Webhooks</h3>
             <p class="mt-2 text-sm text-gray-500">
-              Webhooks allow you to receive real-time notifications when events
-              happen in your Zenobia Pay account. For example, when a payment is
-              completed or when a transfer fails.
-            </p>
-            <p class="mt-2 text-sm text-gray-500">
-              We'll send HTTP POST requests to your endpoint with event data
-              whenever these events occur.
+              Webhooks give real-time notifications when transfer events happen.
+              It is crucial that webhook domains are set correctly so that order
+              status updates are received. Failure to receive webhook events
+              will result in customers who have been charged but not received
+              their order.
             </p>
           </div>
 
-          <Show when={merchantConfig.loading}>
-            <div class="bg-white shadow overflow-hidden sm:rounded-md p-6 text-center">
-              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-              <p class="mt-2 text-sm text-gray-500">
-                Loading webhook configuration...
-              </p>
-            </div>
+          <Show when={!isEditingWebhook()}>
+            <Show when={webhooks().length === 0}>
+              <div class="bg-white shadow overflow-hidden sm:rounded-md p-6 text-center">
+                <p class="text-sm text-gray-500 mb-4">No webhooks configured</p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingWebhook(true)}
+                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
+                >
+                  Add Webhook
+                </button>
+              </div>
+            </Show>
+
+            <Show when={webhooks().length > 0}>
+              <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+                <ul role="list" class="divide-y divide-gray-200">
+                  <For each={webhooks()}>
+                    {(webhook) => (
+                      <li class="px-6 py-4">
+                        <div class="flex items-center justify-between">
+                          <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate">
+                              {webhook.url}
+                            </p>
+                          </div>
+                          <div class="ml-4 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingWebhook(true)}
+                              class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
+                            >
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    )}
+                  </For>
+                </ul>
+              </div>
+            </Show>
           </Show>
 
-          <Show when={!merchantConfig.loading && isEditingWebhook()}>
+          <Show when={isEditingWebhook()}>
             <div class="bg-white shadow overflow-hidden sm:rounded-lg p-6">
               <h3 class="text-md font-medium text-gray-900 mb-4">
                 {webhooks().length === 0 ? "Add Webhook" : "Edit Webhook"}
@@ -651,26 +543,6 @@ const Developers: Component = () => {
                   </p>
                 </div>
 
-                <div>
-                  <label class="block text-sm font-medium text-gray-700">
-                    Events
-                  </label>
-                  <div class="mt-2 space-y-2">
-                    <p class="text-sm text-gray-500">
-                      Your webhook will receive all of the following events:
-                    </p>
-                    <div class="flex flex-wrap gap-2">
-                      <For each={webhookEvents()}>
-                        {(event) => (
-                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                            {event}
-                          </span>
-                        )}
-                      </For>
-                    </div>
-                  </div>
-                </div>
-
                 <div class="flex gap-3 pt-4">
                   <button
                     type="button"
@@ -691,90 +563,6 @@ const Developers: Component = () => {
                 </div>
               </div>
             </div>
-          </Show>
-
-          <Show when={!merchantConfig.loading && !isEditingWebhook()}>
-            <Show when={webhooks().length === 0}>
-              <div class="bg-white shadow overflow-hidden sm:rounded-md p-6 text-center">
-                <p class="text-sm text-gray-500">
-                  No webhook URL has been configured yet. Click "Add Webhook" to
-                  set one up.
-                </p>
-              </div>
-            </Show>
-
-            <Show when={webhooks().length > 0}>
-              <div class="bg-white shadow overflow-hidden sm:rounded-md">
-                <ul class="divide-y divide-gray-200">
-                  <For each={webhooks()}>
-                    {(webhook) => (
-                      <li>
-                        <div class="px-4 py-4 sm:px-6">
-                          <div class="flex items-center justify-between">
-                            <div class="flex items-center">
-                              <div class="flex-shrink-0">
-                                <div
-                                  class={`h-8 w-8 rounded-full flex items-center justify-center ${webhook.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      stroke-width="2"
-                                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                                    />
-                                  </svg>
-                                </div>
-                              </div>
-                              <div class="ml-4">
-                                <div class="font-medium text-gray-900 break-all">
-                                  {webhook.url}
-                                </div>
-                                <div class="text-sm text-gray-500">
-                                  Events: {webhook.events.join(", ")}
-                                </div>
-                              </div>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                              <span
-                                class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${webhook.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}`}
-                              >
-                                {webhook.active ? "Active" : "Inactive"}
-                              </span>
-                              <button
-                                class="text-gray-400 hover:text-gray-500"
-                                onClick={() => setIsEditingWebhook(true)}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  class="h-5 w-5"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="2"
-                                    d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
-                                  />
-                                </svg>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </li>
-                    )}
-                  </For>
-                </ul>
-              </div>
-            </Show>
           </Show>
         </div>
       </Show>

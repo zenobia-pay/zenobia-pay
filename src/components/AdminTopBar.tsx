@@ -20,8 +20,8 @@ export const AdminTopBar: Component = () => {
   return (
     <div class="sticky top-0 z-30 w-full shadow-sm">
       {/* Main Navigation */}
-      <div class="bg-white border-b border-gray-200">
-        <div class="h-14 px-4 flex items-center justify-between max-w-screen-2xl mx-auto">
+      <div class="bg-white border-b h-14 border-gray-200">
+        <div class="px-4 py-2 flex items-center justify-between max-w-screen-2xl mx-auto">
           {/* Mobile Menu Toggle - Only visible on small screens */}
           <div class="lg:hidden">
             <button

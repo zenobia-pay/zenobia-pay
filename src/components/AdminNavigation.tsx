@@ -1,12 +1,14 @@
 import { Component, createSignal } from "solid-js"
-import { A, useSearchParams } from "@solidjs/router"
+import { useSearchParams } from "@solidjs/router"
 import { authService } from "../services/auth"
 import { useAdminLayout } from "./AdminLayout"
+import { useMerchant } from "../context/MerchantContext"
 
 export const AdminNavigation: Component = () => {
   const [searchParams] = useSearchParams()
   const [loggingOut, setLoggingOut] = createSignal(false)
   const adminLayout = useAdminLayout()
+  const merchant = useMerchant()
 
   // Get current active tab from URL
   const currentTab = () => searchParams.tab || "overview"
@@ -14,10 +16,12 @@ export const AdminNavigation: Component = () => {
   return (
     <div class="h-full bg-white border-r border-gray-200 flex flex-col">
       {/* Logo Section */}
-      <div class="py-4 px-5 border-b border-gray-200">
-        <A href="/" class="text-lg font-medium text-gray-900 flex items-center">
-          <span>Zenobia Pay</span>
-        </A>
+      <div class="py-4 px-5 h-14 border-b border-gray-200">
+        <span class="text-lg font-medium text-gray-900 truncate block">
+          {merchant.merchantConfigLoading()
+            ? "Loading..."
+            : merchant.merchantConfig()?.merchantDisplayName || "Zenobia"}
+        </span>
       </div>
 
       {/* Navigation Links */}
@@ -83,35 +87,6 @@ export const AdminNavigation: Component = () => {
               />
             </svg>
             Transactions
-          </button>
-
-          <button
-            class={`w-full flex items-center px-2 py-2 text-sm font-medium rounded-md group transition-colors ${
-              currentTab() === "payouts"
-                ? "text-indigo-700 bg-indigo-50"
-                : "text-gray-700 hover:text-indigo-700 hover:bg-gray-50"
-            }`}
-            onClick={() => adminLayout.navigateToTab("payouts")}
-          >
-            <svg
-              class={`mr-3 h-5 w-5 transition-colors ${
-                currentTab() === "payouts"
-                  ? "text-indigo-500"
-                  : "text-gray-400 group-hover:text-indigo-500"
-              }`}
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-              />
-            </svg>
-            Payouts
           </button>
         </div>
 

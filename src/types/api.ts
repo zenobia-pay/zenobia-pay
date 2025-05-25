@@ -29,7 +29,7 @@ export enum TransferStatus {
 }
 
 export interface UpdateMerchantRequest {
-  bankAccountId?: string
+  bankAccountId: string
   merchantDisplayName?: string
   merchantDescription?: string
   merchantLocation?: Location
@@ -54,9 +54,11 @@ export interface Transfer {
 }
 
 export interface MerchantTransfer {
+  transferRequestId: string
   amount: number
   status: TransferStatus
-  transferRequestId: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface MerchantTransferResponse {
@@ -184,15 +186,4 @@ export interface SubmitMerchantOnboardingRequest {
 export enum PlaidProduct {
   AUTH = "AUTH",
   IDENTITY_VERIFICATION = "IDENTITY_VERIFICATION",
-}
-
-export interface MerchantPayout {
-  amount: number
-  fee: number
-  status: "PENDING" | "PAID"
-}
-
-export interface MerchantPayoutResponse {
-  continuationToken?: string
-  items: MerchantPayout[]
 }

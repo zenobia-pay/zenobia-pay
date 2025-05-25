@@ -1,75 +1,38 @@
-import { Component, createSignal, createResource, Show, For } from "solid-js"
+import { Component, createSignal, Show, createEffect } from "solid-js"
 import { api } from "../../services/api"
-import type {
-  GetMerchantConfigResponse,
-  UpdateMerchantRequest,
-  Location,
-  BankAccount,
-} from "../../types/api"
-import { useAdminLayout } from "../AdminLayout"
+import type { UpdateMerchantRequest } from "../../types/api"
+import { useMerchant } from "../../context/MerchantContext"
 
 const Settings: Component = () => {
+  const merchant = useMerchant()
   const [error, setError] = createSignal<string | null>(null)
   const [success, setSuccess] = createSignal<string | null>(null)
   const [isLoading, setIsLoading] = createSignal(false)
 
-  const adminLayout = useAdminLayout()
-
   // Form state for merchant config
-  const [merchantDisplayName, setMerchantDisplayName] = createSignal("")
   const [merchantDescription, setMerchantDescription] = createSignal("")
   const [webhookUrl, setWebhookUrl] = createSignal("")
   const [editingWebhook, setEditingWebhook] = createSignal(false)
-  const [bankAccountId, setBankAccountId] = createSignal("")
-  const [address, setAddress] = createSignal("")
-  const [latitude, setLatitude] = createSignal(0)
-  const [longitude, setLongitude] = createSignal(0)
+  const [merchantDisplayName, setMerchantDisplayName] = createSignal("")
 
-  // Bank accounts state
-  const [bankAccounts] = createResource<BankAccount[]>(async () => {
-    try {
-      // Return type is cast to match our BankAccount interface
-      const accounts = await api.listBankAccounts()
-      console.log(accounts)
-      return accounts.items
-    } catch (err) {
-      console.error("Error fetching bank accounts:", err)
-      setError("Failed to load bank accounts")
-      return []
+  // Update form state when merchant config changes
+  const updateFormState = () => {
+    const config = merchant.merchantConfig()
+    if (config) {
+      if (config.merchantDescription)
+        setMerchantDescription(config.merchantDescription)
+      if (config.webhookUrl) setWebhookUrl(config.webhookUrl)
+      if (config.merchantDisplayName)
+        setMerchantDisplayName(config.merchantDisplayName)
+    }
+  }
+
+  // Update form state when merchant config is loaded
+  createEffect(() => {
+    if (!merchant.merchantConfigLoading()) {
+      updateFormState()
     }
   })
-
-  // Fetch merchant config
-  const [merchantConfig] = createResource<GetMerchantConfigResponse>(
-    async () => {
-      try {
-        const result = await api.getMerchantConfig()
-
-        // Update form state with fetched data
-        if (result.merchantDisplayName)
-          setMerchantDisplayName(result.merchantDisplayName)
-        if (result.merchantDescription)
-          setMerchantDescription(result.merchantDescription)
-        if (result.webhookUrl) setWebhookUrl(result.webhookUrl)
-        if (result.bankAccountId) setBankAccountId(result.bankAccountId)
-
-        if (result.merchantLocation) {
-          if (result.merchantLocation.address)
-            setAddress(result.merchantLocation.address)
-          if (result.merchantLocation.latitude)
-            setLatitude(result.merchantLocation.latitude)
-          if (result.merchantLocation.longitude)
-            setLongitude(result.merchantLocation.longitude)
-        }
-
-        return result
-      } catch (err) {
-        console.error("Error fetching merchant config:", err)
-        setError("Failed to load merchant configuration")
-        return {} as GetMerchantConfigResponse
-      }
-    }
-  )
 
   const handleWebhookSave = () => {
     setEditingWebhook(false)
@@ -81,31 +44,23 @@ const Settings: Component = () => {
       setError(null)
       setSuccess(null)
 
-      const updateRequest: UpdateMerchantRequest = {}
+      const updateRequest: UpdateMerchantRequest = {
+        bankAccountId: merchant.merchantConfig()?.bankAccountId || "",
+        merchantDisplayName:
+          merchant.merchantConfig()?.merchantDisplayName || "",
+      }
 
       // Only include fields that have values
-      if (merchantDisplayName())
-        updateRequest.merchantDisplayName = merchantDisplayName()
       if (merchantDescription())
         updateRequest.merchantDescription = merchantDescription()
       if (webhookUrl()) updateRequest.webhookUrl = webhookUrl()
-      if (bankAccountId()) updateRequest.bankAccountId = bankAccountId()
-
-      // Only include location if at least one field has a value
-      if (address() || latitude() !== 0 || longitude() !== 0) {
-        const location: Location = {
-          latitude: latitude(),
-          longitude: longitude(),
-        }
-
-        if (address()) location.address = address()
-        updateRequest.merchantLocation = location
-      }
 
       // Only make the API call if there's at least one field to update
       if (Object.keys(updateRequest).length > 0) {
         await api.updateMerchantConfig(updateRequest)
         setSuccess("Merchant configuration updated successfully")
+        // Refetch merchant config to get latest data
+        await merchant.refetchMerchantConfig()
       } else {
         setError("No changes to save")
       }
@@ -122,8 +77,7 @@ const Settings: Component = () => {
       <div class="mb-8">
         <h1 class="text-2xl font-bold text-gray-800">Settings</h1>
         <p class="text-gray-600 mt-1">
-          Manage your merchant profile, payment accounts, and location
-          information
+          Manage your merchant profile and webhook settings
         </p>
       </div>
 
@@ -138,17 +92,16 @@ const Settings: Component = () => {
         </nav>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <h2 class="text-xl font-semibold text-gray-800 mb-4 w-full">
+        Merchant Profile
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
         <div class="md:col-span-2 space-y-6">
           {/* Merchant Profile Section */}
           <section id="profile">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">
-              Merchant Profile
-            </h2>
-
             <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
               <div class="px-6 py-6">
-                <Show when={merchantConfig.loading}>
+                <Show when={merchant.merchantConfigLoading()}>
                   <div class="flex justify-center py-8">
                     <div class="animate-pulse flex space-x-4 items-center">
                       <div class="rounded-full bg-blue-100 h-10 w-10"></div>
@@ -157,7 +110,7 @@ const Settings: Component = () => {
                   </div>
                 </Show>
 
-                <Show when={!merchantConfig.loading}>
+                <Show when={!merchant.merchantConfigLoading()}>
                   <div class="space-y-6">
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -165,13 +118,14 @@ const Settings: Component = () => {
                       </label>
                       <input
                         type="text"
-                        class="form-input shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 transition duration-150"
+                        class="form-input shadow-sm bg-gray-50 block w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700"
                         value={merchantDisplayName()}
-                        onInput={(e) =>
-                          setMerchantDisplayName(e.currentTarget.value)
-                        }
-                        placeholder="Enter your business name"
+                        disabled
+                        placeholder="Your business name"
                       />
+                      <p class="mt-1 text-xs text-gray-500">
+                        Display name cannot be modified.
+                      </p>
                     </div>
 
                     <div class="form-group">
@@ -185,7 +139,7 @@ const Settings: Component = () => {
                           setMerchantDescription(e.currentTarget.value)
                         }
                         rows={3}
-                        placeholder="Describe your business"
+                        placeholder="Description"
                       />
                     </div>
 
@@ -265,215 +219,9 @@ const Settings: Component = () => {
               </div>
             </div>
           </section>
-
-          {/* Payment Methods Section */}
-          <section id="payment" class="mt-10">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-semibold text-gray-800">
-                Payment Methods
-              </h2>
-              <a
-                onClick={() => adminLayout.navigateToTab("payouts")}
-                class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm leading-5 font-medium rounded-md text-blue-700 bg-white hover:text-blue-500 hover:bg-blue-50 focus:outline-none focus:border-blue-300 focus:shadow-outline-blue active:text-blue-800 active:bg-blue-50 transition ease-in-out duration-150"
-              >
-                Manage Payouts
-              </a>
-            </div>
-
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
-              <div class="px-6 py-6">
-                {/* Bank accounts list */}
-                <Show
-                  when={!bankAccounts.loading}
-                  fallback={
-                    <div class="animate-pulse space-y-4">
-                      <div class="h-10 bg-gray-100 rounded-md w-full"></div>
-                      <div class="h-10 bg-gray-100 rounded-md w-full"></div>
-                    </div>
-                  }
-                >
-                  <div class="space-y-3">
-                    {/* No bank accounts case */}
-                    <Show when={(bankAccounts() || []).length === 0}>
-                      <div class="text-center py-10 px-4">
-                        <svg
-                          class="mx-auto h-12 w-12 text-gray-400"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                          />
-                        </svg>
-                        <h3 class="mt-4 text-base font-medium text-gray-900">
-                          No payment methods
-                        </h3>
-                        <p class="mt-1 text-sm text-gray-500">
-                          You haven't added any bank accounts or payment methods
-                          yet.
-                        </p>
-                        <div class="mt-6">
-                          <a
-                            href="/accounts"
-                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                          >
-                            <svg
-                              class="-ml-1 mr-2 h-5 w-5"
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                              />
-                            </svg>
-                            Add Payment Method
-                          </a>
-                        </div>
-                      </div>
-                    </Show>
-
-                    {/* Has bank accounts case */}
-                    <Show when={(bankAccounts() || []).length > 0}>
-                      <div class="grid gap-3">
-                        <For each={bankAccounts() || []}>
-                          {(account) => (
-                            <div
-                              class={`flex items-center p-3 border rounded-md cursor-pointer transition-all ${
-                                bankAccountId() === account.bankAccountId
-                                  ? "border-blue-500 bg-blue-50"
-                                  : "border-gray-200 hover:border-blue-300 hover:bg-blue-50"
-                              }`}
-                              onClick={() =>
-                                setBankAccountId(account.bankAccountId)
-                              }
-                            >
-                              <div
-                                class={`w-5 h-5 rounded-full border flex items-center justify-center mr-3 ${
-                                  bankAccountId() === account.bankAccountId
-                                    ? "border-blue-500"
-                                    : "border-gray-300"
-                                }`}
-                              >
-                                {bankAccountId() === account.bankAccountId && (
-                                  <div class="w-3 h-3 rounded-full bg-blue-500"></div>
-                                )}
-                              </div>
-                              <div>
-                                <div class="font-medium text-gray-800">
-                                  {account.bankAccountName}
-                                  <span class="ml-2 text-sm text-gray-500">
-                                    (****
-                                    {account.bankAccountId?.slice(-4) || "0000"}
-                                    )
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </For>
-                      </div>
-                    </Show>
-                  </div>
-                </Show>
-              </div>
-            </div>
-          </section>
-
-          {/* Location Section */}
-          <section id="location" class="mt-10">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Location</h2>
-
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
-              <div class="px-6 py-6">
-                <Show when={!merchantConfig.loading}>
-                  <div class="space-y-6">
-                    <div class="form-group mb-6">
-                      <label class="block text-sm font-medium text-gray-700 mb-2">
-                        Address
-                      </label>
-                      <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <svg
-                            class="h-5 w-5 text-gray-400"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1114.314 0z"
-                            />
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                            />
-                          </svg>
-                        </div>
-                        <input
-                          type="text"
-                          class="pl-10 form-input shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 transition duration-150"
-                          value={address()}
-                          onInput={(e) => setAddress(e.currentTarget.value)}
-                          placeholder="123 Main St, City, State, Zip"
-                        />
-                      </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div class="form-group">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                          Latitude
-                        </label>
-                        <input
-                          type="number"
-                          step="0.000001"
-                          class="form-input shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 transition duration-150"
-                          value={latitude()}
-                          onInput={(e) =>
-                            setLatitude(parseFloat(e.currentTarget.value))
-                          }
-                          placeholder="37.7749"
-                        />
-                      </div>
-                      <div class="form-group">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                          Longitude
-                        </label>
-                        <input
-                          type="number"
-                          step="0.000001"
-                          class="form-input shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2 border border-gray-300 rounded-md text-gray-700 transition duration-150"
-                          value={longitude()}
-                          onInput={(e) =>
-                            setLongitude(parseFloat(e.currentTarget.value))
-                          }
-                          placeholder="-122.4194"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </Show>
-              </div>
-            </div>
-          </section>
         </div>
 
-        <div class="md:col-span-1 space-y-6">
+        <div class="md:col-span-1">
           {/* Helpful Information */}
           <div class="bg-blue-50 shadow-sm rounded-lg overflow-hidden border border-blue-100 p-4">
             <h4 class="text-sm font-medium text-blue-800 mb-2 flex items-center">
@@ -518,8 +266,9 @@ const Settings: Component = () => {
               support@zenobiapay.com
             </a>
           </div>
+
           {/* Save Changes Section */}
-          <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200 p-6 sticky top-6">
+          <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200 p-6 sticky top-6 mt-6">
             <button
               class={`w-full flex items-center justify-center py-3 px-4 border border-transparent shadow-sm text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-150 ${
                 isLoading() ? "opacity-70 cursor-not-allowed" : ""
