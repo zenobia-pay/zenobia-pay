@@ -13,12 +13,13 @@ interface PaymentSessionBody {
 }
 
 export async function onRequestPost(
-  context: EventContext<ExtendedEnv, string, unknown>
+  context: EventContext<Env, string, unknown>
 ) {
   const { request, env } = context
 
   try {
     const body = (await request.json()) as PaymentSessionBody
+    console.log("body", body)
     const shop = request.headers.get("shopify-shop-domain")
     const paymentSessionId = body.id
     const returnUrl = body.return_url ?? body.cancel_url
@@ -44,7 +45,7 @@ export async function onRequestPost(
     }
 
     // optionally store metadata but not the token
-    await env.SESSION_KV.put(
+    await env.SHOPIFY_CHECKOUT_SESSION_KV.put(
       paymentSessionId,
       JSON.stringify({
         shop,
