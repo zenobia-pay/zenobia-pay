@@ -105,24 +105,33 @@ async function getOrderDetails(
                 currencyCode
               }
               returnUrl
-              order {
+              paymentSession {
                 id
-                name
-                email
-                totalPriceSet {
-                  shopMoney {
-                    amount
-                    currencyCode
-                  }
+                state
+                amount {
+                  amount
+                  currencyCode
                 }
-                lineItems(first: 10) {
-                  edges {
-                    node {
-                      title
-                      quantity
-                      variant {
-                        price
+                returnUrl
+                order {
+                  id
+                  name
+                  email
+                  totalPriceSet {
+                    shopMoney {
+                      amount
+                      currencyCode
+                    }
+                  }
+                  lineItems(first: 10) {
+                    edges {
+                      node {
                         title
+                        quantity
+                        variant {
+                          price
+                          title
+                        }
                       }
                     }
                   }
@@ -146,7 +155,7 @@ async function getOrderDetails(
 
   const data = await response.json()
   console.log("Order details:", JSON.stringify(data, null, 2))
-  return data.data?.paymentSession?.order
+  return data.data?.paymentSession?.paymentSession?.order
 }
 
 export async function onRequest(context: EventContext<Env, string, unknown>) {
