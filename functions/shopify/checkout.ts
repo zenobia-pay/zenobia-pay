@@ -57,7 +57,8 @@ export async function onRequestPost(
       })
     )
 
-    const redirectUrl = `https://dashboard.zenobiapay.com/shopify/store?id=${encodeURIComponent(paymentSessionId)}`
+    console.log("shop", shop)
+    const redirectUrl = `https://dashboard.zenobiapay.com/shopify/store/${shop}?id=${encodeURIComponent(paymentSessionId)}`
 
     return Response.redirect(redirectUrl, 302)
   } catch (err) {
