@@ -1,6 +1,7 @@
 import { Env } from "../../types"
 import { EventContext } from "@cloudflare/workers-types"
 import * as jose from "jose"
+import { decrypt } from "../../../utils/encryption"
 
 interface WebhookPayload {
   transferRequestId: string
@@ -178,6 +179,12 @@ async function handleWebhook(
       return new Response("Store not found", { status: 404 })
     }
 
+    // Decrypt the access token
+    const accessToken = await decrypt(
+      store.access_token,
+      env.SHOPIFY_ENCRYPTION_KEY
+    )
+
     // Get the session ID from KV storage
     const sessionId = await env.TRANSFER_MAPPINGS.get(body.transferRequestId)
     if (!sessionId) {
@@ -196,7 +203,7 @@ async function handleWebhook(
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": store.access_token,
+            "X-Shopify-Access-Token": accessToken,
             Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
             "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
           },
@@ -238,7 +245,7 @@ async function handleWebhook(
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "X-Shopify-Access-Token": store.access_token,
+            "X-Shopify-Access-Token": accessToken,
             Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
             "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
           },
