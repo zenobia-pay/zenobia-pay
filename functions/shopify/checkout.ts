@@ -60,7 +60,12 @@ export async function onRequestPost(
     console.log("shop", shop)
     const redirectUrl = `https://dashboard.zenobiapay.com/shopify/store/${shop}?id=${encodeURIComponent(paymentSessionId)}`
 
-    return Response.redirect(redirectUrl, 302)
+    return new Response(JSON.stringify({ redirect_url: redirectUrl }), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
   } catch (err) {
     console.error("error handling session init:", err)
     return new Response("internal error", { status: 500 })
