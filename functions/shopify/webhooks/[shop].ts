@@ -169,7 +169,7 @@ async function handleWebhook(
 
     // Get store details from database
     const store = await env.MERCHANTS_OAUTH.prepare(
-      `SELECT shop, access_token FROM shopify_stores WHERE shop = ?`
+      `SELECT shop_domain, access_token FROM shopify_stores WHERE shop_domain = ?`
     )
       .bind(shop)
       .first<ShopifyStore>()
