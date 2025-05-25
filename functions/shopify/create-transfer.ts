@@ -37,10 +37,11 @@ async function getAccessToken(
     }
 
     // Decrypt the client secret
-    const clientSecret = await decrypt(
-      encryptedClientSecret,
-      env.SHOPIFY_ENCRYPTION_KEY
-    )
+    const clientSecret = encryptedClientSecret
+    //  await decrypt(
+    //   encryptedClientSecret,
+    //   env.SHOPIFY_ENCRYPTION_KEY
+    // )
 
     const response = await fetch(tokenUrl, {
       method: "POST",
