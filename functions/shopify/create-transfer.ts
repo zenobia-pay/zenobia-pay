@@ -82,8 +82,6 @@ async function getOrderDetails(
     encryptedAccessToken,
     env.SHOPIFY_ENCRYPTION_KEY
   )
-  console.log("Decrypted access token:", accessToken)
-
   const response = await fetch(
     "https://v0-simple-proxy-server.vercel.app/api/proxy",
     {

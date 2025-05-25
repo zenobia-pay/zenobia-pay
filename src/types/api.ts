@@ -29,7 +29,6 @@ export enum TransferStatus {
 }
 
 export interface UpdateMerchantRequest {
-  bankAccountId: string
   merchantDisplayName?: string
   merchantDescription?: string
   merchantLocation?: Location

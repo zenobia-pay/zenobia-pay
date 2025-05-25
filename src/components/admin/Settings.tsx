@@ -45,7 +45,6 @@ const Settings: Component = () => {
       setSuccess(null)
 
       const updateRequest: UpdateMerchantRequest = {
-        bankAccountId: merchant.merchantConfig()?.bankAccountId || "",
         merchantDisplayName:
           merchant.merchantConfig()?.merchantDisplayName || "",
       }

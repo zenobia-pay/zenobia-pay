@@ -88,7 +88,6 @@ const Developers: Component = () => {
       setIsSavingWebhook(true)
 
       const updateRequest: UpdateMerchantRequest = {
-        bankAccountId: merchant.merchantConfig()?.bankAccountId || "",
         merchantDisplayName:
           merchant.merchantConfig()?.merchantDisplayName || "",
         webhookUrl: webhookUrl(),
