@@ -1,4 +1,4 @@
-import { Env } from "../../types"
+import { Env } from "../types"
 import { EventContext } from "@cloudflare/workers-types"
 
 interface CreateTransferRequest {
@@ -65,6 +65,19 @@ async function getAccessToken(
 
 export async function onRequest(context: EventContext<Env, string, unknown>) {
   const { request, env } = context
+
+  // Handle CORS preflight requests
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Max-Age": "86400",
+      },
+    })
+  }
 
   // Only allow POST requests
   if (request.method !== "POST") {
@@ -157,6 +170,7 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     return new Response(JSON.stringify(transferData), {
       headers: {
         "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
       },
     })
   } catch (error) {
