@@ -141,12 +141,12 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
           amount: Math.round(parseFloat(session.amount || "0") * 100),
         },
       ],
-      metadata: {
-        sessionId: sessionId,
-        shop: session.shop,
-        email: session.email,
-        currency: session.currency,
-      },
+      // metadata: {
+      //   sessionId: sessionId,
+      //   shop: session.shop,
+      //   email: session.email,
+      //   currency: session.currency,
+      // },
     }
 
     console.log("Creating transfer request with body:", transferRequestBody)
