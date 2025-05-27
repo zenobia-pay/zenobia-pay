@@ -1,4 +1,4 @@
-name = "zenobia-dashboard"
+name = "beta-dashboard"
 compatibility_date = "2024-03-20"
 main = "src/worker.ts"
 
@@ -17,11 +17,11 @@ directory = "./dist"
 binding = "ASSETS"
 
 [vars]
-BIGCOMMERCE_CLIENT_ID = "c1cohhttoxpeq0pjltju1clo1djme0g"
 ACCOUNTS_DOMAIN = "https://zenobia-beta.us.auth0.com"
 ACCOUNTS_AUDIENCE = "https://dashboard.zenobiapay.com"
 ZENOBIA_CLIENT_ID = "THPfLUrf2wgJmgnSIPIGrZIb8W0GpUqA"
 SHOPIFY_CLIENT_ID = "2e0bcf59a2683f29d5f70770020da601"
+BIGCOMMERCE_CLIENT_ID = "c1cohhttoxpeq0pjltju1clo1djme0g"
 API_BASE_URL = "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
 VITE_AUTH0_DOMAIN = "zenobia-beta.us.auth0.com"
 VITE_AUTH0_CLIENT_ID = "gRg4qNX32qmtoLOUH8wmojid0So9MkqB"
