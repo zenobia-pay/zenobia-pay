@@ -54,12 +54,16 @@ export default {
         }) as unknown as CFResponse
       }
     }
+    const isDev = VITE_DEV_SERVER.includes("localhost")
 
-    // Proxy to Vite dev server for all other requests
-    const viteUrl = new URL(path, VITE_DEV_SERVER)
-    return fetch(
-      viteUrl.toString(),
-      request as unknown as Request
-    ) as unknown as Promise<CFResponse>
+    if (!handler && isDev) {
+      const viteUrl = new URL(path, VITE_DEV_SERVER)
+      return fetch(
+        viteUrl.toString(),
+        request as unknown as Request
+      ) as unknown as Promise<CFResponse>
+    }
+
+    return new Response("Not Found", { status: 404 }) as unknown as CFResponse
   },
 }
