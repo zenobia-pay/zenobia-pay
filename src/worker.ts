@@ -14,7 +14,7 @@ import { onRequest as shopifyAuthCallback } from "../functions/shopify/auth/call
 import { onRequest as shopifyCreateTransfer } from "../functions/shopify/create-transfer"
 import { onRequestPost as shopifyCheckout } from "../functions/shopify/checkout"
 
-const VITE_DEV_SERVER = "http://localhost:5173"
+const VITE_DEV_SERVER = "http://localhost:8787"
 
 // Define route handlers mapping (no /api prefix)
 const API_ROUTES: Record<
@@ -38,32 +38,49 @@ export default {
     const url = new URL(request.url)
     const path = url.pathname
 
-    console.log("got request", path)
+    console.log(`[Request] ${request.method} ${path}`)
     // Route all paths directly
     const handler = API_ROUTES[path]
     if (handler) {
       try {
-        return handler(
+        const response = (await handler(
           request as unknown as Request,
           env
-        ) as unknown as Promise<CFResponse>
+        )) as unknown as Promise<CFResponse>
+        const resolvedResponse = await response
+        console.log(`[Response] ${path} - Status: ${resolvedResponse.status}`)
+        return response
       } catch (e) {
         console.error("Route error:", e)
-        return new Response("Not Found", {
+        const errorResponse = new Response("Not Found", {
           status: 404,
         }) as unknown as CFResponse
+        console.log(`[Response] ${path} - Status: 404 (Error)`)
+        return errorResponse
       }
     }
     const isDev = url.hostname === "localhost" || url.hostname === "127.0.0.1"
 
     if (!handler && isDev) {
+      console.log(`[Request] Dev server - ${path}`)
       const viteUrl = new URL(path, VITE_DEV_SERVER)
-      return fetch(
+      const response = (await fetch(
         viteUrl.toString(),
         request as unknown as Request
-      ) as unknown as Promise<CFResponse>
+      )) as unknown as Promise<CFResponse>
+      const resolvedResponse = await response
+      console.log(
+        `[Response] Dev server - ${path} - Status: ${resolvedResponse.status}`
+      )
+      return response
     }
 
-    return env.ASSETS.fetch(request)
+    console.log(`[Request] Assets - ${path}`)
+    const response = await env.ASSETS.fetch(request)
+    const resolvedResponse = await response
+    console.log(
+      `[Response] Assets - ${path} - Status: ${resolvedResponse.status}`
+    )
+    return response
   },
 }

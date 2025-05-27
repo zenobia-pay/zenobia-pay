@@ -15,6 +15,7 @@ enabled = true
 [assets]
 directory = "./dist"
 binding = "ASSETS"
+not_found_handling = "single-page-application"
 
 # D1 Database binding
 [[d1_databases]]
