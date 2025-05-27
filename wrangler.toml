@@ -17,6 +17,12 @@ directory = "./dist"
 binding = "ASSETS"
 not_found_handling = "single-page-application"
 
+# Custom domain configuration
+[[routes]]
+pattern = "dashboard.zenobiapay.com"
+custom_domain = true
+
+
 # D1 Database binding
 [[d1_databases]]
 binding = "MERCHANTS_OAUTH"
