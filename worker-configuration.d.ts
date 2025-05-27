@@ -5,7 +5,6 @@ interface Env {
   SHOPIFY_CHECKOUT_SESSION_KV: KVNamespace
   ACCOUNTS_DOMAIN: "https://accounts.zenobiapay.com"
   ACCOUNTS_AUDIENCE: "https://dashboard.zenobiapay.com"
-  ZENOBIA_CLIENT_ID: "THPfLUrf2wgJmgnSIPIGrZIb8W0GpUqA"
   API_BASE_URL: "https://api.zenobiapay.com"
   BIGCOMMERCE_CLIENT_ID: "c1cohhttoxpeq0pjltju1clo1djme0g"
   SHOPIFY_CLIENT_ID: "2e0bcf59a2683f29d5f70770020da601"
