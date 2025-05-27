@@ -5,9 +5,6 @@ main = "src/worker.ts"
 [build]
 command = "vite build"
 
-[site]
-bucket = "./dist"
-
 [dev]
 port = 3000
 local_protocol = "http"
