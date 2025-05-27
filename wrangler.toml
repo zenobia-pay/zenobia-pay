@@ -11,3 +11,10 @@ bucket = "./dist"
 [dev]
 port = 3000
 local_protocol = "http"
+
+[observability.logs]
+enabled = true
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"

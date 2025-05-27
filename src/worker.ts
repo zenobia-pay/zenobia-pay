@@ -17,6 +17,7 @@ export default {
     const url = new URL(request.url)
     const path = url.pathname
 
+    console.log("got request", path)
     // Handle API routes
     if (path.startsWith("/api/")) {
       try {
@@ -37,6 +38,7 @@ export default {
 
     // In production, serve static assets
     try {
+      console.log("serving static assets")
       const response = await env.ASSETS.fetch(request)
       if (response.status === 200) {
         return response
@@ -47,6 +49,7 @@ export default {
 
     // For GET requests, fallback to index.html for SPA routing
     if (request.method === "GET") {
+      console.log("serving index.html")
       if (env.ASSETS) {
         return env.ASSETS.fetch(new Request(new URL("/index.html", url)))
       } else {
