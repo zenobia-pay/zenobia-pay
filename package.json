@@ -1,11 +1,14 @@
 {
   "name": "zenobia-dashboard",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev:vite": "vite --port 3000",
+    "dev:worker": "wrangler dev src/worker.ts --local --port 8787",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:worker\"",
     "build": "tsc && vite build",
+    "deploy": "wrangler deploy",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0 --fix",
     "preview": "vite preview"
@@ -25,6 +28,7 @@
     "@typescript-eslint/eslint-plugin": "^8.28.0",
     "@typescript-eslint/parser": "^8.28.0",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.2",
     "constructs": "^10.3.0",
     "daisyui": "^5.0.9",
     "esbuild": "^0.20.2",
@@ -36,6 +40,7 @@
     "tailwindcss": "^3.4.17",
     "tsx": "^4.7.2",
     "typescript": "^5.4.5",
-    "vite": "^5.4.11"
+    "vite": "^5.4.11",
+    "wrangler": "^4.16.1"
   }
 }
