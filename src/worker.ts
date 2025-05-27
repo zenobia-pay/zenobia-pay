@@ -2,7 +2,7 @@ import type {
   Request as CFRequest,
   Response as CFResponse,
 } from "@cloudflare/workers-types"
-import type { Env as FunctionsEnv } from "../functions/types"
+import type { Env } from "../worker-configuration.d.ts"
 import { onRequest as bigcommerceOAuth } from "../functions/bigcommerce/oauth"
 import { onRequest as bigcommerceLoad } from "../functions/bigcommerce/load"
 import { onRequest as bigcommerceCheckoutDetails } from "../functions/bigcommerce/checkout-details"
@@ -19,7 +19,7 @@ const VITE_DEV_SERVER = "http://localhost:5173"
 // Define route handlers mapping (no /api prefix)
 const API_ROUTES: Record<
   string,
-  (request: Request, env: FunctionsEnv) => Promise<Response>
+  (request: Request, env: Env) => Promise<Response>
 > = {
   "/bigcommerce/oauth": bigcommerceOAuth,
   "/bigcommerce/load": bigcommerceLoad,
@@ -34,7 +34,7 @@ const API_ROUTES: Record<
 }
 
 export default {
-  async fetch(request: CFRequest, env: FunctionsEnv): Promise<CFResponse> {
+  async fetch(request: CFRequest, env: Env): Promise<CFResponse> {
     const url = new URL(request.url)
     const path = url.pathname
 
@@ -54,7 +54,7 @@ export default {
         }) as unknown as CFResponse
       }
     }
-    const isDev = VITE_DEV_SERVER.includes("localhost")
+    const isDev = url.hostname === "localhost" || url.hostname === "127.0.0.1"
 
     if (!handler && isDev) {
       const viteUrl = new URL(path, VITE_DEV_SERVER)
@@ -64,6 +64,6 @@ export default {
       ) as unknown as Promise<CFResponse>
     }
 
-    return new Response("Not Found", { status: 404 }) as unknown as CFResponse
+    return env.ASSETS.fetch(request)
   },
 }

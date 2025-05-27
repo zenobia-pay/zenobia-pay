@@ -16,13 +16,38 @@ enabled = true
 directory = "./dist"
 binding = "ASSETS"
 
+# D1 Database binding
+[[d1_databases]]
+binding = "MERCHANTS_OAUTH"
+database_name = "merchants-oauth-beta"
+database_id = "d3ddca47-8492-4c50-bd96-9f857edaa634"
+
+# KV Namespace bindings
+[[kv_namespaces]]
+binding = "TRANSFER_MAPPINGS"
+id = "d4bc3fa28e7841089cce25a12fc1a5ac"
+
+[[kv_namespaces]]
+binding = "SHOPIFY_CHECKOUT_SESSION_KV"
+id = "44cc08e2fb9a4f53a7bcf32118e78591"
+
 [vars]
-ACCOUNTS_DOMAIN = "https://zenobia-beta.us.auth0.com"
+# Auth0 related
+ACCOUNTS_DOMAIN = "zenobia-beta.us.auth0.com"
 ACCOUNTS_AUDIENCE = "https://dashboard.zenobiapay.com"
 ZENOBIA_CLIENT_ID = "THPfLUrf2wgJmgnSIPIGrZIb8W0GpUqA"
-SHOPIFY_CLIENT_ID = "2e0bcf59a2683f29d5f70770020da601"
-BIGCOMMERCE_CLIENT_ID = "c1cohhttoxpeq0pjltju1clo1djme0g"
+
+# API related
+API_DOMAIN = "mm24mwlpnd.execute-api.us-east-1.amazonaws.com"
 API_BASE_URL = "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
+
+# BigCommerce related
+BIGCOMMERCE_CLIENT_ID = "c1cohhttoxpeq0pjltju1clo1djme0g"
+
+# Shopify related
+SHOPIFY_CLIENT_ID = "2e0bcf59a2683f29d5f70770020da601"
+
+# Vite specific variables
 VITE_AUTH0_DOMAIN = "zenobia-beta.us.auth0.com"
 VITE_AUTH0_CLIENT_ID = "gRg4qNX32qmtoLOUH8wmojid0So9MkqB"
 VITE_API_BASE_URL = "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
