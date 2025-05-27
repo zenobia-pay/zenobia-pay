@@ -1,5 +1,4 @@
 import { Env } from "../types"
-import { EventContext } from "@cloudflare/workers-types"
 
 interface CreateTransferRequest {
   checkoutId: string
@@ -110,8 +109,7 @@ async function getAccessToken(
   }
 }
 
-export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env } = context
+export async function onRequest(request: Request, env: Env) {
   const origin = request.headers.get("Origin")
 
   // Handle CORS preflight requests

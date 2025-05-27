@@ -1,63 +1,65 @@
-import type { ExecutionContext } from "@cloudflare/workers-types"
-
-interface Env {
-  ASSETS?: {
-    fetch: (request: Request) => Promise<Response>
-  }
-}
+import type {
+  Request as CFRequest,
+  Response as CFResponse,
+} from "@cloudflare/workers-types"
+import type { Env as FunctionsEnv } from "../functions/types"
+import { onRequest as bigcommerceOAuth } from "../functions/bigcommerce/oauth"
+import { onRequest as bigcommerceLoad } from "../functions/bigcommerce/load"
+import { onRequest as bigcommerceCheckoutDetails } from "../functions/bigcommerce/checkout-details"
+import { onRequest as bigcommerceCreateTransfer } from "../functions/bigcommerce/create-transfer"
+import { onRequest as bigcommerceWebhooks } from "../functions/bigcommerce/webhooks/[storeId]"
+import { onRequest as shopifyIndex } from "../functions/shopify/index"
+import { onRequest as shopifyWebhooks } from "../functions/shopify/webhooks/[shop]"
+import { onRequest as shopifyAuthCallback } from "../functions/shopify/auth/callback"
+import { onRequest as shopifyCreateTransfer } from "../functions/shopify/create-transfer"
+import { onRequestPost as shopifyCheckout } from "../functions/shopify/checkout"
 
 const VITE_DEV_SERVER = "http://localhost:5173"
 
+// Define route handlers mapping (no /api prefix)
+const API_ROUTES: Record<
+  string,
+  (request: Request, env: FunctionsEnv) => Promise<Response>
+> = {
+  "/bigcommerce/oauth": bigcommerceOAuth,
+  "/bigcommerce/load": bigcommerceLoad,
+  "/bigcommerce/checkout-details": bigcommerceCheckoutDetails,
+  "/bigcommerce/create-transfer": bigcommerceCreateTransfer,
+  "/bigcommerce/webhooks": bigcommerceWebhooks,
+  "/shopify": shopifyIndex,
+  "/shopify/webhooks": shopifyWebhooks,
+  "/shopify/auth/callback": shopifyAuthCallback,
+  "/shopify/create-transfer": shopifyCreateTransfer,
+  "/shopify/checkout": shopifyCheckout,
+}
+
 export default {
-  async fetch(
-    request: Request,
-    env: Env,
-    ctx: ExecutionContext
-  ): Promise<Response> {
+  async fetch(request: CFRequest, env: FunctionsEnv): Promise<CFResponse> {
     const url = new URL(request.url)
     const path = url.pathname
 
     console.log("got request", path)
-    // Handle API routes
-    if (path.startsWith("/api/")) {
+    // Route all paths directly
+    const handler = API_ROUTES[path]
+    if (handler) {
       try {
-        // Import the function dynamically based on the path
-        const module = await import(`../functions${path}.ts`)
-        return module.default(request, env, ctx)
+        return handler(
+          request as unknown as Request,
+          env
+        ) as unknown as Promise<CFResponse>
       } catch (e) {
-        console.error("API route error:", e)
-        return new Response("Not Found", { status: 404 })
+        console.error("Route error:", e)
+        return new Response("Not Found", {
+          status: 404,
+        }) as unknown as CFResponse
       }
     }
 
-    // In development, proxy to Vite dev server
-    if (!env.ASSETS) {
-      const viteUrl = new URL(path, VITE_DEV_SERVER)
-      return fetch(viteUrl.toString(), request)
-    }
-
-    // In production, serve static assets
-    try {
-      console.log("serving static assets")
-      const response = await env.ASSETS.fetch(request)
-      if (response.status === 200) {
-        return response
-      }
-    } catch (e) {
-      console.error("Static asset error:", e)
-    }
-
-    // For GET requests, fallback to index.html for SPA routing
-    if (request.method === "GET") {
-      console.log("serving index.html")
-      if (env.ASSETS) {
-        return env.ASSETS.fetch(new Request(new URL("/index.html", url)))
-      } else {
-        // In development, proxy to Vite dev server
-        return fetch(VITE_DEV_SERVER, request)
-      }
-    }
-
-    return new Response("Not Found", { status: 404 })
+    // Proxy to Vite dev server for all other requests
+    const viteUrl = new URL(path, VITE_DEV_SERVER)
+    return fetch(
+      viteUrl.toString(),
+      request as unknown as Request
+    ) as unknown as Promise<CFResponse>
   },
 }

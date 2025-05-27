@@ -1,5 +1,4 @@
 import { Env } from "../types"
-import { EventContext } from "@cloudflare/workers-types"
 
 interface PaymentSessionBody {
   id: string
@@ -12,11 +11,7 @@ interface PaymentSessionBody {
   currency?: string
 }
 
-export async function onRequestPost(
-  context: EventContext<Env, string, unknown>
-) {
-  const { request, env } = context
-
+export async function onRequestPost(request: Request, env: Env) {
   try {
     const body = (await request.json()) as PaymentSessionBody
     console.log("body", body)

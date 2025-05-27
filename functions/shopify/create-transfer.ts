@@ -1,5 +1,4 @@
 import { Env } from "../types"
-import { EventContext } from "@cloudflare/workers-types"
 import { decrypt } from "../../utils/encryption"
 
 interface CreateTransferRequest {
@@ -156,9 +155,7 @@ async function getOrderDetails(
   return data.data?.paymentSession?.paymentSession?.order
 }
 
-export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env } = context
-
+export async function onRequest(request: Request, env: Env) {
   // Handle CORS preflight requests
   if (request.method === "OPTIONS") {
     return new Response(null, {

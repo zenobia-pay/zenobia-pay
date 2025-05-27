@@ -270,8 +270,7 @@ async function handleWebhook(
   }
 }
 
-export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env } = context
+export async function onRequest(request: Request, env: Env) {
   const url = new URL(request.url)
   const storeId = url.pathname.split("/").pop()
 
@@ -280,5 +279,5 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
     return new Response("Store ID is required", { status: 400 })
   }
 
-  return await handleWebhook(request as unknown as Request, env, storeId)
+  return await handleWebhook(request, env, storeId)
 }

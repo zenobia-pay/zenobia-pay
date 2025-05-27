@@ -1,5 +1,4 @@
 import { Env } from "../types"
-import { EventContext } from "@cloudflare/workers-types"
 
 interface CheckoutData {
   data: {
@@ -103,8 +102,7 @@ async function verifyPayloadSignature(
   }
 }
 
-export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env } = context
+export async function onRequest(request: Request, env: Env) {
   const url = new URL(request.url)
 
   // Handle CORS preflight requests

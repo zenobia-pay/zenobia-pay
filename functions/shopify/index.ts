@@ -1,5 +1,4 @@
 import { Env } from "../types"
-import { EventContext } from "@cloudflare/workers-types"
 
 async function generateHmac(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder()
@@ -54,8 +53,7 @@ async function validateJwtToken(
   }
 }
 
-export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env } = context
+export async function onRequest(request: Request, env: Env) {
   const url = new URL(request.url)
   const params = Object.fromEntries(url.searchParams)
 

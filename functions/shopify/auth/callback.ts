@@ -1,5 +1,4 @@
-import { Env } from "../../types"
-import { EventContext } from "@cloudflare/workers-types"
+import { Env } from "../types"
 import { encrypt } from "../../../utils/encryption"
 
 async function generateHmac(message: string, secret: string): Promise<string> {
@@ -23,13 +22,13 @@ async function generateHmac(message: string, secret: string): Promise<string> {
     .join("")
 }
 
-export async function onRequest(context: EventContext<Env, string, unknown>) {
-  const { request, env } = context
+export async function onRequest(request: Request, env: Env) {
   const url = new URL(request.url)
   const params = Object.fromEntries(url.searchParams)
 
   const { code, hmac, shop, host, timestamp } = params
 
+  console.log("shopify auth callback", params)
   // Check if all required parameters are present
   if (!code || !hmac || !shop || !host || !timestamp) {
     return new Response("Missing required parameters", { status: 400 })
@@ -191,11 +190,13 @@ export async function onRequest(context: EventContext<Env, string, unknown>) {
       )
     }
 
-    // Redirect back to Shopify admin with the proper payments partner gateway settings URL
-    const redirectUrl = `https://${shop}/services/payments_partners/gateways/${env.SHOPIFY_CLIENT_ID}/settings`
-    return Response.redirect(redirectUrl)
+    // Redirect to the app
+    return Response.redirect(
+      `https://dashboard.zenobiapay.com/shopify/store/${shop}`,
+      302
+    )
   } catch (error) {
-    console.error("Error during OAuth callback:", error)
-    return new Response("Error processing OAuth callback", { status: 500 })
+    console.error("OAuth error:", error)
+    return new Response("Authentication failed", { status: 500 })
   }
 }
