@@ -51,23 +51,29 @@ export default {
 
     if (matchingRoute) {
       try {
-        const response = (await matchingRoute.handler(
+        const response = await matchingRoute.handler(
           request as unknown as Request,
           env
-        )) as unknown as Promise<CFResponse>
-        const resolvedResponse = await response
-        console.log(`[Response] ${path} - Status: ${resolvedResponse.status}`)
-        // Clone the response before logging its body
-        const clonedResponse = resolvedResponse.clone()
-        console.log(`Response body: ${await clonedResponse.text()}`)
-        return resolvedResponse
+        )
+        console.log(`[Response] ${path} - Status: ${response.status}`)
+
+        // Only log response body for non-streaming responses
+        if (
+          response.headers.get("content-type")?.includes("application/json")
+        ) {
+          const clonedResponse = response.clone()
+          const body = await clonedResponse.text()
+          console.log(`Response body: ${body}`)
+        }
+
+        return response as unknown as CFResponse
       } catch (e) {
         console.error("Route error:", e)
         const errorResponse = new Response("Not Found", {
-          status: 404,
-        }) as unknown as CFResponse
-        console.log(`[Response] ${path} - Status: 404 (Error)`)
-        return errorResponse
+          status: 500,
+        })
+        console.log(`[Response] ${path} - Status: 500 (Error)`)
+        return errorResponse as unknown as CFResponse
       }
     }
 
@@ -76,23 +82,19 @@ export default {
     if (!matchingRoute && isDev) {
       console.log(`[Request] Dev server - ${path}`)
       const viteUrl = new URL(path, VITE_DEV_SERVER)
-      const response = (await fetch(
+      const response = await fetch(
         viteUrl.toString(),
-        request as unknown as Request
-      )) as unknown as Promise<CFResponse>
-      const resolvedResponse = await response
-      console.log(
-        `[Response] Dev server - ${path} - Status: ${resolvedResponse.status}`
+        request as unknown as RequestInit
       )
-      return response
+      console.log(
+        `[Response] Dev server - ${path} - Status: ${response.status}`
+      )
+      return response as unknown as CFResponse
     }
 
     console.log(`[Request] Assets - ${path}`)
     const response = await env.ASSETS.fetch(request)
-    const resolvedResponse = await response
-    console.log(
-      `[Response] Assets - ${path} - Status: ${resolvedResponse.status}`
-    )
-    return response
+    console.log(`[Response] Assets - ${path} - Status: ${response.status}`)
+    return response as unknown as CFResponse
   },
 }

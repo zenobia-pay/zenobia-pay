@@ -13,6 +13,7 @@ local_protocol = "http"
 
 [observability.logs]
 enabled = true
+head_sampling_rate = 1
 
 [assets]
 directory = "./dist"
