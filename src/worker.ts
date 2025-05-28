@@ -2,7 +2,6 @@ import type {
   Request as CFRequest,
   Response as CFResponse,
 } from "@cloudflare/workers-types"
-import type { Env } from "../worker-configuration.d.ts"
 import { onRequest as bigcommerceOAuth } from "../functions/bigcommerce/oauth"
 import { onRequest as bigcommerceLoad } from "../functions/bigcommerce/load"
 import { onRequest as bigcommerceCheckoutDetails } from "../functions/bigcommerce/checkout-details"
@@ -13,25 +12,30 @@ import { onRequest as shopifyWebhooks } from "../functions/shopify/webhooks/[sho
 import { onRequest as shopifyAuthCallback } from "../functions/shopify/auth/callback"
 import { onRequest as shopifyCreateTransfer } from "../functions/shopify/create-transfer"
 import { onRequestPost as shopifyCheckout } from "../functions/shopify/checkout"
+import { onRequestGet as shopifyStore } from "../functions/shopify/store/[shop]"
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 
-// Define route handlers mapping (no /api prefix)
-const API_ROUTES: Record<
-  string,
-  (request: Request, env: Env) => Promise<Response>
-> = {
-  "/bigcommerce/oauth": bigcommerceOAuth,
-  "/bigcommerce/load": bigcommerceLoad,
-  "/bigcommerce/checkout-details": bigcommerceCheckoutDetails,
-  "/bigcommerce/create-transfer": bigcommerceCreateTransfer,
-  "/bigcommerce/webhooks": bigcommerceWebhooks,
-  "/shopify": shopifyIndex,
-  "/shopify/webhooks": shopifyWebhooks,
-  "/shopify/auth/callback": shopifyAuthCallback,
-  "/shopify/create-transfer": shopifyCreateTransfer,
-  "/shopify/checkout": shopifyCheckout,
-}
+// Define route patterns and their handlers
+const ROUTE_PATTERNS = [
+  { pattern: /^\/bigcommerce\/oauth$/, handler: bigcommerceOAuth },
+  { pattern: /^\/bigcommerce\/load$/, handler: bigcommerceLoad },
+  {
+    pattern: /^\/bigcommerce\/checkout-details$/,
+    handler: bigcommerceCheckoutDetails,
+  },
+  {
+    pattern: /^\/bigcommerce\/create-transfer$/,
+    handler: bigcommerceCreateTransfer,
+  },
+  { pattern: /^\/bigcommerce\/webhooks\/[^/]+$/, handler: bigcommerceWebhooks },
+  { pattern: /^\/shopify$/, handler: shopifyIndex },
+  { pattern: /^\/shopify\/store\/[^/]+$/, handler: shopifyStore },
+  { pattern: /^\/shopify\/webhooks\/[^/]+$/, handler: shopifyWebhooks },
+  { pattern: /^\/shopify\/auth\/callback$/, handler: shopifyAuthCallback },
+  { pattern: /^\/shopify\/create-transfer$/, handler: shopifyCreateTransfer },
+  { pattern: /^\/shopify\/checkout$/, handler: shopifyCheckout },
+]
 
 export default {
   async fetch(request: CFRequest, env: Env): Promise<CFResponse> {
@@ -39,17 +43,24 @@ export default {
     const path = url.pathname
 
     console.log(`[Request] ${request.method} ${path}`)
-    // Route all paths directly
-    const handler = API_ROUTES[path]
-    if (handler) {
+
+    // Find matching route pattern
+    const matchingRoute = ROUTE_PATTERNS.find((route) =>
+      route.pattern.test(path)
+    )
+
+    if (matchingRoute) {
       try {
-        const response = (await handler(
+        const response = (await matchingRoute.handler(
           request as unknown as Request,
           env
         )) as unknown as Promise<CFResponse>
         const resolvedResponse = await response
         console.log(`[Response] ${path} - Status: ${resolvedResponse.status}`)
-        return response
+        // Clone the response before logging its body
+        const clonedResponse = resolvedResponse.clone()
+        console.log(`Response body: ${await clonedResponse.text()}`)
+        return resolvedResponse
       } catch (e) {
         console.error("Route error:", e)
         const errorResponse = new Response("Not Found", {
@@ -59,9 +70,10 @@ export default {
         return errorResponse
       }
     }
+
     const isDev = url.hostname === "localhost" || url.hostname === "127.0.0.1"
 
-    if (!handler && isDev) {
+    if (!matchingRoute && isDev) {
       console.log(`[Request] Dev server - ${path}`)
       const viteUrl = new URL(path, VITE_DEV_SERVER)
       const response = (await fetch(
