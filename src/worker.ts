@@ -12,7 +12,7 @@ import { onRequest as shopifyWebhooks } from "../functions/shopify/webhooks/[sho
 import { onRequest as shopifyAuthCallback } from "../functions/shopify/auth/callback"
 import { onRequest as shopifyCreateTransfer } from "../functions/shopify/create-transfer"
 import { onRequestPost as shopifyCheckout } from "../functions/shopify/checkout"
-import { onRequestGet as shopifyStore } from "../functions/shopify/store/[shop]"
+import { onRequest as shopifyStore } from "../functions/shopify/store/[shop]"
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 

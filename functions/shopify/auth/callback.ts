@@ -190,13 +190,11 @@ export async function onRequest(request: Request, env: Env) {
       )
     }
 
-    // Redirect to the app
-    return Response.redirect(
-      `https://dashboard.zenobiapay.com/shopify/store/${shop}`,
-      302
-    )
+    // Redirect back to Shopify admin with the proper payments partner gateway settings URL
+    const redirectUrl = `https://${shop}/services/payments_partners/gateways/${env.SHOPIFY_CLIENT_ID}/settings`
+    return Response.redirect(redirectUrl)
   } catch (error) {
-    console.error("OAuth error:", error)
-    return new Response("Authentication failed", { status: 500 })
+    console.error("Error during OAuth callback:", error)
+    return new Response("Error processing OAuth callback", { status: 500 })
   }
 }

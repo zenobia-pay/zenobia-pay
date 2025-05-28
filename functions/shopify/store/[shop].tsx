@@ -1,5 +1,4 @@
 import { Env } from "../../types"
-import { EventContext } from "@cloudflare/workers-types"
 
 interface CheckoutSession {
   shop: string
@@ -10,12 +9,15 @@ interface CheckoutSession {
   createdAt: number
 }
 
-export async function onRequestGet(
-  context: EventContext<Env, string, unknown>
-) {
-  const { request, env, params } = context
-  const shop = params?.shop as string
-  const id = new URL(request.url).searchParams.get("id")
+export async function onRequest(request: Request, env: Env) {
+  const url = new URL(request.url)
+  const shop = url.pathname.split("/").pop() // Get shop from the last path segment
+
+  if (!shop) {
+    return new Response("Missing shop parameter", { status: 400 })
+  }
+
+  const id = url.searchParams.get("id")
 
   if (!id) {
     return new Response("Missing session ID", { status: 400 })
@@ -30,7 +32,6 @@ export async function onRequestGet(
   const session = JSON.parse(sessionData) as CheckoutSession
 
   // Fetch the HTML template
-  const url = new URL(request.url)
   const html = await fetch(`${url.origin}/store.html`).then((res) => res.text())
 
   // Replace placeholders in the template

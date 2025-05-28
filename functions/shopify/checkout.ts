@@ -9,6 +9,7 @@ interface PaymentSessionBody {
   }
   amount?: string
   currency?: string
+  test?: boolean
 }
 
 export async function onRequestPost(request: Request, env: Env) {
@@ -18,6 +19,10 @@ export async function onRequestPost(request: Request, env: Env) {
     const shop = request.headers.get("shopify-shop-domain")
     const paymentSessionId = body.id
     const returnUrl = body.return_url ?? body.cancel_url
+
+    console.log("shop", shop)
+    console.log("paymentSessionId", paymentSessionId)
+    console.log("returnUrl", returnUrl)
 
     if (!shop || !paymentSessionId || !returnUrl) {
       console.log("missing required params", {
@@ -39,16 +44,17 @@ export async function onRequestPost(request: Request, env: Env) {
       return new Response("Store not found", { status: 404 })
     }
 
-    // optionally store metadata but not the token
     await env.SHOPIFY_CHECKOUT_SESSION_KV.put(
       paymentSessionId,
       JSON.stringify({
         shop,
         returnUrl,
+        cancelUrl: body.cancel_url,
         email: body.customer?.email,
         amount: body.amount,
         currency: body.currency,
         createdAt: Date.now(),
+        test: body.test ?? false,
       })
     )
 
