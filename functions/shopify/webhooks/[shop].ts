@@ -1,7 +1,14 @@
 import { Env } from "../../types"
-import { EventContext } from "@cloudflare/workers-types"
-import * as jose from "jose"
 import { decrypt } from "../../../utils/encryption"
+import { jwtVerify } from "jose/jwt/verify"
+import { createRemoteJWKSet } from "jose/jwks/remote"
+
+import {
+  JWSSignatureVerificationFailed,
+  JWTExpired,
+  JWTInvalid,
+} from "jose/errors"
+import type { JWTVerifyResult } from "jose"
 
 interface WebhookPayload {
   transferRequestId: string
@@ -32,7 +39,7 @@ function addCorsHeaders(response: Response): Response {
 // Function to verify JWT token from Authorization header
 async function verifyJWT(
   authHeader: string | null
-): Promise<jose.JWTVerifyResult | null> {
+): Promise<JWTVerifyResult | null> {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.error("Invalid or missing Authorization header")
     return null
@@ -43,26 +50,24 @@ async function verifyJWT(
     console.log("Attempting to verify JWT token...")
 
     // Create the JWKS client
-    const jwksClient = jose.createRemoteJWKSet(
+    const jwksClient = createRemoteJWKSet(
       new URL("https://zenobiapay.com/.well-known/jwks.json")
     )
 
     // Verify the JWT with detailed error handling
     try {
-      const result = await jose.jwtVerify(token, jwksClient, {
+      const result = await jwtVerify(token, jwksClient, {
         algorithms: ["RS256"],
       })
-      console.log("JWT verification successful")
+
       return result
     } catch (verifyError) {
       console.error("JWT verification failed with error:", verifyError)
-      if (verifyError instanceof jose.errors.JWTExpired) {
+      if (verifyError instanceof JWTExpired) {
         console.error("Token has expired")
-      } else if (verifyError instanceof jose.errors.JWTInvalid) {
+      } else if (verifyError instanceof JWTInvalid) {
         console.error("Token is invalid")
-      } else if (
-        verifyError instanceof jose.errors.JWSSignatureVerificationFailed
-      ) {
+      } else if (verifyError instanceof JWSSignatureVerificationFailed) {
         console.error("Token signature verification failed")
       }
       return null
@@ -185,6 +190,8 @@ async function handleWebhook(
       env.SHOPIFY_ENCRYPTION_KEY
     )
 
+    console.log("accessToken:", accessToken)
+
     // Get the session ID from KV storage
     const sessionId = await env.TRANSFER_MAPPINGS.get(body.transferRequestId)
     if (!sessionId) {
@@ -237,6 +244,13 @@ async function handleWebhook(
       }
 
       console.log("Payment session authorized successfully")
+      const responseData = await updateResponse.text()
+      console.log("Payment session details: ", {
+        status: updateResponse.status,
+        statusText: updateResponse.statusText,
+        headers: Object.fromEntries(updateResponse.headers.entries()),
+        data: responseData,
+      })
     } else if (body.status === "COMPLETED") {
       // When the transfer is completed, mark the payment session as completed
       const updateResponse = await fetch(
@@ -276,9 +290,10 @@ async function handleWebhook(
         const error = await updateResponse.text()
         console.error("Failed to update payment session:", error)
         return new Response("Failed to update payment session", { status: 500 })
+      } else {
+        console.log("Payment session completed successfully")
+        console.log("Payment session details: ", updateResponse)
       }
-
-      console.log("Payment session completed successfully")
     }
 
     // Return a success response

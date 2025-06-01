@@ -1,5 +1,5 @@
 name = "dashboard"
-compatibility_date = "2024-03-20"
+compatibility_date = "2025-01-01"
 main = "src/worker.ts"
 
 routes = [{ pattern = "dashboard.zenobiapay.com", custom_domain = true }]
