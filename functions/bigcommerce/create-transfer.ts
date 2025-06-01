@@ -112,7 +112,6 @@ async function getAccessToken(
 export async function onRequest(request: Request, env: Env) {
   const origin = request.headers.get("Origin")
 
-  // Handle CORS preflight requests
   if (request.method === "OPTIONS") {
     if (!origin || !isAllowedOrigin(origin)) {
       return new Response(null, { status: 403 })

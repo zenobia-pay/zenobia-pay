@@ -70,13 +70,12 @@ async function getAccessToken(
   }
 }
 
-async function getOrderDetails(
+export async function getOrderDetails(
   env: Env,
   shop: string,
   encryptedAccessToken: string,
   sessionId: string
 ): Promise<any> {
-  // Decrypt the access token
   const accessToken = await decrypt(
     encryptedAccessToken,
     env.SHOPIFY_ENCRYPTION_KEY
@@ -102,33 +101,24 @@ async function getOrderDetails(
                 currencyCode
               }
               returnUrl
-              paymentSession {
+              order {
                 id
-                state
-                amount {
-                  amount
-                  currencyCode
-                }
-                returnUrl
-                order {
-                  id
-                  name
-                  email
-                  totalPriceSet {
-                    shopMoney {
-                      amount
-                      currencyCode
-                    }
+                name
+                email
+                totalPriceSet {
+                  shopMoney {
+                    amount
+                    currencyCode
                   }
-                  lineItems(first: 10) {
-                    edges {
-                      node {
+                }
+                lineItems(first: 10) {
+                  edges {
+                    node {
+                      title
+                      quantity
+                      variant {
+                        price
                         title
-                        quantity
-                        variant {
-                          price
-                          title
-                        }
                       }
                     }
                   }
@@ -152,7 +142,7 @@ async function getOrderDetails(
 
   const data = await response.json()
   console.log("Order details:", JSON.stringify(data, null, 2))
-  return data.data?.paymentSession?.paymentSession?.order
+  return data.data?.paymentSession?.order
 }
 
 export async function onRequest(request: Request, env: Env) {
@@ -209,7 +199,7 @@ export async function onRequest(request: Request, env: Env) {
     }
 
     // Get Auth0 access token using store-specific credentials
-    const accessToken = await getAccessToken(
+    const zenobiaAccessToken = await getAccessToken(
       env,
       store.zenobia_client_id,
       store.zenobia_client_secret
@@ -275,7 +265,7 @@ export async function onRequest(request: Request, env: Env) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
+          Authorization: `Bearer ${zenobiaAccessToken}`,
         },
         body: JSON.stringify(transferRequestBody),
       }

@@ -2,6 +2,7 @@ import { Env } from "../../types"
 import { decrypt } from "../../../utils/encryption"
 import { jwtVerify } from "jose/jwt/verify"
 import { createRemoteJWKSet } from "jose/jwks/remote"
+import { resolvePaymentSession } from "../../../utils/shopify"
 
 import {
   JWSSignatureVerificationFailed,
@@ -202,97 +203,21 @@ async function handleWebhook(
       return new Response("Session ID not found", { status: 400 })
     }
 
-    // When the transfer is in flight, mark the payment session as authorized
-    if (body.status === "IN_FLIGHT") {
-      const updateResponse = await fetch(
-        "https://v0-simple-proxy-server.vercel.app/api/proxy",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": accessToken,
-            Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
-            "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
-          },
-          body: JSON.stringify({
-            query: `
-              mutation updatePaymentSession($id: ID!, $state: PaymentSessionState!) {
-                paymentSessionUpdate(id: $id, state: $state) {
-                  paymentSession {
-                    id
-                    state
-                  }
-                  userErrors {
-                    field
-                    message
-                  }
-                }
-              }
-            `,
-            variables: {
-              id: sessionId,
-              state: "AUTHORIZED",
-            },
-          }),
-        }
-      )
+    console.log("sessionId:", sessionId)
 
-      if (!updateResponse.ok) {
-        const error = await updateResponse.text()
-        console.error("Failed to update payment session:", error)
+    if (body.status === "IN_FLIGHT" || body.status === "COMPLETED") {
+      try {
+        const result = await resolvePaymentSession({
+          shop,
+          accessToken,
+          proxySecret: env.SHOPIFY_PROXY_SECRET,
+          sessionId,
+          amount: body.amount,
+        })
+        console.log("Payment session resolved successfully:", result)
+      } catch (err) {
+        console.error("Failed to resolve payment session:", err)
         return new Response("Failed to update payment session", { status: 500 })
-      }
-
-      console.log("Payment session authorized successfully")
-      const responseData = await updateResponse.text()
-      console.log("Payment session details: ", {
-        status: updateResponse.status,
-        statusText: updateResponse.statusText,
-        headers: Object.fromEntries(updateResponse.headers.entries()),
-        data: responseData,
-      })
-    } else if (body.status === "COMPLETED") {
-      // When the transfer is completed, mark the payment session as completed
-      const updateResponse = await fetch(
-        "https://v0-simple-proxy-server.vercel.app/api/proxy",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Shopify-Access-Token": accessToken,
-            Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
-            "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
-          },
-          body: JSON.stringify({
-            query: `
-              mutation updatePaymentSession($id: ID!, $state: PaymentSessionState!) {
-                paymentSessionUpdate(id: $id, state: $state) {
-                  paymentSession {
-                    id
-                    state
-                  }
-                  userErrors {
-                    field
-                    message
-                  }
-                }
-              }
-            `,
-            variables: {
-              id: sessionId,
-              state: "COMPLETED",
-            },
-          }),
-        }
-      )
-
-      if (!updateResponse.ok) {
-        const error = await updateResponse.text()
-        console.error("Failed to update payment session:", error)
-        return new Response("Failed to update payment session", { status: 500 })
-      } else {
-        console.log("Payment session completed successfully")
-        console.log("Payment session details: ", updateResponse)
       }
     }
 
