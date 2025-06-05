@@ -44,10 +44,7 @@ const Settings: Component = () => {
       setError(null)
       setSuccess(null)
 
-      const updateRequest: UpdateMerchantRequest = {
-        merchantDisplayName:
-          merchant.merchantConfig()?.merchantDisplayName || "",
-      }
+      const updateRequest: UpdateMerchantRequest = {}
 
       // Only include fields that have values
       if (merchantDescription())

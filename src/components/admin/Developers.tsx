@@ -88,8 +88,6 @@ const Developers: Component = () => {
       setIsSavingWebhook(true)
 
       const updateRequest: UpdateMerchantRequest = {
-        merchantDisplayName:
-          merchant.merchantConfig()?.merchantDisplayName || "",
         webhookUrl: webhookUrl(),
       }
 

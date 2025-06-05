@@ -29,7 +29,6 @@ export enum TransferStatus {
 }
 
 export interface UpdateMerchantRequest {
-  merchantDisplayName?: string
   merchantDescription?: string
   merchantLocation?: Location
   webhookUrl?: string
