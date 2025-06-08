@@ -18,14 +18,6 @@
       "tag": "v2"
     }
   ],
-  "assets": {
-    "directory": "./public",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
-  },
-  "build": {
-    "command": "npx esbuild src/client/index.tsx --bundle --splitting --format=esm --platform=browser --outdir=public/dist"
-  },
   "durable_objects": {
     "bindings": [
       {
@@ -64,7 +56,11 @@
           "binding": "TRANSFER_STATUS",
           "id": "53e293fadb394a3fa566886f796ce194"
         }
-      ]
+      ],
+      "observability": {
+        "enabled": true
+      },
+      "upload_source_maps": true
     }
   }
   /**
