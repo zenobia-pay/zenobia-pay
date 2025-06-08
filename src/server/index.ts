@@ -842,9 +842,9 @@ export class TransferStatusServer {
 
       // Convert to URL-safe Base64 without padding to match Java's Base64.getUrlEncoder().withoutPadding()
       let expectedSignature = btoa(String.fromCharCode(...signatureArray))
-        .replace(/\+/g, "-") // Convert '+' to '-'
-        .replace(/\//g, "_") // Convert '/' to '_'
-        .replace(/=+$/, ""); // Remove padding '='
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
 
       // Compare the expected signature with the received one
       const signaturesMatch = receivedSignature === expectedSignature;

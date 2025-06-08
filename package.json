@@ -1,8 +1,14 @@
 {
   "name": "durable-chat-template",
   "description": "Chat with other users in real-time using Durable Objects and PartyKit.",
+  "scripts": {
+    "check": "tsc --project src/client && tsc --project src/server && wrangler deploy --dry-run",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "types": "wrangler types ./src/server/worker-configuration.d.ts"
+  },
   "cloudflare": {
-    "label": "Durable Chat App",
+    "label": "Transfer Status",
     "products": [
       "Workers",
       "Durable Objects"
@@ -28,11 +34,5 @@
     "esbuild": "0.25.2",
     "typescript": "5.8.2",
     "wrangler": "^4.14.0"
-  },
-  "scripts": {
-    "check": "tsc --project src/client && tsc --project src/server && wrangler deploy --dry-run",
-    "deploy": "wrangler deploy",
-    "dev": "wrangler dev",
-    "types": "wrangler types ./src/server/worker-configuration.d.ts"
   }
 }
