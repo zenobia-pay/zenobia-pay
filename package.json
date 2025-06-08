@@ -7,8 +7,12 @@
     "start": "vinxi start"
   },
   "dependencies": {
+    "@mdx-js/rollup": "^3.1.0",
+    "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.1.0",
+    "gray-matter": "^4.0.3",
+    "marked": "^15.0.12",
     "solid-js": "^1.9.5",
     "vinxi": "^0.5.3"
   },
