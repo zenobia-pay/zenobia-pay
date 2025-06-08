@@ -1,100 +1,164 @@
 import { Title } from "@solidjs/meta";
 import { A } from "@solidjs/router";
+import SectionCard from "~/components/SectionCard";
+import Footer from "~/components/Footer";
 
 export default function Home() {
   return (
-    <>
-      <Title>Welcome to Our Site</Title>
-      <main class="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div class="min-h-screen flex flex-col">
+      {/* Header */}
+
+      {/* Content */}
+      <main class="flex-grow">
         {/* Hero Section */}
-        <section class="px-4 py-20 mx-auto max-w-7xl sm:px-6 lg:px-8">
-          <div class="text-center">
-            <h1 class="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl md:text-6xl">
-              <span class="block">Welcome to</span>
-              <span class="block text-indigo-600">Our Amazing Platform</span>
-            </h1>
-            <p class="max-w-md mx-auto mt-3 text-base text-gray-500 sm:text-lg md:mt-5 md:text-xl md:max-w-3xl">
-              Discover our latest insights and stay updated with our blog posts.
-            </p>
-            <div class="max-w-md mx-auto mt-5 sm:flex sm:justify-center md:mt-8">
-              <div class="rounded-md shadow">
-                <A
-                  href="/blog"
-                  class="flex items-center justify-center w-full px-8 py-3 text-base font-medium text-white bg-indigo-600 border border-transparent rounded-md hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
-                >
-                  Read Our Blog
-                </A>
-              </div>
+        <section class="h-screen relative bg-black text-white">
+          {/* Top padding block */}
+          <div
+            class="flex flex-col items-center justify-center px-6"
+            style={{
+              height: `calc(100vh - var(--hero-bottom-height))`,
+              "padding-top": `calc(var(--nav-height) + 2rem)`,
+              "padding-bottom": "var(--hero-bottom-height)",
+            }}
+          >
+            <h2 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
+              <span class="text-white drop-shadow-lg">Zenobia Pay</span>
+            </h2>
+          </div>
+
+          {/* Bottom curved block */}
+          <div
+            style={{
+              height: "var(--hero-bottom-height)",
+              "border-radius":
+                "var(--hero-bottom-radius) var(--hero-bottom-radius) 0 0",
+            }}
+            class="bg-white relative"
+          >
+            <div
+              class="absolute inset-0 flex items-start justify-between pt-6"
+              style={{
+                "padding-left": "calc(var(--hero-bottom-radius))",
+                "padding-right": "calc(var(--hero-bottom-radius))",
+              }}
+            >
+              <span class="text-black/60 text-lg font-medium md:block hidden">
+                Payments software for luxury
+              </span>
+              <span class="text-black/60 text-lg font-medium md:hidden block">
+                Payments software for luxury
+              </span>
+              <button
+                onClick={() =>
+                  document
+                    .querySelector("section:nth-of-type(2)")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                class="bg-neutral-200 hover:bg-neutral-300 transition-colors px-24 py-1.5 rounded-lg text-black/80 font-medium md:block hidden"
+              ></button>
+              <span class="text-black/60 text-lg font-medium md:block hidden">
+                3x cheaper payments
+              </span>
             </div>
           </div>
         </section>
 
-        {/* Features Section */}
-        <section class="py-12 bg-white">
-          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="lg:text-center">
-              <h2 class="text-base text-indigo-600 font-semibold tracking-wide uppercase">
-                Features
-              </h2>
-              <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
-                Everything you need
-              </p>
-            </div>
+        {/* First Content Section */}
+        <section class="bg-white">
+          <div class="max-w-7xl mx-auto px-4 py-50 max-w-[900px]">
+            <h2 class="text-4xl font-bold mb-4 tracking-tight">
+              Zenobia Pay enables luxury brands and jewelers to accept
+              pay-by-bank.
+            </h2>
+            <p class="text-xl text-neutral-600 mb-12">
+              We've built an instant clearing pay-by-bank network with bundled
+              fraud insurance that costs 3 times less in fees than credit card
+              processing.
+            </p>
+          </div>
+          <div
+            style={{
+              height: "var(--hero-bottom-height)",
+              "border-radius":
+                "var(--hero-bottom-radius) var(--hero-bottom-radius) 0 0",
+            }}
+            class="bg-[var(--brand-green)]"
+          ></div>
+        </section>
 
-            <div class="mt-10">
-              <div class="space-y-10 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10">
-                {[
-                  {
-                    title: "Server-Side Rendering",
-                    description:
-                      "Optimal SEO performance with server-side rendered content",
-                  },
-                  {
-                    title: "Modern Stack",
-                    description:
-                      "Built with SolidStart for the best developer experience",
-                  },
-                  {
-                    title: "Markdown Support",
-                    description: "Write content in Markdown with MDX support",
-                  },
-                  {
-                    title: "Fast Performance",
-                    description:
-                      "Lightning-fast page loads and smooth interactions",
-                  },
-                ].map((feature) => (
-                  <div class="relative">
-                    <div class="absolute flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                      <svg
-                        class="h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    </div>
-                    <div class="ml-16">
-                      <h3 class="text-lg leading-6 font-medium text-gray-900">
-                        {feature.title}
-                      </h3>
-                      <p class="mt-2 text-base text-gray-500">
-                        {feature.description}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+        {/* Green Section */}
+        <section
+          class="relative"
+          style={{ "background-color": "var(--brand-green)" }}
+        >
+          {/* Content block */}
+          <div class="py-20 px-6">
+            <div class="max-w-7xl mx-auto">
+              <h2 class="text-4xl font-bold mb-12 text-white tracking-tight">
+                Why Choose Zenobia?
+              </h2>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                  <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                    Direct Bank Integration
+                  </h3>
+                  <p class="text-white/80 text-lg font-medium">
+                    Seamlessly connect with your customers' banks for instant,
+                    secure transactions without the traditional payment
+                    processing delays.
+                  </p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                  <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                    Lower Transaction Fees
+                  </h3>
+                  <p class="text-white/80 text-lg font-medium">
+                    Cut costs with our competitive fee structure, designed
+                    specifically for high-value transactions in the luxury
+                    market.
+                  </p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                  <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                    Enhanced Security
+                  </h3>
+                  <p class="text-white/80 text-lg font-medium">
+                    Bank-level security protocols ensure your transactions are
+                    protected at every step, with real-time fraud detection.
+                  </p>
+                </div>
+                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                  <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                    24/7 Support
+                  </h3>
+                  <p class="text-white/80 text-lg font-medium">
+                    Our dedicated support team is always available to assist you
+                    with any questions or concerns about your transactions.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Bottom curved block (absolutely positioned) */}
+          <div
+            style={{
+              height: "var(--hero-bottom-height)",
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: "calc(var(--hero-bottom-height) * -1)",
+              width: "100%",
+              "background-color": "var(--brand-green)",
+              "border-radius":
+                "0 0 var(--hero-bottom-radius) var(--hero-bottom-radius)",
+              "z-index": 2,
+              "pointer-events": "none",
+            }}
+          ></div>
         </section>
       </main>
-    </>
+      <Footer />
+    </div>
   );
 }

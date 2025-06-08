@@ -3,6 +3,7 @@ import { FileRoutes } from "@solidjs/start/router";
 import { Suspense } from "solid-js";
 import { MetaProvider } from "@solidjs/meta";
 import Nav from "~/components/Nav";
+import SmoothScroll from "~/components/SmoothScroll";
 import "./app.css";
 
 export default function App() {
@@ -11,6 +12,7 @@ export default function App() {
       <Router
         root={(props) => (
           <>
+            <SmoothScroll />
             <Nav />
             <Suspense>{props.children}</Suspense>
           </>

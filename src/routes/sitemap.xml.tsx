@@ -2,7 +2,7 @@ import { getBlogPosts } from "~/lib/mdx";
 
 export async function GET() {
   const posts = await getBlogPosts();
-  const baseUrl = "https://yourdomain.com"; // Replace with your actual domain
+  const baseUrl = "https://zenobiapay.com"; // Replace with your actual domain
 
   const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

@@ -1,0 +1,12 @@
+{
+  "keys": [
+    {
+      "e":"AQAB",
+      "kty":"RSA",
+      "n":"s97rN4NhCO1MUl-hZOLdaUKzhfMj7jURfZ47FgrQ8TlIfePpeSA2tHgwDfMaY82oJFEu0mHYYkP6NCUClLRaH9SvuoPZ9RFgYbWKDwVakBWLJXIZPeeJe1PbzSUSAnLLFtdTnfIQspr_HcOMmQ18Dj6X9-y_YB393q92wvCzKPguca_w8yMfR-x8-S9AsbBRRHBeRVN2Enw4gCFYZverrkgVVVKIRqP4IyBx99U_kwQx0P4puSzzUmCs8WS2Owjp1cRn_S2jgAsrY_X9dYdgyETE4mZatzNXaLgKXbec5DZKnjhRYuBW1gdq47KnzeYO5-dKugWCCrtRWMWSdqxiwQ",
+      "alg": "RS256",
+      "kid": "zenobia-webhooks",
+      "use": "sig"
+    }
+  ]
+}

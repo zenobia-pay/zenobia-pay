@@ -3,6 +3,7 @@ import { useParams, A } from "@solidjs/router";
 import { getBlogPost } from "~/lib/mdx";
 import { Show, createResource } from "solid-js";
 import { marked } from "marked";
+import Footer from "~/components/Footer";
 
 // Configure marked to use synchronous mode
 marked.setOptions({
@@ -89,6 +90,7 @@ export default function BlogPost() {
               </div>
             </article>
           </main>
+          <Footer />
         </>
       )}
     </Show>

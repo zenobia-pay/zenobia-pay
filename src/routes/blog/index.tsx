@@ -1,7 +1,13 @@
 import { Title, Meta } from "@solidjs/meta";
 import { A } from "@solidjs/router";
 import { getBlogPosts } from "~/lib/mdx";
-import { createResource } from "solid-js";
+import { createResource, createSignal } from "solid-js";
+import Footer from "~/components/Footer";
+
+const topics = [
+  { label: "All Posts", value: "all" },
+  { label: "Insights", value: "insights" },
+];
 
 // Add caching headers
 export const route = {
@@ -18,10 +24,20 @@ export const route = {
 
 export default function BlogIndex() {
   const [posts] = createResource(getBlogPosts);
+  const [selectedTopic, setSelectedTopic] = createSignal("all");
+
+  const filteredPosts = () => {
+    const allPosts = posts();
+    if (!allPosts) return [];
+    if (selectedTopic() === "all") return allPosts;
+    return allPosts.filter(
+      (post) => (post as any).category === selectedTopic()
+    );
+  };
 
   return (
     <>
-      <Title>Blog - Our Latest Posts</Title>
+      <Title>Blog - Zenobia Pay</Title>
       <Meta
         name="description"
         content="Discover our latest insights and updates from our team"
@@ -39,76 +55,104 @@ export default function BlogIndex() {
         content="Discover our latest insights and updates from our team"
       />
 
-      <main class="min-h-screen bg-gray-50 py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center">
-            <h1 class="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Our Blog
-            </h1>
-            <p class="mt-3 max-w-2xl mx-auto text-xl text-gray-500 sm:mt-4">
-              Latest insights and updates from our team
-            </p>
-          </div>
+      <main class="min-h-screen bg-white pt-12 pb-0">
+        <div class="max-w-[1400px] mx-auto px-4 flex flex-col lg:flex-row gap-12">
+          {/* Sidebar */}
+          <aside class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-6">
+            {/* Filter Card */}
+            <div class="rounded-3xl bg-neutral-100 p-6">
+              <h2 class="text-2xl font-bold mb-4 tracking-tight">Filter</h2>
+              <div class="border-b border-neutral-200 mb-4"></div>
+              <div class="text-neutral-500 text-sm mb-2">By topic</div>
+              <ul class="space-y-1">
+                {topics.map((topic) => (
+                  <li
+                    class={
+                      selectedTopic() === topic.value
+                        ? "font-bold text-black"
+                        : "text-neutral-400 font-medium hover:text-black transition cursor-pointer"
+                    }
+                    onClick={() => setSelectedTopic(topic.value)}
+                  >
+                    {selectedTopic() === topic.value ? "• " : ""}
+                    {topic.label}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </aside>
 
-          <div class="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {posts.loading && (
-              <div class="col-span-full text-center">
-                <p class="text-gray-500">Loading posts...</p>
-              </div>
-            )}
-
-            {posts.error && (
-              <div class="col-span-full text-center">
-                <p class="text-red-500">
-                  Error loading posts. Please try again later.
-                </p>
-              </div>
-            )}
-
-            {posts()?.map((post) => (
-              <article class="bg-white rounded-lg shadow-lg overflow-hidden">
-                <div class="p-6">
-                  <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                      <span class="inline-flex items-center justify-center h-12 w-12 rounded-md bg-indigo-500 text-white">
-                        <svg
-                          class="h-6 w-6"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"
-                          />
-                        </svg>
-                      </span>
-                    </div>
-                    <div class="ml-4">
-                      <p class="text-sm font-medium text-gray-500">
-                        {new Date(post.date).toLocaleDateString()}
-                      </p>
-                      <p class="text-sm font-medium text-gray-500">
-                        By {post.author}
-                      </p>
-                    </div>
+          {/* Feed/Main Content */}
+          <section
+            class="flex-1 min-w-0 relative"
+            style={{
+              "border-radius":
+                "0 0 var(--hero-bottom-radius) var(--hero-bottom-radius)",
+            }}
+          >
+            <h1 class="text-5xl font-bold mb-8 tracking-tight">Blog</h1>
+            <div class="border-b border-dashed border-neutral-200 mb-10"></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {posts.loading && (
+                <div class="col-span-full text-center">
+                  <p class="text-neutral-400 font-medium">Loading posts...</p>
+                </div>
+              )}
+              {posts.error && (
+                <div class="col-span-full text-center">
+                  <p class="text-red-500 font-medium">
+                    Error loading posts. Please try again later.
+                  </p>
+                </div>
+              )}
+              {filteredPosts().map((post) => (
+                <A
+                  href={`/blog/${post.slug}`}
+                  class="block group rounded-3xl overflow-hidden bg-neutral-50 hover:bg-neutral-100 transition shadow-sm"
+                >
+                  <div class="aspect-[4/3] bg-neutral-200 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={
+                        (post as any).image ||
+                        "https://placehold.co/600x450/000/fff?text=Post+Image"
+                      }
+                      alt={post.title}
+                      class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                    />
                   </div>
-                  <A href={`/blog/${post.slug}`} class="block mt-4">
-                    <h2 class="text-xl font-semibold text-gray-900 hover:text-indigo-600">
+                  <div class="p-6">
+                    <div class="text-neutral-400 text-sm font-medium mb-1">
+                      {(post as any).category || "Uncategorized"}
+                    </div>
+                    <h2 class="text-2xl font-bold text-black group-hover:text-[var(--brand-green)] tracking-tight mb-2">
                       {post.title}
                     </h2>
-                    <p class="mt-3 text-base text-gray-500">
+                    <p class="text-neutral-500 font-medium line-clamp-2">
                       {post.description}
                     </p>
-                  </A>
-                </div>
-              </article>
-            ))}
-          </div>
+                  </div>
+                </A>
+              ))}
+            </div>
+          </section>
         </div>
+        <div
+          style={{
+            height: "var(--hero-bottom-height)",
+            position: "absolute",
+            left: 0,
+            right: 0,
+            bottom: "calc(var(--hero-bottom-height) * -1)",
+            width: "100%",
+            "background-color": "white",
+            "border-radius":
+              "0 0 var(--hero-bottom-radius) var(--hero-bottom-radius)",
+            "z-index": 2,
+            "pointer-events": "none",
+          }}
+        ></div>
       </main>
+      <Footer />
     </>
   );
 }
