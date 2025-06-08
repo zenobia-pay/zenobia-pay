@@ -8,6 +8,7 @@ const ProductsPage = lazy(() => import("./pages/ProductsPage"));
 const ProductDetailPage = lazy(() => import("./pages/ProductDetailPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const DemoPage = lazy(() => import("./pages/DemoPage"));
 
 // Helper function to wrap components with MainLayout
 const withMainLayout = (Component: any) => () =>
@@ -75,5 +76,9 @@ export const routes: RouteDefinition[] = [
   {
     path: "/checkout",
     component: CheckoutPage,
+  },
+  {
+    path: "/demo",
+    component: DemoPage,
   },
 ];
