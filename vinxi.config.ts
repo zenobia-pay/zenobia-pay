@@ -9,4 +9,15 @@ export default createConfig({
       rehypePlugins: [],
     }),
   ],
+  vite: {
+    css: {
+      postcss: {
+        plugins: [
+          require("tailwindcss"),
+          require("autoprefixer"),
+          require("@tailwindcss/typography"),
+        ],
+      },
+    },
+  },
 });

@@ -22,8 +22,12 @@ export default function Nav() {
     checkScroll();
   });
 
-  const active = (path: string) =>
-    path == location.pathname ? "underline" : "";
+  const active = (path: string) => {
+    if (path === "/blog") {
+      return location.pathname.startsWith("/blog") ? "underline" : "";
+    }
+    return path === location.pathname ? "underline" : "";
+  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen());
@@ -73,7 +77,13 @@ export default function Nav() {
             <svg
               class="w-6 h-6"
               fill="none"
-              stroke={isAtTop() && !isMenuOpen() ? "white" : "currentColor"}
+              stroke={
+                isMenuOpen()
+                  ? "currentColor"
+                  : isAtTop()
+                  ? "white"
+                  : "currentColor"
+              }
               viewBox="0 0 24 24"
             >
               {isMenuOpen() ? (
@@ -162,11 +172,7 @@ export default function Nav() {
             <a
               class={`px-4 py-2 text-lg font-semibold transition-all duration-300 ease-in-out hover:scale-105 ${active(
                 "/about"
-              )} ${
-                isAtTop()
-                  ? "text-white hover:text-gray-200"
-                  : "text-black hover:text-gray-700"
-              }`}
+              )} text-black hover:text-gray-700`}
               href="/about"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -175,11 +181,7 @@ export default function Nav() {
             <a
               class={`px-4 py-2 text-lg font-semibold transition-all duration-300 ease-in-out hover:scale-105 ${active(
                 "/contact"
-              )} ${
-                isAtTop()
-                  ? "text-white hover:text-gray-200"
-                  : "text-black hover:text-gray-700"
-              }`}
+              )} text-black hover:text-gray-700`}
               href="/contact"
               onClick={() => setIsMenuOpen(false)}
             >
@@ -188,22 +190,14 @@ export default function Nav() {
             <a
               class={`px-4 py-2 text-lg font-semibold transition-all duration-300 ease-in-out hover:scale-105 ${active(
                 "/blog"
-              )} ${
-                isAtTop()
-                  ? "text-white hover:text-gray-200"
-                  : "text-black hover:text-gray-700"
-              }`}
+              )} text-black hover:text-gray-700`}
               href="/blog"
               onClick={() => setIsMenuOpen(false)}
             >
               Blog
             </a>
             <a
-              class={`px-4 py-2 text-lg font-semibold transition-all duration-300 ease-in-out hover:scale-105 ${
-                isAtTop()
-                  ? "text-white hover:text-gray-200"
-                  : "text-black hover:text-gray-700"
-              }`}
+              class={`px-4 py-2 text-lg font-semibold transition-all duration-300 ease-in-out hover:scale-105 text-black hover:text-gray-700`}
               href="/demo"
               onClick={() => setIsMenuOpen(false)}
             >

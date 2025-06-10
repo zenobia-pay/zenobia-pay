@@ -4,14 +4,22 @@ export interface BlogPost {
   slug: string;
   title: string;
   date: string;
+  lastUpdated?: string;
   description: string;
   author: string;
+  category?: string;
   content: string;
+  recommendedPosts?: string[];
 }
 
 // Use Vite's import.meta.glob to get all MDX files
 // In production, this will be statically analyzed at build time
 const posts = import.meta.glob("../content/blog/*.mdx", {
+  as: "raw",
+  eager: true,
+});
+
+const legalContent = import.meta.glob("../content/legal/*.mdx", {
   as: "raw",
   eager: true,
 });
@@ -61,12 +69,32 @@ const processedPosts = Object.entries(posts)
       slug,
       title: data.title || "",
       date: data.date || "",
+      lastUpdated: data.lastUpdated || data.date,
       description: data.description || "",
       author: data.author || "",
+      category: data.category || "",
       content: markdownContent,
+      recommendedPosts: Array.isArray(data.recommendedPosts)
+        ? data.recommendedPosts
+        : [],
     };
   })
   .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+// Pre-process legal content
+const processedLegalContent = Object.entries(legalContent).reduce(
+  (acc, [path, content]) => {
+    const { content: markdownContent } = parseFrontmatter(content as string);
+    const key =
+      path
+        .split("/")
+        .pop()
+        ?.replace(/\.mdx$/, "") || "";
+    acc[key] = markdownContent;
+    return acc;
+  },
+  {} as Record<string, string>
+);
 
 export async function getBlogPosts(): Promise<BlogPost[]> {
   return processedPosts;
@@ -74,4 +102,8 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
 
 export async function getBlogPost(slug: string): Promise<BlogPost | null> {
   return processedPosts.find((post) => post.slug === slug) || null;
+}
+
+export async function getLegalContent(key: string): Promise<string> {
+  return processedLegalContent[key] || "";
 }

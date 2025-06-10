@@ -7,7 +7,7 @@ import BottomCurvedBlock from "~/components/BottomCurvedBlock";
 
 const topics = [
   { label: "All Posts", value: "all" },
-  { label: "Chargebacks & Fraud", value: "chargebacks,fraud" },
+  { label: "Chargebacks", value: "chargebacks" },
 ];
 
 // Add caching headers
@@ -31,9 +31,13 @@ export default function BlogIndex() {
     const allPosts = posts();
     if (!allPosts) return [];
     if (selectedTopic() === "all") return allPosts;
-    return allPosts.filter(
-      (post) => (post as any).category === selectedTopic()
-    );
+
+    const selectedCategories = selectedTopic().split(",");
+    return allPosts.filter((post) => {
+      if (!post.category) return false;
+      const postCategories = post.category.split(",");
+      return selectedCategories.some((cat) => postCategories.includes(cat));
+    });
   };
 
   return (
@@ -58,43 +62,42 @@ export default function BlogIndex() {
 
       <main class="min-h-screen bg-white">
         {/* Hero Section */}
-        <section class="h-screen relative bg-black text-white flex flex-col">
+        <section class="relative bg-black text-white">
           {/* Top padding block */}
           <div
-            class="flex-grow px-6"
+            class="flex flex-col items-start justify-center px-6"
             style={{
               "padding-top": `calc(var(--nav-height) + 4rem)`,
+              "padding-bottom": "var(--hero-bottom-height)",
             }}
           >
-            <div class="max-w-7xl mx-auto w-full h-full flex flex-col">
+            <div class="max-w-7xl mx-auto w-full">
               {/* BLOG text and statements */}
-              <div class="flex-grow flex flex-col">
-                <h2 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
-                  Follow our blog.
+              <div class="flex flex-col">
+                <h2 class="text-4xl md:text-7xl font-bold leading-tight tracking-tight">
+                  Follow our blog as we write about...
                 </h2>
               </div>
             </div>
           </div>
 
           {/* Bottom curved block */}
-          <div class="flex-shrink-0">
-            <BottomCurvedBlock
-              leftText="Latest insights"
-              rightText="From our team"
-              background="rgb(var(--bg-light))"
-              showButton={true}
-              buttonOnClick={() =>
-                document
-                  .querySelector("section:nth-of-type(2)")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              buttonText=""
-            />
-          </div>
+          <BottomCurvedBlock
+            leftText=""
+            rightText=""
+            background="rgb(var(--bg-light))"
+            showButton={true}
+            buttonOnClick={() =>
+              document
+                .querySelector("section:nth-of-type(2)")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            buttonText=""
+          />
         </section>
 
         {/* Blog Content */}
-        <section class="bg-[rgb(var(--bg-light))] pt-24 pb-120">
+        <section class="bg-[rgb(var(--bg-light))] pt-12 pb-64">
           <div class="max-w-[1400px] mx-auto px-4 flex flex-col lg:flex-row gap-12">
             {/* Sidebar */}
             <aside class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-6">
@@ -123,7 +126,7 @@ export default function BlogIndex() {
 
             {/* Feed/Main Content */}
             <section class="flex-1 min-w-0">
-              <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {posts.loading && (
                   <div class="col-span-full text-center">
                     <p class="text-neutral-400 font-medium">Loading posts...</p>
@@ -141,21 +144,13 @@ export default function BlogIndex() {
                     href={`/blog/${post.slug}`}
                     class="block group rounded-3xl overflow-hidden bg-neutral-50 hover:bg-neutral-100 transition shadow-sm"
                   >
-                    <div class="aspect-[4/3] bg-neutral-200 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={
-                          (post as any).image ||
-                          "https://placehold.co/600x450/000/fff?text=Post+Image"
-                        }
-                        alt={post.title}
-                        class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                    <div class="p-6">
-                      <div class="text-neutral-400 text-sm font-medium mb-1">
-                        {(post as any).category || "Uncategorized"}
+                    <div class="p-8">
+                      <div class="flex items-center gap-2 text-neutral-400 text-sm font-medium mb-2">
+                        <span>{post.category || "Uncategorized"}</span>
+                        <span>•</span>
+                        <span>{new Date(post.date).toLocaleDateString()}</span>
                       </div>
-                      <h2 class="text-2xl font-bold text-black group-hover:text-[var(--brand-green)] tracking-tight mb-2">
+                      <h2 class="text-2xl font-bold text-black group-hover:text-[var(--brand-green)] tracking-tight mb-3">
                         {post.title}
                       </h2>
                       <p class="text-neutral-500 font-medium line-clamp-2">
