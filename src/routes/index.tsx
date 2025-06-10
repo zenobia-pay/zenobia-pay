@@ -16,21 +16,6 @@ export default function Home() {
         <section class="h-screen relative text-white overflow-hidden">
           {/* Video Background */}
           <div class="absolute inset-0 w-full h-full">
-            <style>
-              {`
-                @media (max-aspect-ratio: 3/2) {
-                  .video-container video {
-                    display: none;
-                  }
-                  .video-container::after {
-                    content: '';
-                    position: absolute;
-                    inset: 0;
-                    background: black;
-                  }
-                }
-              `}
-            </style>
             <div class="video-container absolute inset-0">
               <video
                 class="absolute min-w-full min-h-full object-cover"
@@ -40,7 +25,8 @@ export default function Home() {
                 playsinline
                 poster="/video-poster.jpg"
               >
-                <source src="/hero-300kb.mp4" type="video/mp4" />
+                <source src="/hero-200kb.webm" type="video/webm" />
+                <source src="/hero-200kb.mp4" type="video/mp4" />
               </video>
             </div>
             {/* Overlay to ensure text readability */}
@@ -48,18 +34,22 @@ export default function Home() {
 
           {/* Top padding block */}
           <div
-            class="flex flex-col items-center justify-center px-6 relative z-10 bg-none"
+            class="flex flex-col items-start justify-center px-6 relative z-10 bg-none w-full"
             style={{
               height: `calc(100vh - var(--hero-bottom-height))`,
-              "padding-top": `calc(var(--nav-height) + 2rem)`,
+              "padding-top": `calc(var(--nav-height) - 2rem)`,
               "padding-bottom": "var(--hero-bottom-height)",
             }}
-          ></div>
+          >
+            <h1 class="text-[4rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] xl:text-[12rem] font-black text-white tracking-[-0.02em] leading-[0.9]">
+              ZENOBIA PAY
+            </h1>
+          </div>
 
           {/* Bottom curved block */}
           <BottomCurvedBlock
-            leftText="Payments software for luxury"
-            rightText="3x cheaper payments"
+            leftText="Payments software for luxury."
+            rightText="3x cheaper payments."
             background="rgb(var(--bg-light))"
             showButton={true}
             buttonOnClick={() =>
@@ -73,82 +63,143 @@ export default function Home() {
 
         {/* First Content Section */}
         <section style={{ background: "rgb(var(--bg-light))" }}>
-          <div class="max-w-7xl mx-auto px-4 py-50 max-w-[900px]">
-            <h2 class="text-6xl font-bold mb-8 tracking-tight">
+          <div class="max-w-7xl mx-auto px-4 py-24 md:py-50 max-w-[900px]">
+            <h2 class="text-4xl md:text-6xl font-bold mb-8 tracking-tight">
               Zenobia Pay enables luxury brands and jewelers to accept
               pay-by-bank.
             </h2>
-            <p class="text-2xl text-neutral-500 mb-12">
+            <p class="text-2xl text-neutral-500 mb-12 max-w-[700px]">
               We've built an instant clearing pay-by-bank network with bundled
               fraud insurance that costs 3 times less in fees than credit card
               processing.
             </p>
           </div>
-          <BottomCurvedBlock
-            leftText=""
-            rightText=""
-            background="var(--brand-green)"
-          />
+          <BottomCurvedBlock leftText="" rightText="" background="black" />
         </section>
 
-        {/* Green Section */}
-        <section
-          class="relative"
-          style={{ "background-color": "var(--brand-green)" }}
-        >
+        <section class="relative" style={{ "background-color": "black" }}>
           {/* Content block */}
-          <div class="py-40 px-6">
-            <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-start gap-12">
-              {/* Left: Header */}
-              <div class="md:w-1/3 w-full">
-                <h2 class="text-4xl font-bold mb-4 text-white tracking-tight md:mb-0">
-                  Why Choose Zenobia?
+          <div class="py-24 md:py-40 px-6">
+            <div class="mx-auto">
+              {/* Header */}
+              <div class="mb-12">
+                <h2 class="text-6xl font-bold text-white tracking-tight">
+                  What We Are
                 </h2>
               </div>
-              {/* Right: Features Grid */}
-              <div class="md:w-2/3 w-full grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+              {/* Features Grid */}
+              <div class="grid md:grid-cols-3 gap-8">
+                <div class="p-8 rounded-2xl">
                   <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                    Direct Bank Integration
+                    A new payment option
                   </h3>
                   <p class="text-white/80 text-lg font-medium">
-                    Seamlessly connect with your customers' banks for instant,
-                    secure transactions without the traditional payment
-                    processing delays.
+                    Zenobia Pay is a new payment flow. Accept bank transfers as
+                    payments without dealing with bank account numbers.
                   </p>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                <div class="p-8 rounded-2xl">
                   <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                    Lower Transaction Fees
+                    Mobile flow
                   </h3>
                   <p class="text-white/80 text-lg font-medium">
-                    Cut costs with our competitive fee structure, designed
-                    specifically for high-value transactions in the luxury
-                    market.
+                    Zenobia Pay is already available on your iPhone, no app
+                    download required. Point your camera at your laptop screen
+                    to pay directly from your bank account.
                   </p>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                <div class="p-8 rounded-2xl">
                   <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                    Enhanced Security
+                    Pay With Zenobia button
                   </h3>
                   <p class="text-white/80 text-lg font-medium">
-                    Bank-level security protocols ensure your transactions are
-                    protected at every step, with real-time fraud detection.
+                    A 'Pay With Zenobia' button to add to the checkout flow of
+                    your merchant site.
                   </p>
                 </div>
-                <div class="bg-white/10 backdrop-blur-sm p-8 rounded-2xl">
+                <div class="p-8 rounded-2xl">
                   <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                    24/7 Support
+                    Secure payments for luxury merchants
                   </h3>
                   <p class="text-white/80 text-lg font-medium">
-                    Our dedicated support team is always available to assist you
-                    with any questions or concerns about your transactions.
+                    Zenobia Pay's mobile flow stops fraud at the source. We
+                    shift the liability and provide a fraud chargeback
+                    guarantee.
+                  </p>
+                </div>
+                <div class="p-8 rounded-2xl">
+                  <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                    3x cheaper payments
+                  </h3>
+                  <p class="text-white/80 text-lg font-medium">
+                    Credit card processing fees average 3% of transaction value.
+                    Zenobia Pay charges 1%.
+                  </p>
+                </div>
+                <div class="p-8 rounded-2xl">
+                  <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                    Eliminate friendly fraud
+                  </h3>
+                  <p class="text-white/80 text-lg font-medium">
+                    Zenobia Pay helps merchants accept pay-by-bank, independent
+                    of card networks. We manually review every dispute case to
+                    eliminate friendly fraud.
                   </p>
                 </div>
               </div>
             </div>
           </div>
 
+          <BottomCurvedBlock leftText="" rightText="" background="black" />
+        </section>
+
+        {/* How It Works Section */}
+        <section class="relative" style={{ background: "black" }}>
+          <div class="max-w-7xl mx-auto px-6 py-24">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+              <div class="order-2 md:order-1">
+                <video
+                  class="w-full rounded-lg shadow-lg"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                >
+                  <source src="/linkpaydone.webm" type="video/webm" />
+                  <source src="/linkpaydone.mp4" type="video/mp4" />
+                </video>
+              </div>
+              <div class="space-y-6 order-1 md:order-2 flex flex-col items-center">
+                <div class="w-full">
+                  <h2 class="text-4xl font-bold mb-12 tracking-tight text-white text-left">
+                    HOW IT WORKS
+                  </h2>
+                </div>
+                <div class="w-full">
+                  <ul class="space-y-6">
+                    <li
+                      class="text-2xl"
+                      style={{ color: "rgb(var(--text-off-white))" }}
+                    >
+                      No app download required
+                    </li>
+                    <li
+                      class="text-2xl"
+                      style={{ color: "rgb(var(--text-off-white))" }}
+                    >
+                      No signup
+                    </li>
+                    <li
+                      class="text-2xl"
+                      style={{ color: "rgb(var(--text-off-white))" }}
+                    >
+                      Link your bank account, hit pay, and you're done.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
           <BottomCurvedBlock
             leftText=""
             rightText=""
@@ -157,8 +208,11 @@ export default function Home() {
         </section>
       </main>
       {/* FAQ Section */}
-      <section class="relative" style={{ background: "rgb(var(--bg-light))" }}>
-        <div class="max-w-3xl mx-auto my-24 px-4">
+      <section
+        class="relative py-24 md:py-40"
+        style={{ background: "rgb(var(--bg-light))" }}
+      >
+        <div class="max-w-3xl mx-auto px-4">
           <h2 class="text-4xl font-bold mb-10 tracking-tight">FAQ</h2>
           <FAQList />
           <div
@@ -286,7 +340,7 @@ function FAQList() {
             >
               <span class="flex items-center gap-4">
                 <span class="text-2xl">{faq.icon}</span>
-                <span class="text-xl font-semibold text-black">
+                <span class="text-xl font-semibold text-black text-left">
                   {faq.question}
                 </span>
               </span>

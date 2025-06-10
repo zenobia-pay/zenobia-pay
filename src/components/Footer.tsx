@@ -13,7 +13,10 @@ export default function Footer() {
               <h3 class="text-2xl font-bold mb-4 tracking-tight">
                 Zenobia Pay
               </h3>
-              <p class="text-neutral-400 font-medium">Backed by YCombinator</p>
+              <div class="flex items-center gap-2">
+                <span class="text-white font-medium">Backed by</span>
+                <img src="/yc-logo.svg" alt="YCombinator" class="h-5" />
+              </div>
             </div>
 
             {/* Company Links */}
