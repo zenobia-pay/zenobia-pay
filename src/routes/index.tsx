@@ -2,10 +2,41 @@ import { Title, Meta } from "@solidjs/meta";
 import { A } from "@solidjs/router";
 import SectionCard from "~/components/SectionCard";
 import Footer from "~/components/Footer";
-import { createSignal, For } from "solid-js";
+import { createSignal, For, onMount, onCleanup } from "solid-js";
 import BottomCurvedBlock from "../components/BottomCurvedBlock";
 
 export default function Home() {
+  let videoRef: HTMLVideoElement | undefined;
+  const [isVideoVisible, setIsVideoVisible] = createSignal(false);
+
+  onMount(() => {
+    const handleScroll = () => {
+      if (!videoRef) return;
+
+      const rect = videoRef.getBoundingClientRect();
+      const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+      setIsVideoVisible(isVisible);
+
+      if (isVisible) {
+        const scrollProgress =
+          (window.innerHeight - rect.top) / (window.innerHeight + rect.height);
+        const videoDuration = videoRef.duration;
+        videoRef.currentTime = Math.max(
+          0,
+          Math.min(videoDuration, scrollProgress * videoDuration)
+        );
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    // Initial check
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  });
+
   return (
     <>
       <Title>
@@ -193,10 +224,9 @@ export default function Home() {
               <div class="grid md:grid-cols-2 gap-12 items-center">
                 <div class="order-2 md:order-1">
                   <video
+                    ref={videoRef}
                     class="w-full rounded-lg shadow-lg"
-                    autoplay
                     muted
-                    loop
                     playsinline
                     preload="auto"
                     width="1280"
