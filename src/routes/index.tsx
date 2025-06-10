@@ -31,6 +31,17 @@ export default function Home() {
         content="Zenobia Pay enables luxury brands and jewelers to accept pay-by-bank."
       />
       <Meta name="twitter:image" content="https://zenobiapay.com/hero.png" />
+
+      {/* Preload critical resources */}
+      <link
+        rel="preload"
+        href="/hero-200kb.webm"
+        as="video"
+        type="video/webm"
+      />
+      <link rel="preload" href="/hero-200kb.mp4" as="video" type="video/mp4" />
+      <link rel="preload" href="/hero.png" as="image" type="image/png" />
+
       <div class="min-h-screen flex flex-col">
         {/* Header */}
 
@@ -47,7 +58,7 @@ export default function Home() {
                   muted
                   loop
                   playsinline
-                  poster="/hero.png"
+                  preload="auto"
                 >
                   <source src="/hero-200kb.webm" type="video/webm" />
                   <source src="/hero-200kb.mp4" type="video/mp4" />
@@ -188,6 +199,9 @@ export default function Home() {
                     muted
                     loop
                     playsinline
+                    preload="auto"
+                    width="1280"
+                    height="720"
                   >
                     <source src="/linkpaydone.webm" type="video/webm" />
                     <source src="/linkpaydone.mp4" type="video/mp4" />
