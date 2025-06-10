@@ -54,7 +54,9 @@
   --nav-height: 4rem;
   --hero-bottom-height: 8rem;
   --hero-bottom-radius: 8rem;
-  --brand-green: color(display-p3 0.075 0.502 0.282);
+  /* --brand-green: color(display-p3 0.075 0.502 0.282); */
+  --brand-green: rgb(130, 139, 76);
+  --bg-light: 247, 247, 247;
 }
 
 @media (max-width: 768px) {

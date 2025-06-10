@@ -1,12 +1,105 @@
 import { Title, Meta } from "@solidjs/meta";
 import { A } from "@solidjs/router";
 import { getBlogPosts } from "~/lib/mdx";
-import { createResource, createSignal } from "solid-js";
+import { createResource, createSignal, For } from "solid-js";
 import Footer from "~/components/Footer";
 
 const topics = [
   { label: "All Posts", value: "all" },
   { label: "Insights", value: "insights" },
+];
+
+const faqs = [
+  {
+    icon: (
+      <svg
+        width="32"
+        height="32"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="4" />
+      </svg>
+    ),
+    question: "UI Design",
+    answer:
+      "UI Design is about creating visually appealing and user-friendly interfaces for digital products.",
+  },
+  {
+    icon: (
+      <svg
+        width="32"
+        height="32"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M9 21V9" />
+      </svg>
+    ),
+    question: "Development",
+    answer:
+      "Development involves building and maintaining the codebase for web and mobile applications.",
+  },
+  {
+    icon: (
+      <svg
+        width="32"
+        height="32"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M7 7h10v10H7z" />
+      </svg>
+    ),
+    question: "Branding",
+    answer:
+      "Branding is the process of creating a unique identity and image for a product or company.",
+  },
+  {
+    icon: (
+      <svg
+        width="32"
+        height="32"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <path d="M3 9h18M9 21V9" />
+      </svg>
+    ),
+    question: "Animation",
+    answer:
+      "Animation brings interfaces to life and improves user experience through motion.",
+  },
+  {
+    icon: (
+      <svg
+        width="32"
+        height="32"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        viewBox="0 0 24 24"
+      >
+        <circle cx="12" cy="12" r="10" />
+        <path d="M12 6v6l4 2" />
+      </svg>
+    ),
+    question: "Motion",
+    answer:
+      "Motion design uses animation and movement to communicate and guide users.",
+  },
 ];
 
 // Add caching headers
@@ -55,7 +148,7 @@ export default function BlogIndex() {
         content="Discover our latest insights and updates from our team"
       />
 
-      <main class="min-h-screen bg-white pt-12 pb-0">
+      <main class="min-h-screen bg-white pt-[calc(var(--nav-height)+2rem)] pb-0">
         <div class="max-w-[1400px] mx-auto px-4 flex flex-col lg:flex-row gap-12">
           {/* Sidebar */}
           <aside class="w-full lg:w-[320px] flex-shrink-0 flex flex-col gap-6">
@@ -152,6 +245,7 @@ export default function BlogIndex() {
           }}
         ></div>
       </main>
+
       <Footer />
     </>
   );
