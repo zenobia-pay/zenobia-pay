@@ -3,6 +3,14 @@ import { createResource } from "solid-js";
 import Footer from "~/components/Footer";
 import BottomCurvedBlock from "~/components/BottomCurvedBlock";
 import { getLegalContent } from "~/lib/mdx";
+import { marked } from "marked";
+
+// Configure marked to use synchronous mode
+marked.setOptions({
+  async: false,
+  gfm: true,
+  breaks: true,
+});
 
 export const route = {
   load: async () => {
@@ -45,30 +53,26 @@ export default function DebitAuth() {
           >
             <div class="max-w-7xl mx-auto w-full">
               <div class="flex flex-col">
-                <h2 class="text-4xl md:text-7xl font-bold leading-tight tracking-tight">
+                <h1 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6">
                   Debit Authorization
-                </h2>
+                </h1>
               </div>
             </div>
           </div>
 
           <BottomCurvedBlock
-            leftText="Payment"
-            rightText="Authorization"
             background="rgb(var(--bg-light))"
-            showButton={true}
-            buttonOnClick={() =>
-              document
-                .querySelector("section:nth-of-type(2)")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
-            buttonText=""
+            leftText=""
+            rightText=""
           />
         </section>
 
         {/* Content Section */}
-        <section class="bg-[rgb(var(--bg-light))] pt-12 pb-64">
-          <div class="max-w-[1400px] mx-auto px-4">
+        <section
+          class="pt-16 pb-32"
+          style={{ background: "rgb(var(--bg-light))" }}
+        >
+          <div class="max-w-4xl px-4 md:px-0">
             {content.loading && (
               <div class="text-center">
                 <p class="text-neutral-400 font-medium">Loading content...</p>
@@ -82,8 +86,11 @@ export default function DebitAuth() {
               </div>
             )}
             {content() && (
-              <div class="bg-white rounded-3xl p-8 shadow-sm max-w-4xl mx-auto">
-                <div class="prose prose-lg max-w-none">{content()}</div>
+              <div class="py-8 md:p-12">
+                <div
+                  class="prose prose-lg max-w-none prose-headings:text-black prose-h1:text-3xl md:prose-h1:text-5xl prose-a:text-[var(--brand-green)] hover:prose-a:text-[var(--brand-green-dark)] prose-img:rounded-2xl prose-img:shadow-sm prose-blockquote:border-l-[var(--brand-green)] prose-blockquote:bg-neutral-50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:text-neutral-700 prose-code:text-[var(--brand-green)] prose-code:bg-neutral-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-neutral-900 prose-pre:text-white prose-pre:rounded-2xl prose-pre:shadow-sm"
+                  innerHTML={marked(content() || "") as string}
+                />
               </div>
             )}
           </div>

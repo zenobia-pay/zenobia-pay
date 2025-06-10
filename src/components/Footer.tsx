@@ -79,7 +79,7 @@ export default function Footer() {
               <ul class="space-y-2">
                 <li>
                   <a
-                    href="https://twitter.com/zenobiapay"
+                    href="https://twitter.com/zenobia_pay"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-neutral-400 hover:text-white transition font-medium"
@@ -89,7 +89,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <a
-                    href="https://linkedin.com/company/zenobiapay"
+                    href="https://www.linkedin.com/company/zenobia-pay"
                     target="_blank"
                     rel="noopener noreferrer"
                     class="text-neutral-400 hover:text-white transition font-medium"

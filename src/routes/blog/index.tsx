@@ -75,7 +75,7 @@ export default function BlogIndex() {
               {/* BLOG text and statements */}
               <div class="flex flex-col">
                 <h2 class="text-4xl md:text-7xl font-bold leading-tight tracking-tight">
-                  Follow our blog as we write about...
+                  Follow our blog
                 </h2>
               </div>
             </div>

@@ -77,6 +77,12 @@ export default function BlogPost() {
                 <div class="max-w-7xl mx-auto w-full">
                   {/* Title and metadata */}
                   <div class="flex flex-col">
+                    <A
+                      href="/blog"
+                      class="inline-flex items-center text-neutral-400 hover:text-white font-medium text-lg mb-6"
+                    >
+                      ← Back to blog
+                    </A>
                     <h1 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6">
                       {post().title}
                     </h1>

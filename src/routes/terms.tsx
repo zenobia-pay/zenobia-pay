@@ -1,5 +1,5 @@
 import { Title, Meta } from "@solidjs/meta";
-import { createResource, createSignal } from "solid-js";
+import { createResource } from "solid-js";
 import Footer from "~/components/Footer";
 import BottomCurvedBlock from "~/components/BottomCurvedBlock";
 import { getLegalContent } from "~/lib/mdx";
@@ -14,41 +14,30 @@ marked.setOptions({
 
 export const route = {
   load: async () => {
-    const [terms, privacy] = await Promise.all([
-      getLegalContent("terms"),
-      getLegalContent("privacy"),
-    ]);
+    const content = await getLegalContent("terms");
     return {
       headers: {
         "Cache-Control": "public, max-age=3600, s-maxage=3600",
       },
-      data: { terms, privacy },
+      data: content,
     };
   },
 };
 
-export default function TermsPrivacy() {
-  const [content] = createResource(async () => {
-    const [terms, privacy] = await Promise.all([
-      getLegalContent("terms"),
-      getLegalContent("privacy"),
-    ]);
-    return { terms, privacy };
-  });
-
-  const [activeTab, setActiveTab] = createSignal<"terms" | "privacy">("terms");
+export default function Terms() {
+  const [content] = createResource(() => getLegalContent("terms"));
 
   return (
     <>
-      <Title>Terms & Privacy - Zenobia Pay</Title>
+      <Title>Terms of Service - Zenobia Pay</Title>
       <Meta
         name="description"
-        content="Terms of Service and Privacy Policy for Zenobia Pay"
+        content="Terms of Service for Zenobia Pay services"
       />
-      <Meta property="og:title" content="Terms & Privacy" />
+      <Meta property="og:title" content="Terms of Service" />
       <Meta
         property="og:description"
-        content="Terms of Service and Privacy Policy for Zenobia Pay"
+        content="Terms of Service for Zenobia Pay services"
       />
       <Meta property="og:type" content="website" />
 
@@ -65,7 +54,7 @@ export default function TermsPrivacy() {
             <div class="max-w-7xl mx-auto w-full">
               <div class="flex flex-col">
                 <h1 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight mb-6">
-                  Terms & Privacy
+                  Terms of Service
                 </h1>
               </div>
             </div>
@@ -98,40 +87,9 @@ export default function TermsPrivacy() {
             )}
             {content() && (
               <div class="py-8 md:p-12">
-                {/* Toggle Buttons */}
-                <div class="flex gap-4 mb-8">
-                  <button
-                    class={`px-6 py-3 rounded-xl font-medium transition-colors ${
-                      activeTab() === "terms"
-                        ? "bg-[var(--brand-green)] text-white"
-                        : "bg-white text-neutral-600 hover:bg-neutral-50"
-                    }`}
-                    onClick={() => setActiveTab("terms")}
-                  >
-                    Terms of Service
-                  </button>
-                  <button
-                    class={`px-6 py-3 rounded-xl font-medium transition-colors ${
-                      activeTab() === "privacy"
-                        ? "bg-[var(--brand-green)] text-white"
-                        : "bg-white text-neutral-600 hover:bg-neutral-50"
-                    }`}
-                    onClick={() => setActiveTab("privacy")}
-                  >
-                    Privacy Policy
-                  </button>
-                </div>
-
-                {/* Content */}
                 <div
                   class="prose prose-lg max-w-none prose-headings:text-black prose-h1:text-3xl md:prose-h1:text-5xl prose-a:text-[var(--brand-green)] hover:prose-a:text-[var(--brand-green-dark)] prose-img:rounded-2xl prose-img:shadow-sm prose-blockquote:border-l-[var(--brand-green)] prose-blockquote:bg-neutral-50 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic prose-blockquote:text-neutral-700 prose-code:text-[var(--brand-green)] prose-code:bg-neutral-100 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-pre:bg-neutral-900 prose-pre:text-white prose-pre:rounded-2xl prose-pre:shadow-sm"
-                  innerHTML={
-                    marked(
-                      activeTab() === "terms"
-                        ? content()?.terms || ""
-                        : content()?.privacy || ""
-                    ) as string
-                  }
+                  innerHTML={marked(content()) as string}
                 />
               </div>
             )}
