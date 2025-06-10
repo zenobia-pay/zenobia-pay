@@ -19,14 +19,14 @@ export default function Contact() {
           >
             <h2 class="text-5xl md:text-7xl font-bold leading-tight tracking-tight">
               <span class="text-white drop-shadow-lg">
-                Get in touch with us:
+                Get in touch with us
                 <br />
                 <br />
                 For support inquiries:
                 <br />
                 <a
                   href="mailto:support@zenobiapay.com"
-                  class="text-white hover:text-neutral-300 transition-colors underline"
+                  class="text-white hover:text-neutral-300 transition-colors underline text-2xl md:text-7xl"
                 >
                   support@zenobiapay.com
                 </a>
@@ -36,7 +36,7 @@ export default function Contact() {
                 <br />
                 <a
                   href="mailto:info@zenobiapay.com"
-                  class="text-white hover:text-neutral-300 transition-colors underline"
+                  class="text-white hover:text-neutral-300 transition-colors underline text-2xl md:text-7xl"
                 >
                   info@zenobiapay.com
                 </a>
@@ -46,7 +46,7 @@ export default function Contact() {
                 <br />
                 <a
                   href="tel:+16468479305"
-                  class="text-white hover:text-neutral-300 transition-colors underline"
+                  class="text-white hover:text-neutral-300 transition-colors underline text-2xl md:text-7xl"
                 >
                   +1 (646) 847-9305
                 </a>
@@ -57,7 +57,7 @@ export default function Contact() {
                 <br />
                 <a
                   href="mailto:support@zenobiapay.com"
-                  class="text-white hover:text-neutral-300 transition-colors underline"
+                  class="text-white hover:text-neutral-300 transition-colors underline text-2xl md:text-7xl"
                 >
                   merchants@zenobiapay.com
                 </a>
