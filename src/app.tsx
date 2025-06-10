@@ -9,17 +9,19 @@ import "./app.css";
 export default function App() {
   return (
     <MetaProvider>
-      <Router
-        root={(props) => (
-          <>
-            <SmoothScroll />
-            <Nav />
-            <Suspense>{props.children}</Suspense>
-          </>
-        )}
-      >
-        <FileRoutes />
-      </Router>
+      <div style={{ "max-width": "1920px", margin: "0 auto" }}>
+        <Router
+          root={(props) => (
+            <>
+              <SmoothScroll />
+              <Nav />
+              <Suspense>{props.children}</Suspense>
+            </>
+          )}
+        >
+          <FileRoutes />
+        </Router>
+      </div>
     </MetaProvider>
   );
 }
