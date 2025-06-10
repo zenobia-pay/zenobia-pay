@@ -52,16 +52,65 @@ export default function BlogPost() {
     >
       {(post) => (
         <>
-          <Title>{post().title} - Our Blog</Title>
+          <Title>{post().title} - Zenobia Pay</Title>
           <Meta name="description" content={post().description} />
           <Meta name="author" content={post().author} />
           <Meta property="article:published_time" content={post().date} />
+          <Meta
+            property="article:modified_time"
+            content={post().lastUpdated || post().date}
+          />
+          <Meta
+            property="article:section"
+            content={post().category || "Uncategorized"}
+          />
           <Meta property="og:title" content={post().title} />
           <Meta property="og:description" content={post().description} />
           <Meta property="og:type" content="article" />
-          <Meta name="twitter:card" content="summary" />
+          <Meta
+            property="og:url"
+            content={`https://zenobiapay.com/blog/${post().slug}`}
+          />
+          <Meta property="og:site_name" content="Zenobia Pay" />
+          <Meta name="twitter:card" content="summary_large_image" />
           <Meta name="twitter:title" content={post().title} />
           <Meta name="twitter:description" content={post().description} />
+          <Meta name="robots" content="index, follow" />
+          <Meta
+            name="keywords"
+            content={`${
+              post().category || ""
+            }, payment processing, chargebacks, financial technology, ${
+              post().title
+            }`}
+          />
+          <script type="application/ld+json">
+            {JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "BlogPosting",
+              headline: post()?.title || "",
+              description: post()?.description || "",
+              author: {
+                "@type": "Person",
+                name: post()?.author || "Zenobia Pay",
+              },
+              datePublished: post()?.date || "",
+              dateModified: post()?.lastUpdated || post()?.date || "",
+              publisher: {
+                "@type": "Organization",
+                name: "Zenobia Pay",
+                logo: {
+                  "@type": "ImageObject",
+                  url: "https://zenobiapay.com/logo.png",
+                },
+              },
+              mainEntityOfPage: {
+                "@type": "WebPage",
+                "@id": `https://zenobiapay.com/blog/${post()?.slug || ""}`,
+              },
+              articleSection: post()?.category || "Uncategorized",
+            })}
+          </script>
 
           <main class="min-h-screen bg-white">
             {/* Hero Section */}

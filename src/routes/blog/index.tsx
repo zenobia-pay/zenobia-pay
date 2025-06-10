@@ -45,20 +45,47 @@ export default function BlogIndex() {
       <Title>Blog - Zenobia Pay</Title>
       <Meta
         name="description"
-        content="Discover our latest insights and updates from our team"
+        content="Explore expert insights on payment processing, chargebacks, and financial technology. Stay updated with the latest trends and best practices in the payment industry."
       />
-      <Meta property="og:title" content="Our Blog" />
+      <Meta property="og:title" content="Zenobia Pay Blog " />
       <Meta
         property="og:description"
-        content="Discover our latest insights and updates from our team"
+        content="Explore expert insights on payment processing, chargebacks, and financial technology. Stay updated with the latest trends and best practices in the payment industry."
       />
       <Meta property="og:type" content="website" />
-      <Meta name="twitter:card" content="summary" />
-      <Meta name="twitter:title" content="Our Blog" />
+      <Meta property="og:url" content="https://zenobiapay.com/blog" />
+      <Meta name="twitter:card" content="summary_large_image" />
+      <Meta
+        name="twitter:title"
+        content="Zenobia Pay Blog | Payment Processing & Chargeback Insights"
+      />
       <Meta
         name="twitter:description"
-        content="Discover our latest insights and updates from our team"
+        content="Explore expert insights on payment processing, chargebacks, and financial technology. Stay updated with the latest trends and best practices in the payment industry."
       />
+      <Meta name="robots" content="index, follow" />
+      <Meta
+        name="keywords"
+        content="payment processing, chargebacks, financial technology, payment industry, fintech blog"
+      />
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Blog",
+          name: "Zenobia Pay Blog",
+          description:
+            "Explore expert insights on payment processing, chargebacks, and financial technology.",
+          url: "https://zenobiapay.com/blog",
+          publisher: {
+            "@type": "Organization",
+            name: "Zenobia Pay",
+            logo: {
+              "@type": "ImageObject",
+              url: "https://zenobiapay.com/logo.png",
+            },
+          },
+        })}
+      </script>
 
       <main class="min-h-screen bg-white">
         {/* Hero Section */}
