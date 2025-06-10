@@ -59,8 +59,8 @@ export default function About() {
                   <br />
                   Soon, we'll use purchase metadata to provide a digital proof
                   of purchase for the entire lifespan of luxury goods, so that
-                  brands can earn fees verification fees on the $39B resale
-                  market, which is growing 3 times faster than new sales.
+                  brands can earn verification fees on the $39B resale market,
+                  which is growing 3 times faster than new sales.
                   <br />
                   <br />
                   Zenobia Pay is a branded pay-by-bank rewards network that is
