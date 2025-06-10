@@ -17,10 +17,13 @@ export const route = {
     return {
       headers: {
         "Cache-Control": "public, max-age=3600, s-maxage=3600",
+        "CDN-Cache-Control": "public, max-age=3600",
+        "Vercel-CDN-Cache-Control": "public, max-age=3600",
       },
       data: posts,
     };
   },
+  ssr: true,
 };
 
 export default function BlogIndex() {

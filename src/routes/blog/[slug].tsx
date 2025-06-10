@@ -17,6 +17,14 @@ marked.setOptions({
 export const route = {
   load: async ({ params }: { params: { slug: string } }) => {
     const post = await getBlogPost(params.slug);
+    if (!post) {
+      return {
+        status: 404,
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      };
+    }
     return {
       headers: {
         "Cache-Control": "public, max-age=3600, s-maxage=86400",
@@ -26,6 +34,7 @@ export const route = {
       data: post,
     };
   },
+  ssr: true,
 };
 
 export default function BlogPost() {
@@ -189,7 +198,7 @@ export default function BlogPost() {
                           Recommended Articles
                         </h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          {post().recommendedPosts.map((slug) => {
+                          {post().recommendedPosts?.map((slug) => {
                             const recommendedPost = allPosts()?.find(
                               (p) => p.slug === slug
                             );
