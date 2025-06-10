@@ -40,7 +40,6 @@ export default function Home() {
         type="video/webm"
       />
       <link rel="preload" href="/hero-200kb.mp4" as="video" type="video/mp4" />
-      <link rel="preload" href="/hero.png" as="image" type="image/png" />
 
       <div class="min-h-screen flex flex-col">
         {/* Header */}
@@ -50,10 +49,10 @@ export default function Home() {
           {/* Hero Section */}
           <section class="h-screen relative text-white overflow-hidden">
             {/* Video Background */}
-            <div class="absolute inset-0 w-full h-full">
-              <div class="video-container absolute inset-0">
+            <div class="absolute inset-0 w-full h-full overflow-hidden">
+              <div class="video-container absolute inset-0 w-full h-full">
                 <video
-                  class="absolute min-w-full min-h-full object-cover"
+                  class="absolute w-full h-full object-cover"
                   autoplay
                   muted
                   loop
