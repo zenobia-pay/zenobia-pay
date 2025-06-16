@@ -51,9 +51,7 @@ We partner with OneLeet for annual security reviews. Our last pen test was in Ma
 
 Encryption is used throughout Zenobia Pay. Each database is encrypted with a distinct KMS key, and we follow least-privilege principles when granting our services access to Encrypt/Decrypt permissions. We use AWS API Gateway to process requests which uses TLS version 1.2, encrypting networking traffic. All requests are signed via JWT ensuring that only authorized users can call our endpoints successfully. All Zenobia's M2M credentials are stored in AWS Secrets Manager, which encrypts the data at rest.
 
-## Role Management
-
-### Organizational Security
+## Organizational Security
 
 We enforce 2 factor authentication on all logins. All employees undergo security training on a regular basis. Employee devices are regularly updated.
 
