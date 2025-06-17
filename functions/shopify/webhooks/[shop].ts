@@ -212,7 +212,6 @@ async function handleWebhook(
           accessToken,
           proxySecret: env.SHOPIFY_PROXY_SECRET,
           sessionId,
-          amount: body.amount,
         })
         console.log("Payment session resolved successfully:", result)
       } catch (err) {

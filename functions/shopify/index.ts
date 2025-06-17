@@ -91,7 +91,7 @@ export async function onRequest(request: Request, env: Env) {
     new URLSearchParams({
       client_id: env.SHOPIFY_CLIENT_ID,
       scope:
-        "write_payment_sessions,read_payment_sessions,write_payment_gateways,read_payment_gateways,write_payment_apps",
+        "write_payment_sessions,read_payment_sessions,write_payment_gateways,read_payment_gateways,write_payment_apps,read_orders,read_products",
       redirect_uri: "https://dashboard.zenobiapay.com/shopify/auth/callback",
     }).toString()
 

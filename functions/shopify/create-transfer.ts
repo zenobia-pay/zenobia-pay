@@ -73,63 +73,40 @@ async function getAccessToken(
 export async function getOrderDetails(
   env: Env,
   shop: string,
-  encryptedAccessToken: string,
-  sessionId: string
+  encryptedAccessToken: string
 ): Promise<any> {
   const accessToken = await decrypt(
     encryptedAccessToken,
     env.SHOPIFY_ENCRYPTION_KEY
   )
+
   const response = await fetch(
-    "https://v0-simple-proxy-server.vercel.app/api/proxy",
+    `https://${shop}/admin/api/2025-04/graphql.json`,
     {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Access-Token": accessToken,
-        Authorization: `Bearer ${env.SHOPIFY_PROXY_SECRET}`,
-        "x-target-url": `https://${shop}/payments_apps/api/2025-04/graphql.json`,
       },
       body: JSON.stringify({
         query: `
-          query getPaymentSession($id: ID!) {
-            paymentSession(id: $id) {
-              id
-              state
-              amount {
-                amount
-                currencyCode
+          query {
+            orders(first: 10) {
+              edges {
+                cursor
+                node {
+                  id
+                }
               }
-              returnUrl
-              order {
-                id
-                name
-                email
-                totalPriceSet {
-                  shopMoney {
-                    amount
-                    currencyCode
-                  }
-                }
-                lineItems(first: 10) {
-                  edges {
-                    node {
-                      title
-                      quantity
-                      variant {
-                        price
-                        title
-                      }
-                    }
-                  }
-                }
+              pageInfo {
+                hasNextPage
+                hasPreviousPage
+                startCursor
+                endCursor
               }
             }
           }
         `,
-        variables: {
-          id: sessionId,
-        },
       }),
     }
   )
@@ -142,7 +119,7 @@ export async function getOrderDetails(
 
   const data = await response.json()
   console.log("Order details:", JSON.stringify(data, null, 2))
-  return data.data?.paymentSession?.order
+  return data.data?.orders
 }
 
 export async function onRequest(request: Request, env: Env) {
@@ -173,6 +150,7 @@ export async function onRequest(request: Request, env: Env) {
       return new Response("Missing sessionId in request body", { status: 400 })
     }
 
+    console.log("Creating transfer with body:", body)
     // Get session data from KV
     const sessionData = await env.SHOPIFY_CHECKOUT_SESSION_KV.get(sessionId)
     if (!sessionData) {
@@ -211,8 +189,7 @@ export async function onRequest(request: Request, env: Env) {
       orderDetails = await getOrderDetails(
         env,
         session.shop,
-        store.access_token,
-        sessionId
+        store.access_token
       )
       console.log(
         "Successfully fetched order details:",

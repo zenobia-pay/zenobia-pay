@@ -3,16 +3,17 @@ export async function resolvePaymentSession({
   accessToken,
   proxySecret,
   sessionId,
-  amount,
 }: {
   shop: string
   accessToken: string
   proxySecret: string
   sessionId: string
-  amount: number
 }) {
-  const authExpiry = new Date(Date.now() + 10 * 60 * 1000).toISOString()
-
+  console.log(
+    "Attepmting to resolve payment session for the following args:",
+    sessionId,
+    shop
+  )
   const response = await fetch(
     "https://v0-simple-proxy-server.vercel.app/api/proxy",
     {
@@ -25,15 +26,15 @@ export async function resolvePaymentSession({
       },
       body: JSON.stringify({
         query: `
-          mutation ResolvePaymentSession(
+          mutation paymentSessionResolve(
+            $authentication: PaymentSessionThreeDSecureAuthentication
             $id: ID!
-            $authorizationExpiresAt: DateTime!
-            $paymentDetails: PaymentSessionDetailsInput!
+            $networkTransactionId: String
           ) {
             paymentSessionResolve(
+              authentication: $authentication
               id: $id
-              authorizationExpiresAt: $authorizationExpiresAt
-              paymentDetails: $paymentDetails
+              networkTransactionId: $networkTransactionId
             ) {
               paymentSession {
                 id
@@ -47,13 +48,9 @@ export async function resolvePaymentSession({
           }
         `,
         variables: {
-          id: sessionId,
-          authorizationExpiresAt: authExpiry,
-          paymentDetails: {
-            amount: amount.toFixed(2),
-            currencyCode: "USD",
-            paymentMethodName: "Bank Transfer",
-          },
+          id: `gid://shopify/PaymentSession/${sessionId}`,
+          authentication: null,
+          networkTransactionId: null,
         },
       }),
     }
@@ -66,5 +63,6 @@ export async function resolvePaymentSession({
   }
 
   const data = await response.json()
+  console.log("Resolved payment session data:", data)
   return data.data?.paymentSessionResolve
 }
