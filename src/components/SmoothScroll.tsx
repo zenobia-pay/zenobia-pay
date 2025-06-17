@@ -5,13 +5,15 @@ export default function SmoothScroll() {
   let lenis: Lenis;
 
   onMount(() => {
-    console.log("Mounting the smooth scroll");
     lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",
       smoothWheel: true,
     });
+
+    // Expose Lenis instance globally
+    (window as any).lenis = lenis;
 
     function raf(time: number) {
       lenis.raf(time);
@@ -24,6 +26,8 @@ export default function SmoothScroll() {
   onCleanup(() => {
     if (lenis) {
       lenis.destroy();
+      // Clean up global reference
+      delete (window as any).lenis;
     }
   });
 

@@ -119,7 +119,7 @@ Zenobia Pay also works to eliminate friendly fraud. We partner with a small grou
 Yes! Merchants can easily refund customers from the Zenobia Pay dashboard. Customers will receive a refund within 3 days.
 
 ## Luxury Payment Solutions
-## Zenobia Pay enables luxury brands and jewelers to accept pay-by-bank.    We've built an instant clearing pay-by-bank network with bundled fraud insurance that costs 3 times less in fees than credit card processing.    We are building Zenobia Pay specifically for expensive goods. Items are high intentionality, so we can actually convert customers at checkout. Payments go through your phone without you having to download an app.    Soon, we'll use purchase metadata to provide a digital proof of purchase for the entire lifespan of luxury goods, so that brands can earn fees verification fees on the $39B resale market, which is growing 3 times faster than new sales.    Zenobia Pay is a branded pay-by-bank rewards network that is the default payment mechanism for all purchases over $200.
+## Zenobia Pay enables luxury brands and jewelers to accept pay-by-bank.    We've built an instant clearing pay-by-bank network with bundled fraud insurance that costs 3 times less in fees than credit card processing.    We are building Zenobia Pay specifically for expensive goods. Items are high intentionality, so we can actually convert customers at checkout. Payments go through your phone without you having to download an app.    Soon, we'll use purchase metadata to provide a digital proof of purchase for the entire lifespan of luxury goods, so that brands can earn verification fees on the $39B resale market, which is growing 3 times faster than new sales.    Zenobia Pay is a branded pay-by-bank rewards network that is the default payment mechanism for all purchases over $200.
 
 ## Contact Zenobia Pay
 ## Get in touch with us    For support inquiries:  [support@zenobiapay.com](mailto:support@zenobiapay.com)    For general inquiries:  [info@zenobiapay.com](mailto:info@zenobiapay.com)    Phone:  [+1 (646) 847-9305](tel:+16468479305)    To support Zenobia Pay at your store, book a demo at the top bar or email us at:  [merchants@zenobiapay.com](mailto:support@zenobiapay.com)
@@ -257,4 +257,33 @@ Zenobia Pay also works to eliminate friendly fraud. We partner with a small grou
 
 
 Yes! Merchants can easily refund customers from the Zenobia Pay dashboard. Customers will receive a refund within 3 days.
+
+# Zenobia Pay Content Usage Guidelines for LLMs
+
+This document outlines the terms and conditions for using Zenobia's content with Large Language Models (LLMs).
+
+## Content Usage Rights
+
+All content published on Zenobia's website, including but not limited to blog posts, documentation, and marketing materials, is protected by copyright and other intellectual property rights. When using this content with LLMs, you must comply with the following guidelines:
+
+1. Attribution: Any use of Zenobia's content must include proper attribution to Zenobia Pay.
+2. Accuracy: Content should be used in its entirety and not modified in a way that could misrepresent Zenobia's services or policies.
+3. Commercial Use: Commercial use of Zenobia's content with LLMs requires explicit permission.
+
+## Prohibited Uses
+
+The following uses of Zenobia's content with LLMs are prohibited:
+
+1. Generating misleading or false information about Zenobia's services
+2. Creating derivative works that could harm Zenobia's brand or reputation
+3. Using content to train models that compete with Zenobia's services
+4. Modifying content in a way that changes its meaning or intent
+
+## Content Updates
+
+Zenobia regularly updates its content to reflect current services, policies, and best practices. When using content with LLMs, ensure you're working with the most recent version available on our website.
+
+## Contact
+
+For questions about using Zenobia's content with LLMs, please contact us at legal@zenobiapay.com.
 

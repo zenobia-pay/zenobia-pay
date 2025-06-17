@@ -1,5 +1,9 @@
 User-agent: *
 Allow: /
 
+# Allow all blog content
+Allow: /blog/
+Allow: /content/
+
 # Sitemap
 Sitemap: https://zenobiapay.com/sitemap.xml

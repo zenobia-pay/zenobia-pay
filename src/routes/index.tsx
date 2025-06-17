@@ -144,17 +144,17 @@ export default function Home() {
 
           <section class="relative" style={{ "background-color": "black" }}>
             {/* Content block */}
-            <div class="py-24 md:py-40 px-6">
+            <div class="py-24 md:pt-40 px-6">
               <div class="mx-auto">
                 {/* Header */}
                 <div class="mb-12">
                   <h2 class="text-6xl font-bold text-white tracking-tight">
-                    What We Are
+                    Zenobia is pay-by-bank
                   </h2>
                 </div>
                 {/* Features Grid */}
                 <div class="grid md:grid-cols-3 gap-8">
-                  <div class="p-8 rounded-2xl">
+                  <div class="rounded-2xl">
                     <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
                       A new payment option
                     </h3>
@@ -163,7 +163,7 @@ export default function Home() {
                       as payments without dealing with bank account numbers.
                     </p>
                   </div>
-                  <div class="p-8 rounded-2xl">
+                  <div class="rounded-2xl">
                     <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
                       Mobile flow
                     </h3>
@@ -173,26 +173,8 @@ export default function Home() {
                       to pay directly from your bank account.
                     </p>
                   </div>
-                  <div class="p-8 rounded-2xl">
-                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                      Pay With Zenobia button
-                    </h3>
-                    <p class="text-white/80 text-lg font-medium">
-                      A 'Pay With Zenobia' button to add to the checkout flow of
-                      your merchant site.
-                    </p>
-                  </div>
-                  <div class="p-8 rounded-2xl">
-                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                      Secure payments for luxury merchants
-                    </h3>
-                    <p class="text-white/80 text-lg font-medium">
-                      Zenobia Pay's mobile flow stops fraud at the source. We
-                      shift the liability and provide a fraud chargeback
-                      guarantee.
-                    </p>
-                  </div>
-                  <div class="p-8 rounded-2xl">
+
+                  <div class="rounded-2xl">
                     <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
                       3x cheaper payments
                     </h3>
@@ -201,21 +183,96 @@ export default function Home() {
                       value. Zenobia Pay charges 1%.
                     </p>
                   </div>
-                  <div class="p-8 rounded-2xl">
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* Zenobia x Resellers Section */}
+          <section class="relative" style={{ "background-color": "black" }}>
+            <div class="py-24 px-6">
+              <div class="mx-auto">
+                <div class="mb-12">
+                  <h2 class="text-6xl font-bold text-white tracking-tight">
+                    Zenobia is for resellers
+                  </h2>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                  <div class="rounded-2xl">
                     <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
-                      Eliminate friendly fraud
+                      Identity + metadata
                     </h3>
                     <p class="text-white/80 text-lg font-medium">
-                      Zenobia Pay helps merchants accept pay-by-bank,
-                      independent of card networks. We manually review every
-                      dispute case to eliminate friendly fraud.
+                      Zenobia uses purchase metadata to serve as digital proof
+                      of purchase for the entire lifespan of luxury goods.
+                    </p>
+                  </div>
+                  <div class="rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                      Verification royalties
+                    </h3>
+                    <p class="text-white/80 text-lg font-medium">
+                      Digitally authenticated goods sell for more in resale
+                      markets, in exchange for royalties back to the original
+                      brand.
+                    </p>
+                  </div>
+                  <div class="rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                      Fraud Protection
+                    </h3>
+                    <p class="text-white/80 text-lg font-medium">
+                      Bank account payments allow more comprehensive blocking
+                      and banning of bad actors in resale markets.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
+          </section>
 
-            <BottomCurvedBlock leftText="" rightText="" background="black" />
+          {/* Zenobia x Bot Protection Section */}
+          <section class="relative" style={{ "background-color": "black" }}>
+            <div class="py-24 px-6">
+              <div class="mx-auto">
+                <div class="mb-12">
+                  <h2 class="text-6xl font-bold text-white tracking-tight">
+                    Zenobia is for bot protection
+                  </h2>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                  <div class="rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                      Mobile flow
+                    </h3>
+                    <p class="text-white/80 text-lg font-medium">
+                      Mobile flow is crypotgraphically signed to the device
+                      itself, ensuring only the device that connected the bank
+                      account can pay.
+                    </p>
+                  </div>
+                  <div class="rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                      Pay by bank
+                    </h3>
+                    <p class="text-white/80 text-lg font-medium">
+                      Bank accounts are significantly harder to spoof, steal, or
+                      amass than card numbers.
+                    </p>
+                  </div>
+                  <div class="rounded-2xl">
+                    <h3 class="text-2xl font-bold mb-4 text-white tracking-tight">
+                      Conditional payments
+                    </h3>
+                    <p class="text-white/80 text-lg font-medium">
+                      If you have a custom ruleset you want to deploy (early
+                      access, tiered release), we can add that at the point of
+                      sale.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </section>
 
           {/* How It Works Section */}
