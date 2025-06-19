@@ -13,6 +13,9 @@ import { onRequest as shopifyAuthCallback } from "../functions/shopify/auth/call
 import { onRequest as shopifyCreateTransfer } from "../functions/shopify/create-transfer"
 import { onRequestPost as shopifyCheckout } from "../functions/shopify/checkout"
 import { onRequest as shopifyStore } from "../functions/shopify/store/[shop]"
+import { onRequest as shopifyShopErasure } from "../functions/shopify/shop-erasure"
+import { onRequest as shopifyCustomerErasure } from "../functions/shopify/customer-erasure"
+import { onRequest as shopifyCustomerData } from "../functions/shopify/customer-data"
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 
@@ -35,6 +38,9 @@ const ROUTE_PATTERNS = [
   { pattern: /^\/shopify\/auth\/callback$/, handler: shopifyAuthCallback },
   { pattern: /^\/shopify\/create-transfer$/, handler: shopifyCreateTransfer },
   { pattern: /^\/shopify\/checkout$/, handler: shopifyCheckout },
+  { pattern: /^\/shopify\/shop-erasure$/, handler: shopifyShopErasure },
+  { pattern: /^\/shopify\/customer-erasure$/, handler: shopifyCustomerErasure },
+  { pattern: /^\/shopify\/customer-data$/, handler: shopifyCustomerData },
 ]
 
 export default {
