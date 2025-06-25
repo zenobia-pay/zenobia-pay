@@ -20,9 +20,12 @@ export async function onRequest(request: Request, env: Env) {
   }
 
   try {
+    // Clone the request for HMAC validation
+    const clonedRequest = request.clone()
+
     // Validate the webhook HMAC
     const isValid = await validateShopifyWebhook(
-      request,
+      clonedRequest,
       env.SHOPIFY_CLIENT_SECRET
     )
     if (!isValid) {
