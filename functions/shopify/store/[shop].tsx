@@ -59,60 +59,6 @@ async function getAccessToken(
   return data.access_token
 }
 
-async function createTestModeTransfer(
-  env: Env,
-  session: CheckoutSession,
-  sessionId: string
-) {
-  // Use test env variables
-  const clientId = env.TEST_ZENOBIA_CLIENT_ID
-  const clientSecret = env.TEST_ZENOBIA_CLIENT_SECRET
-  const apiBaseUrl = env.TEST_API_BASE_URL
-
-  if (!clientId || !clientSecret || !apiBaseUrl) {
-    throw new Error("Missing test mode env variables")
-  }
-
-  // Get Auth0 access token using test credentials
-  const zenobiaAccessToken = await getAccessToken(env, clientId, clientSecret)
-
-  const transferRequestBody = {
-    amount: Math.round(parseFloat(session.amount || "0") * 100),
-    statementItems: [
-      {
-        name: "Payment",
-        amount: Math.round(parseFloat(session.amount || "0") * 100),
-      },
-    ],
-    // Optionally add metadata here
-  }
-
-  // Create transfer request with Zenobia Pay (test mode)
-  const transferResponse = await fetch(
-    `${apiBaseUrl}/create-transfer-request`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${zenobiaAccessToken}`,
-      },
-      body: JSON.stringify(transferRequestBody),
-    }
-  )
-
-  if (!transferResponse.ok) {
-    const error = await transferResponse.text()
-    throw new Error(`Failed to create test transfer: ${error}`)
-  }
-
-  const transferData = await transferResponse.json()
-
-  // Store the mapping between transfer ID and session ID
-  await env.TRANSFER_MAPPINGS.put(transferData.transferRequestId, sessionId)
-
-  return transferData
-}
-
 export async function onRequest(request: Request, env: Env) {
   const url = new URL(request.url)
   const shop = url.pathname.split("/").pop() // Get shop from the last path segment
@@ -136,71 +82,63 @@ export async function onRequest(request: Request, env: Env) {
   const session = JSON.parse(sessionData) as CheckoutSession
 
   console.log("session", session)
-  let transferData
-  const ignoreTestMode = true
-  if (session.test && !ignoreTestMode) {
-    transferData = await createTestModeTransfer(env, session, id)
-  } else {
-    // Get the store based on the shop domain
-    const store = await env.MERCHANTS_OAUTH.prepare(
-      `SELECT shop_domain, access_token, zenobia_client_id, zenobia_client_secret FROM shopify_stores WHERE shop_domain = ?`
-    )
-      .bind(session.shop)
-      .first<ShopifyStore>()
+  // Get the store based on the shop domain
+  const store = await env.MERCHANTS_OAUTH.prepare(
+    `SELECT shop_domain, access_token, zenobia_client_id, zenobia_client_secret FROM shopify_stores WHERE shop_domain = ?`
+  )
+    .bind(session.shop)
+    .first<ShopifyStore>()
 
-    if (!store) {
-      return new Response("Store not found", { status: 404 })
-    }
-
-    if (!store.zenobia_client_id || !store.zenobia_client_secret) {
-      return new Response("Store not configured with Zenobia credentials", {
-        status: 400,
-      })
-    }
-
-    // Get Auth0 access token using store-specific credentials
-    const zenobiaAccessToken = await getAccessToken(
-      env,
-      store.zenobia_client_id,
-      store.zenobia_client_secret
-    )
-
-    const transferRequestBody = {
-      amount: Math.round(parseFloat(session.amount || "0") * 100),
-      statementItems: [
-        {
-          name: "Payment",
-          amount: Math.round(parseFloat(session.amount || "0") * 100),
-        },
-      ],
-      // Optionally add metadata here
-    }
-
-    // Create transfer request with Zenobia Pay
-    const transferResponse = await fetch(
-      `${env.API_BASE_URL}/create-transfer-request`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${zenobiaAccessToken}`,
-        },
-        body: JSON.stringify(transferRequestBody),
-      }
-    )
-
-    if (!transferResponse.ok) {
-      const error = await transferResponse.text()
-      return new Response(`Failed to create transfer: ${error}`, {
-        status: 500,
-      })
-    }
-
-    transferData = await transferResponse.json()
-
-    // Store the mapping between transfer ID and session ID
-    await env.TRANSFER_MAPPINGS.put(transferData.transferRequestId, id)
+  if (!store) {
+    return new Response("Store not found", { status: 404 })
   }
+
+  if (!store.zenobia_client_id || !store.zenobia_client_secret) {
+    return new Response("Store not configured with Zenobia credentials", {
+      status: 400,
+    })
+  }
+
+  // Get Auth0 access token using store-specific credentials
+  const zenobiaAccessToken = await getAccessToken(
+    env,
+    store.zenobia_client_id,
+    store.zenobia_client_secret
+  )
+
+  const transferRequestBody = {
+    amount: Math.round(parseFloat(session.amount || "0") * 100),
+    statementItems: [
+      {
+        name: "Payment",
+        amount: Math.round(parseFloat(session.amount || "0") * 100),
+      },
+    ],
+    // Optionally add metadata here
+  }
+
+  const apiUrl = session.test ? env.TESTMODE_API_BASE_URL : env.API_BASE_URL
+  // Create transfer request with Zenobia Pay
+  const transferResponse = await fetch(`${apiUrl}/create-transfer-request`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${zenobiaAccessToken}`,
+    },
+    body: JSON.stringify(transferRequestBody),
+  })
+
+  if (!transferResponse.ok) {
+    const error = await transferResponse.text()
+    return new Response(`Failed to create transfer: ${error}`, {
+      status: 500,
+    })
+  }
+
+  const transferData = await transferResponse.json()
+
+  // Store the mapping between transfer ID and session ID
+  await env.TRANSFER_MAPPINGS.put(transferData.transferRequestId, id)
 
   // Calculate amount in cents for the modal
   const amountCents = Math.round(parseFloat(session.amount || "0") * 100)
