@@ -44,6 +44,9 @@
     const amount = Number("{{amountCents}}");
     // Transfer signature for status listening
     const transferSignature = "{{transferSignature}}";
+    // Additional transfer request data
+    const transferExpiry = Number("{{transferExpiry}}") || undefined;
+    const transferMerchantId = "{{transferMerchantId}}" || undefined;
     // Pass test and cancelUrl for future use or debugging
     const isTest = session.test;
     const cancelUrl = session.cancelUrl;
@@ -64,12 +67,16 @@
     ZenobiaPayModal.init({
       isOpen: true,
       onClose: () => { window.location.href = session.cancelUrl; },
-      transferRequestId,
-      signature: transferSignature,
+      transferRequest: {
+        transferRequestId,
+        signature: transferSignature,
+        expiry: transferExpiry,
+        merchantId: transferMerchantId,
+      },
       amount, // amount in cents
       target: '#zenobia-modal-root',
-      onSuccess: () => {
-        console.log("Woohoo")
+      onSuccess: (response, status) => {
+        console.log("Woohoo", response, status)
         window.location.href = session.returnUrl;
       },
       onError: (error) => { alert(error.message); },

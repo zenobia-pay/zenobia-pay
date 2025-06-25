@@ -219,6 +219,8 @@ export async function onRequest(request: Request, env: Env) {
     .replace("{{transferRequestId}}", transferData.transferRequestId)
     .replace("{{amountCents}}", amountCents.toString())
     .replace("{{transferSignature}}", transferData.signature || "")
+    .replace("{{transferExpiry}}", transferData.expiry?.toString() || "")
+    .replace("{{transferMerchantId}}", transferData.merchantId || "")
 
   return new Response(template, {
     headers: {
