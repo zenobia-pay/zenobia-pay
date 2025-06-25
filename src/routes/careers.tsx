@@ -50,7 +50,7 @@ export default function Careers() {
                   <br />
                   <a
                     href="mailto:info@zenobiapay.com"
-                    class="text-white hover:text-neutral-300 transition-colors underline"
+                    class="text-white hover:text-neutral-300 transition-colors underline text-2xl md:text-7xl"
                   >
                     info@zenobiapay.com
                   </a>
