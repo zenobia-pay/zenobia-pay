@@ -15,6 +15,7 @@ interface WebhookPayload {
   transferRequestId: string
   status: string
   amount: number
+  isTest?: boolean
 }
 
 interface ShopifyStore {
@@ -39,7 +40,8 @@ function addCorsHeaders(response: Response): Response {
 
 // Function to verify JWT token from Authorization header
 async function verifyJWT(
-  authHeader: string | null
+  authHeader: string | null,
+  body: WebhookPayload
 ): Promise<JWTVerifyResult | null> {
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     console.error("Invalid or missing Authorization header")
@@ -50,10 +52,16 @@ async function verifyJWT(
     const token = authHeader.split(" ")[1]
     console.log("Attempting to verify JWT token...")
 
+    // Determine which JWKS URL to use based on isTest field
+    const jwksUrl =
+      body.isTest === true
+        ? "https://zenobiapay.com/.well-known/sandbox-jwks.json"
+        : "https://zenobiapay.com/.well-known/jwks.json"
+
+    console.log("Using JWKS URL:", jwksUrl)
+
     // Create the JWKS client
-    const jwksClient = createRemoteJWKSet(
-      new URL("https://zenobiapay.com/.well-known/jwks.json")
-    )
+    const jwksClient = createRemoteJWKSet(new URL(jwksUrl))
 
     // Verify the JWT with detailed error handling
     try {
@@ -136,7 +144,7 @@ async function handleWebhook(
     console.log("============================")
 
     // Verify the JWT token
-    const jwtVerification = await verifyJWT(authHeader)
+    const jwtVerification = await verifyJWT(authHeader, body)
 
     if (!jwtVerification) {
       console.error("JWT verification failed - unauthorized request")

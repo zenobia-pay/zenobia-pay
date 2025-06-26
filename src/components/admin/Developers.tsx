@@ -1,4 +1,4 @@
-import { Component, createSignal, For, Show, createEffect } from "solid-js"
+import { Component, createSignal, For, Show } from "solid-js"
 import { api } from "../../services/api"
 import { toast } from "solid-toast"
 import { useLocation, useNavigate } from "@solidjs/router"
@@ -9,12 +9,6 @@ import { useMerchant } from "../../context/MerchantContext"
 interface WebhookDisplay {
   id: string
   url: string
-}
-
-// Add interface for M2M credentials
-interface M2mCredential {
-  clientId: string
-  createdAt?: string
 }
 
 const Developers: Component = () => {
@@ -46,18 +40,10 @@ const Developers: Component = () => {
     string | null
   >(null)
 
-  // Added state for webhook management
-  const [webhookUrl, setWebhookUrl] = createSignal("")
+  // Webhook management state
   const [isEditingWebhook, setIsEditingWebhook] = createSignal(false)
   const [isSavingWebhook, setIsSavingWebhook] = createSignal(false)
-
-  // Update webhook URL when merchant config changes
-  createEffect(() => {
-    const config = merchant.merchantConfig()
-    if (config?.webhookUrl) {
-      setWebhookUrl(config.webhookUrl)
-    }
-  })
+  const [editingWebhookUrl, setEditingWebhookUrl] = createSignal("")
 
   const handleGenerateCredentials = async () => {
     setIsGeneratingCredentials(true)
@@ -66,6 +52,7 @@ const Developers: Component = () => {
       setNewCredentials(credentials)
     } catch (err) {
       console.error("Error generating credentials:", err)
+      toast.error("Failed to generate credentials")
     } finally {
       setIsGeneratingCredentials(false)
     }
@@ -75,20 +62,22 @@ const Developers: Component = () => {
     setIsDeletingCredentials(clientId)
     try {
       await merchant.deleteM2mCredentials(clientId)
+      toast.success("Credentials deleted successfully")
     } catch (err) {
       console.error("Error deleting credentials:", err)
+      toast.error("Failed to delete credentials")
     } finally {
       setIsDeletingCredentials(null)
     }
   }
 
-  // New function to save webhook URL
+  // Function to save webhook URL
   const saveWebhookUrl = async () => {
     try {
       setIsSavingWebhook(true)
 
       const updateRequest: UpdateMerchantRequest = {
-        webhookUrl: webhookUrl(),
+        webhookUrl: editingWebhookUrl(),
       }
 
       await api.updateMerchantConfig(updateRequest)
@@ -106,24 +95,23 @@ const Developers: Component = () => {
   }
 
   const cancelWebhookEdit = () => {
-    // Reset to original value from merchant config
-    const configWebhookUrl = merchant.merchantConfig()?.webhookUrl
-    if (configWebhookUrl) {
-      setWebhookUrl(configWebhookUrl)
-    } else {
-      setWebhookUrl("")
-    }
     setIsEditingWebhook(false)
+  }
+
+  const startWebhookEdit = () => {
+    setEditingWebhookUrl(merchant.merchantConfig()?.webhookUrl || "")
+    setIsEditingWebhook(true)
   }
 
   // Webhook data derived from merchant config
   const webhooks = () => {
-    if (!webhookUrl()) return [] as WebhookDisplay[]
+    const webhookUrl = merchant.merchantConfig()?.webhookUrl
+    if (!webhookUrl) return [] as WebhookDisplay[]
 
     return [
       {
         id: "wh_main",
-        url: webhookUrl(),
+        url: webhookUrl,
       },
     ] as WebhookDisplay[]
   }
@@ -293,23 +281,39 @@ const Developers: Component = () => {
                             onClick={() =>
                               handleDeleteCredentials(credential.clientId)
                             }
-                            class="text-red-400 hover:text-red-500"
+                            disabled={
+                              isDeletingCredentials() === credential.clientId
+                            }
+                            class="text-red-400 hover:text-red-500 disabled:text-red-300 disabled:cursor-not-allowed"
                             title="Delete credential"
                           >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              class="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
+                            <Show
+                              when={
+                                isDeletingCredentials() === credential.clientId
+                              }
                             >
-                              <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                stroke-width="2"
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
+                              <div class="animate-spin rounded-full h-5 w-5 border-b-2 border-red-400"></div>
+                            </Show>
+                            <Show
+                              when={
+                                isDeletingCredentials() !== credential.clientId
+                              }
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                            </Show>
                           </button>
                         </div>
                       </div>
@@ -449,7 +453,7 @@ const Developers: Component = () => {
             <h2 class="text-lg font-medium text-gray-900">Webhooks</h2>
             <Show when={!isEditingWebhook() && webhooks().length === 0}>
               <button
-                onClick={() => setIsEditingWebhook(true)}
+                onClick={startWebhookEdit}
                 class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
               >
                 Add Webhook
@@ -474,7 +478,7 @@ const Developers: Component = () => {
                 <p class="text-sm text-gray-500 mb-4">No webhooks configured</p>
                 <button
                   type="button"
-                  onClick={() => setIsEditingWebhook(true)}
+                  onClick={startWebhookEdit}
                   class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none"
                 >
                   Add Webhook
@@ -497,7 +501,7 @@ const Developers: Component = () => {
                           <div class="ml-4 flex-shrink-0">
                             <button
                               type="button"
-                              onClick={() => setIsEditingWebhook(true)}
+                              onClick={startWebhookEdit}
                               class="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
                             >
                               Edit
@@ -529,8 +533,10 @@ const Developers: Component = () => {
                     <input
                       type="url"
                       id="webhook-url"
-                      value={webhookUrl()}
-                      onInput={(e) => setWebhookUrl(e.currentTarget.value)}
+                      value={editingWebhookUrl()}
+                      onInput={(e) =>
+                        setEditingWebhookUrl(e.currentTarget.value)
+                      }
                       class="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                       placeholder="https://your-server.com/webhooks/zenobia"
                     />

@@ -13,6 +13,7 @@ import type {
   DeleteM2mCredentialsResponse,
   SubmitMerchantOnboardingRequest,
   PlaidProduct,
+  MerchantPayoutResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -30,7 +31,24 @@ interface Auth0Error extends Error {
   scope?: string
 }
 
-const API_BASE_URL = "https://api.zenobiapay.com"
+const PROD_API_BASE_URL = "https://api.zenobiapay.com"
+const TEST_API_BASE_URL =
+  "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
+
+// Simple test mode toggle
+let isTestMode = false
+
+export const toggleTestMode = () => {
+  isTestMode = !isTestMode
+}
+
+export const getTestMode = () => {
+  return isTestMode
+}
+
+export const getApiBaseUrl = () => {
+  return isTestMode ? TEST_API_BASE_URL : PROD_API_BASE_URL
+}
 
 // Shared Auth0 client instance
 let auth0ClientInstance: Auth0Client | null = null
@@ -182,7 +200,7 @@ export const api = {
     product: PlaidProduct
   ): Promise<CreateLinkTokenResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/create-link-token`, {
+      const response = await fetch(`${getApiBaseUrl()}/create-link-token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -205,7 +223,7 @@ export const api = {
     publicToken: string
   ): Promise<Record<string, never>> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/exchange-token`, {
+      const response = await fetch(`${getApiBaseUrl()}/exchange-token`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -226,7 +244,7 @@ export const api = {
 
   listBankAccounts: async (): Promise<ListBankAccountsResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/list-bank-accounts`, {
+      const response = await fetch(`${getApiBaseUrl()}/list-bank-accounts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -251,14 +269,17 @@ export const api = {
     statementItems?: StatementItem[]
   }): Promise<CreateTransferRequestResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/create-transfer-request`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(params),
-      })
+      const response = await fetch(
+        `${getApiBaseUrl()}/create-transfer-request`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(params),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -277,7 +298,7 @@ export const api = {
     return callApi(async (token) => {
       console.log("fulfilling transfer", params)
 
-      const response = await fetch(`${API_BASE_URL}/fulfill-transfer`, {
+      const response = await fetch(`${getApiBaseUrl()}/fulfill-transfer`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -300,7 +321,7 @@ export const api = {
   ): Promise<GetMerchantTransferResponse> => {
     return callApi(async (token) => {
       const response = await fetch(
-        `${API_BASE_URL}/get-merchant-transfer?id=${id}`,
+        `${getApiBaseUrl()}/get-merchant-transfer?id=${id}`,
         {
           method: "GET",
           headers: {
@@ -323,7 +344,7 @@ export const api = {
     continuationToken?: string
   ): Promise<MerchantTransferResponse> => {
     return callApi(async (token) => {
-      const url = new URL(`${API_BASE_URL}/list-merchant-transfers`)
+      const url = new URL(`${getApiBaseUrl()}/list-merchant-transfers`)
       if (continuationToken) {
         url.searchParams.append("continuationToken", continuationToken)
       }
@@ -351,7 +372,7 @@ export const api = {
     continuationToken?: string
   ): Promise<MerchantPayoutResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/list-merchant-payouts`, {
+      const response = await fetch(`${getApiBaseUrl()}/list-merchant-payouts`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -372,7 +393,7 @@ export const api = {
 
   getMerchantConfig: async (): Promise<GetMerchantConfigResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/get-merchant-config`, {
+      const response = await fetch(`${getApiBaseUrl()}/get-merchant-config`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -394,14 +415,17 @@ export const api = {
     updateRequest: UpdateMerchantRequest
   ): Promise<Record<string, never>> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/update-merchant-config`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(updateRequest),
-      })
+      const response = await fetch(
+        `${getApiBaseUrl()}/update-merchant-config`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updateRequest),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -418,7 +442,7 @@ export const api = {
   ): Promise<Record<string, never>> => {
     return callApi(async (token) => {
       const response = await fetch(
-        `${API_BASE_URL}/submit-merchant-onboarding`,
+        `${getApiBaseUrl()}/submit-merchant-onboarding`,
         {
           method: "POST",
           headers: {
@@ -441,7 +465,7 @@ export const api = {
 
   getUserProfile: async (): Promise<GetUserProfileResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/get-user-profile`, {
+      const response = await fetch(`${getApiBaseUrl()}/get-user-profile`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -460,12 +484,15 @@ export const api = {
 
   createM2mCredentials: async (): Promise<CreateM2mCredentialsResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/create-m2m-credentials`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      const response = await fetch(
+        `${getApiBaseUrl()}/create-m2m-credentials`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -479,7 +506,7 @@ export const api = {
 
   listM2mCredentials: async (): Promise<ListM2mCredentialsResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/list-m2m-credentials`, {
+      const response = await fetch(`${getApiBaseUrl()}/list-m2m-credentials`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -502,14 +529,17 @@ export const api = {
     clientId: string
   ): Promise<DeleteM2mCredentialsResponse> => {
     return callApi(async (token) => {
-      const response = await fetch(`${API_BASE_URL}/delete-m2m-credentials`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ clientId }),
-      })
+      const response = await fetch(
+        `${getApiBaseUrl()}/delete-m2m-credentials`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ clientId }),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

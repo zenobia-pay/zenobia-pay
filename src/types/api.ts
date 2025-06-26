@@ -185,3 +185,16 @@ export enum PlaidProduct {
   AUTH = "AUTH",
   IDENTITY_VERIFICATION = "IDENTITY_VERIFICATION",
 }
+
+export interface MerchantPayout {
+  payoutId: string
+  amount: number
+  status: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MerchantPayoutResponse {
+  continuationToken?: string
+  items: MerchantPayout[]
+}

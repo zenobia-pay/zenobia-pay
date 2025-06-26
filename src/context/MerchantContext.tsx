@@ -56,12 +56,12 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
 
   // Merchant transfers resource
   const [merchantTransfers, { refetch: refetchMerchantTransfers }] =
-    createResource<ListMerchantTransfersResponse>(async () => {
+    createResource<MerchantTransferResponse>(async () => {
       try {
         return await api.listMerchantTransfers()
       } catch (err) {
         console.error("Error fetching merchant transfers:", err)
-        return {} as ListMerchantTransfersResponse
+        return {} as MerchantTransferResponse
       }
     })
 
