@@ -14,6 +14,8 @@ import type {
   SubmitMerchantOnboardingRequest,
   PlaidProduct,
   MerchantPayoutResponse,
+  MerchantKYBRequest,
+  MerchantKYBResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -549,5 +551,26 @@ export const api = {
       console.log("delete m2m credentials response", json)
       return json as DeleteM2mCredentialsResponse
     })
+  },
+
+  submitMerchantKYB: async (
+    kybData: MerchantKYBRequest
+  ): Promise<MerchantKYBResponse> => {
+    // Call the local Cloudflare Workers endpoint instead of external API
+    const response = await fetch("/kyb/submit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(kybData),
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const json = await response.json()
+    console.log("submit merchant KYB response", json)
+    return json as MerchantKYBResponse
   },
 }

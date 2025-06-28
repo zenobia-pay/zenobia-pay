@@ -20,7 +20,7 @@ export const AdminNavigation: Component = () => {
         <span class="text-lg font-medium text-gray-900 truncate block">
           {merchant.merchantConfigLoading()
             ? "Loading..."
-            : merchant.merchantConfig()?.merchantDisplayName || "Zenobia"}
+            : merchant.merchantConfig()?.merchantDisplayName || "Unnamed Store"}
         </span>
       </div>
 

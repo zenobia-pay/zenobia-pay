@@ -16,6 +16,7 @@ import { onRequest as shopifyStore } from "../functions/shopify/store/[shop]"
 import { onRequest as shopifyShopErasure } from "../functions/shopify/shop-erasure"
 import { onRequest as shopifyCustomerErasure } from "../functions/shopify/customer-erasure"
 import { onRequest as shopifyCustomerData } from "../functions/shopify/customer-data"
+import { onRequestPost as kybSubmit } from "../functions/kyb/submit"
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 
@@ -41,6 +42,7 @@ const ROUTE_PATTERNS = [
   { pattern: /^\/shopify\/shop-erasure$/, handler: shopifyShopErasure },
   { pattern: /^\/shopify\/customer-erasure$/, handler: shopifyCustomerErasure },
   { pattern: /^\/shopify\/customer-data$/, handler: shopifyCustomerData },
+  { pattern: /^\/kyb\/submit$/, handler: kybSubmit },
 ]
 
 export default {

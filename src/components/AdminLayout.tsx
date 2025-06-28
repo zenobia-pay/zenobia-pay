@@ -113,18 +113,16 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
                     />
                   </svg>
                   <span class="text-xs font-medium">
-                    Your account is under review. Please allow up to 24 hours
-                    for approval. For issues, please contact
-                    support@zenobiapay.com.
+                    Your account is under review. If you haven't already, please
+                    complete the onboarding process by submitting your KYB
+                    information.
                   </span>
                 </div>
                 <a
-                  href="mailto:support@zenobiapay.com"
+                  href="/merchant-kyb"
                   class="text-xs font-medium text-white hover:underline flex items-center"
-                  target="_blank"
-                  rel="noopener noreferrer"
                 >
-                  Contact support
+                  Complete KYB
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     class="h-3 w-3 ml-1"

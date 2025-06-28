@@ -55,3 +55,6 @@ VITE_AUTH0_DOMAIN = "accounts.zenobiapay.com"
 VITE_AUTH0_CLIENT_ID = "l9yWBIfzSVWjMMHP02BS6if4VeZVFViH"
 VITE_API_BASE_URL = "https://api.zenobiapay.com"
 VITE_TESTMODE_API_BASE_URL = "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
+
+# Slack notifications
+SLACK_WEBHOOK_URL = "https://hooks.slack.com/services/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"

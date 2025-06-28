@@ -18,6 +18,7 @@ export interface Env {
   SHOPIFY_PROXY_SECRET: string
   SHOPIFY_CHECKOUT_SESSION_KV: KVNamespace
   TESTMODE_API_BASE_URL: string
+  SLACK_WEBHOOK_URL?: string
 }
 
 export interface BigCommerceToken {

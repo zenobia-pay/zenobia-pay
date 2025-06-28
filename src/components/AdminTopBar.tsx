@@ -121,7 +121,7 @@ export const AdminTopBar: Component = () => {
                   </svg>
                 )}
                 <span>
-                  {isTestMode() ? "Disable Test Mode" : "Enable Test Mode"}
+                  {isTestMode() ? "Disable Test Mode" : "Show Test Mode"}
                 </span>
               </div>
             </button>

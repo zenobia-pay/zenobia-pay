@@ -198,3 +198,36 @@ export interface MerchantPayoutResponse {
   continuationToken?: string
   items: MerchantPayout[]
 }
+
+// KYB (Know Your Business) types
+export interface BusinessAddress {
+  address1: string
+  address2?: string
+  city: string
+  state: string
+  country: string
+  zip5: string
+}
+
+export interface BusinessContact {
+  type: "email" | "phone" | "website"
+  value: string
+}
+
+export interface MerchantKYBRequest {
+  legal_name: string
+  business_name?: string
+  entity_type: string
+  tax_id: string
+  tax_id_type: "tin" | "ein" | "ssn"
+  account_holder_name: string
+  incorporation_date: string
+  addresses: BusinessAddress[]
+  contacts: BusinessContact[]
+}
+
+export interface MerchantKYBResponse {
+  id: string
+  status: string
+  createdAt: string
+}
