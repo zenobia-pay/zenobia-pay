@@ -1,3 +1,6 @@
 [submodule "packages/client"]
 	path = packages/client
 	url = https://github.com/zenobia-pay/client.git
+[submodule "packages/ui-solid"]
+	path = packages/ui-solid
+	url = https://github.com/zenobia-pay/ui-solid.git
