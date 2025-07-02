@@ -1,0 +1,81 @@
+@import "tailwindcss";
+@plugin '@tailwindcss/typography';
+
+@font-face {
+  font-family: "Ronzino";
+  src: url("/fonts/Ronzino-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ronzino";
+  src: url("/fonts/Ronzino-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ronzino";
+  src: url("/fonts/Ronzino-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ronzino";
+  src: url("/fonts/Ronzino-Oblique.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ronzino";
+  src: url("/fonts/Ronzino-MediumOblique.woff2") format("woff2");
+  font-weight: 500;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Ronzino";
+  src: url("/fonts/Ronzino-BoldOblique.woff2") format("woff2");
+  font-weight: 700;
+  font-style: italic;
+  font-display: swap;
+}
+
+:root {
+  --background-rgb: 214, 219, 220;
+  --foreground-rgb: 0, 0, 0;
+  --nav-height: 4rem;
+  --hero-bottom-height: 8rem;
+  --hero-bottom-radius: 8rem;
+  /* --brand-green: color(display-p3 0.075 0.502 0.282); */
+  --brand-green: rgb(130, 139, 76);
+  --bg-light: 247, 247, 247;
+  --text-off-white: 245, 245, 245;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --hero-bottom-radius: 4rem;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background-rgb: 0, 0, 0;
+    --foreground-rgb: 255, 255, 255;
+  }
+}
+
+body {
+  background: rgb(var(--background-rgb));
+  color: rgb(var(--foreground-rgb));
+  font-family: "Ronzino", sans-serif;
+}

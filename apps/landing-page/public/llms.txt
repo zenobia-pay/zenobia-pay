@@ -1,0 +1,289 @@
+# https://zenobiapay.com llms-full.txt
+
+## Luxury Payment Solutions
+# ZENOBIA PAY
+
+Payments software for luxury.
+
+3x cheaper payments.
+
+## Zenobia Pay enables luxury brands and jewelers to accept pay-by-bank.
+
+We've built an instant clearing pay-by-bank network with bundled fraud insurance that costs 3 times less in fees than credit card processing.
+
+## What We Are
+
+### A new payment option
+
+Zenobia Pay is a new payment flow. Accept bank transfers as payments without dealing with bank account numbers.
+
+### Mobile flow
+
+Zenobia Pay is already available on your iPhone, no app download required. Point your camera at your laptop screen to pay directly from your bank account.
+
+### Pay With Zenobia button
+
+A 'Pay With Zenobia' button to add to the checkout flow of your merchant site.
+
+### Secure payments for luxury merchants
+
+Zenobia Pay's mobile flow stops fraud at the source. We shift the liability and provide a fraud chargeback guarantee.
+
+### 3x cheaper payments
+
+Credit card processing fees average 3% of transaction value. Zenobia Pay charges 1%.
+
+### Eliminate friendly fraud
+
+Zenobia Pay helps merchants accept pay-by-bank, independent of card networks. We manually review every dispute case to eliminate friendly fraud.
+
+## HOW IT WORKS
+
+- No app download required
+- No signup
+- Link your bank account, hit pay, and you're done.
+
+## FAQ
+
+- How does Zenobia Pay work?+
+
+
+Zenobia Pay works by allowing luxury merchants to accept pay-by-bank.
+
+
+
+
+Our platform uses [ACH](https://www.nacha.org/ach-network) to pull funds out of the customer's account.
+
+
+These funds are sent to a [beneficiary account](https://www.moderntreasury.com/learn/what-is-an-fbo-account) for the merchant.
+
+
+We push the funds using [FedNow](https://www.frbservices.org/financial-services/fednow/about.html) with T+2 settlement to your payout account.
+
+
+
+
+Our platform provides instant clearance on ACH bank transfers without merchants having to worry about ACH returns or fraud.
+
+
+This eliminates credit card processing fees, while providing a seamless checkout experience for high-value transactions.
+
+- Is Zenobia Pay secure?+
+
+
+Absolutely. Zenobia Pay uses Plaid to connect bank details using OAuth, and refresh tokens are stored in a secure enclave on the device itself.
+
+
+
+Zenobia Pay also uses device hardware signing and biometric authentication to ensure that payments are authorized from the same device.
+
+
+
+We regularly conduct penetration tests to ensure that your data remains secure. We follow security best practices and encrypt all data at rest and in transit.
+
+- What is Zenobia Pay's fraud guarantee to merchants?+
+
+
+Customer initiated returns for reasons "account stolen", "transaction not authorized", or "fraud" are covered by Zenobia Pay. Merchants are not liable for these tyypes of fraud or their related ACH-returns.
+
+
+
+Fraud guarantee does not cover disputes for the following reasons:
+
+
+
+
+• Item did not arrive
+
+
+• Item arrived damaged or defective
+
+
+• Wrong item received (e.g. wrong size, color, or product)
+
+
+• Item not as described (e.g. materially different from listing/photos)
+
+
+• Merchandise or service not rendered as promised (e.g. service canceled or incomplete)
+
+
+
+
+Zenobia Pay also works to eliminate friendly fraud. We partner with a small group of high-end merchants, and we know that false chargebacks are a huge problem. Unlike credit card processors who have millions of merchants, we manually review every dispute and promise sane resolution for merchants on Zenobia Pay.
+
+- Does Zenobia Pay have a refund mechanism?+
+
+
+Yes! Merchants can easily refund customers from the Zenobia Pay dashboard. Customers will receive a refund within 3 days.
+
+## Luxury Payment Solutions
+## Zenobia Pay enables luxury brands and jewelers to accept pay-by-bank.    We've built an instant clearing pay-by-bank network with bundled fraud insurance that costs 3 times less in fees than credit card processing.    We are building Zenobia Pay specifically for expensive goods. Items are high intentionality, so we can actually convert customers at checkout. Payments go through your phone without you having to download an app.    Soon, we'll use purchase metadata to provide a digital proof of purchase for the entire lifespan of luxury goods, so that brands can earn verification fees on the $39B resale market, which is growing 3 times faster than new sales.    Zenobia Pay is a branded pay-by-bank rewards network that is the default payment mechanism for all purchases over $200.
+
+## Contact Zenobia Pay
+## Get in touch with us    For support inquiries:  [support@zenobiapay.com](mailto:support@zenobiapay.com)    For general inquiries:  [info@zenobiapay.com](mailto:info@zenobiapay.com)    Phone:  [+1 (646) 847-9305](tel:+16468479305)    To support Zenobia Pay at your store, book a demo at the top bar or email us at:  [merchants@zenobiapay.com](mailto:support@zenobiapay.com)
+
+## Career Opportunities
+While we don't have any open positions at the moment, we're always interested in connecting with exceptional people.
+
+For career opportunities, contact us at:
+
+[info@zenobiapay.com](mailto:info@zenobiapay.com)
+
+## Chargebacks and Fraud Blog
+## Follow our blog
+
+[chargebacks•6/9/2025\\
+\\
+**Chargebacks & Friendly Fraud** \\
+\\
+Chargebacks & Friendly Fraud: A Growing Challenge](https://zenobiapay.com/blog/chargebacks-fraud)
+
+## Luxury Payment Solutions
+# ZENOBIA PAY
+
+Payments software for luxury.
+
+3x cheaper payments.
+
+## Zenobia Pay enables luxury brands and jewelers to accept pay-by-bank.
+
+We've built an instant clearing pay-by-bank network with bundled fraud insurance that costs 3 times less in fees than credit card processing.
+
+## What We Are
+
+### A new payment option
+
+Zenobia Pay is a new payment flow. Accept bank transfers as payments without dealing with bank account numbers.
+
+### Mobile flow
+
+Zenobia Pay is already available on your iPhone, no app download required. Point your camera at your laptop screen to pay directly from your bank account.
+
+### Pay With Zenobia button
+
+A 'Pay With Zenobia' button to add to the checkout flow of your merchant site.
+
+### Secure payments for luxury merchants
+
+Zenobia Pay's mobile flow stops fraud at the source. We shift the liability and provide a fraud chargeback guarantee.
+
+### 3x cheaper payments
+
+Credit card processing fees average 3% of transaction value. Zenobia Pay charges 1%.
+
+### Eliminate friendly fraud
+
+Zenobia Pay helps merchants accept pay-by-bank, independent of card networks. We manually review every dispute case to eliminate friendly fraud.
+
+## HOW IT WORKS
+
+- No app download required
+- No signup
+- Link your bank account, hit pay, and you're done.
+
+## FAQ
+
+- How does Zenobia Pay work?+
+
+
+Zenobia Pay works by allowing luxury merchants to accept pay-by-bank.
+
+
+
+
+Our platform uses [ACH](https://www.nacha.org/ach-network) to pull funds out of the customer's account.
+
+
+These funds are sent to a [beneficiary account](https://www.moderntreasury.com/learn/what-is-an-fbo-account) for the merchant.
+
+
+We push the funds using [FedNow](https://www.frbservices.org/financial-services/fednow/about.html) with T+2 settlement to your payout account.
+
+
+
+
+Our platform provides instant clearance on ACH bank transfers without merchants having to worry about ACH returns or fraud.
+
+
+This eliminates credit card processing fees, while providing a seamless checkout experience for high-value transactions.
+
+- Is Zenobia Pay secure?+
+
+
+Absolutely. Zenobia Pay uses Plaid to connect bank details using OAuth, and refresh tokens are stored in a secure enclave on the device itself.
+
+
+
+Zenobia Pay also uses device hardware signing and biometric authentication to ensure that payments are authorized from the same device.
+
+
+
+We regularly conduct penetration tests to ensure that your data remains secure. We follow security best practices and encrypt all data at rest and in transit.
+
+- What is Zenobia Pay's fraud guarantee to merchants?+
+
+
+Customer initiated returns for reasons "account stolen", "transaction not authorized", or "fraud" are covered by Zenobia Pay. Merchants are not liable for these tyypes of fraud or their related ACH-returns.
+
+
+
+Fraud guarantee does not cover disputes for the following reasons:
+
+
+
+
+• Item did not arrive
+
+
+• Item arrived damaged or defective
+
+
+• Wrong item received (e.g. wrong size, color, or product)
+
+
+• Item not as described (e.g. materially different from listing/photos)
+
+
+• Merchandise or service not rendered as promised (e.g. service canceled or incomplete)
+
+
+
+
+Zenobia Pay also works to eliminate friendly fraud. We partner with a small group of high-end merchants, and we know that false chargebacks are a huge problem. Unlike credit card processors who have millions of merchants, we manually review every dispute and promise sane resolution for merchants on Zenobia Pay.
+
+- Does Zenobia Pay have a refund mechanism?+
+
+
+Yes! Merchants can easily refund customers from the Zenobia Pay dashboard. Customers will receive a refund within 3 days.
+
+# Zenobia Pay Content Usage Guidelines for LLMs
+
+This document outlines the terms and conditions for using Zenobia's content with Large Language Models (LLMs).
+
+## Content Usage Rights
+
+All content published on Zenobia's website, including but not limited to blog posts, documentation, and marketing materials, is protected by copyright and other intellectual property rights. When using this content with LLMs, you must comply with the following guidelines:
+
+1. Attribution: Any use of Zenobia's content must include proper attribution to Zenobia Pay.
+2. Accuracy: Content should be used in its entirety and not modified in a way that could misrepresent Zenobia's services or policies.
+3. Commercial Use: Commercial use of Zenobia's content with LLMs requires explicit permission.
+
+## Prohibited Uses
+
+The following uses of Zenobia's content with LLMs are prohibited:
+
+1. Generating misleading or false information about Zenobia's services
+2. Creating derivative works that could harm Zenobia's brand or reputation
+3. Using content to train models that compete with Zenobia's services
+4. Modifying content in a way that changes its meaning or intent
+
+## Content Updates
+
+Zenobia regularly updates its content to reflect current services, policies, and best practices. When using content with LLMs, ensure you're working with the most recent version available on our website.
+
+## Contact
+
+For questions about using Zenobia's content with LLMs, please contact us at legal@zenobiapay.com.
+

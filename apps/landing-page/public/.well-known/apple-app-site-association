@@ -1,0 +1,18 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "XZAH4FVXK7.zenobia.Zenobia",
+        "paths": [
+          "*"
+        ]
+      }
+    ]
+  },
+  "appclips": {
+    "apps": [
+      "XZAH4FVXK7.zenobia.Zenobia.Clip"
+    ]
+  }
+}
