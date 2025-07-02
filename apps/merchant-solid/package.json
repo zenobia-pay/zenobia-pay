@@ -6,11 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "vite",
-    "dev": "vite",
     "build": "tsc && vite build",
     "serve": "vite preview",
-    "pages:dev": "npm run build && npx wrangler pages dev dist",
-    "pages:deploy": "npm run build && npx wrangler pages deploy dist"
+    "dev": "npm run build && npx wrangler dev",
+    "deploy": "npm run build && npx wrangler deploy",
+    "deploy:beta": "npm run build && npx wrangler deploy --env beta"
   },
   "license": "MIT",
   "devDependencies": {

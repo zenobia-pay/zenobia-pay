@@ -1,0 +1,29 @@
+name = "mock-merchant"
+compatibility_date = "2025-01-01"
+main = "src/worker.ts"
+
+[dev]
+port = 3000
+local_protocol = "http"
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+
+# Default environment (master)
+[env.master]
+name = "mock-merchant"
+
+# Beta environment
+[env.beta]
+name = "mock-merchant-beta"
+
+# Environment variables
+[vars]
+VITE_API_BASE_URL = "https://api.zenobiapay.com"
+VITE_TESTMODE_API_BASE_URL = "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
