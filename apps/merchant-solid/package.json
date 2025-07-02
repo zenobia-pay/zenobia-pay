@@ -1,0 +1,36 @@
+{
+  "name": "vite-template-solid",
+  "private": true,
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "scripts": {
+    "start": "vite",
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "serve": "vite preview",
+    "pages:dev": "npm run build && npx wrangler pages dev dist",
+    "pages:deploy": "npm run build && npx wrangler pages deploy dist"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250406.0",
+    "@types/node": "^20.11.19",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0",
+    "vite-plugin-solid": "^2.11.6",
+    "wrangler": "^4.10.0"
+  },
+  "dependencies": {
+    "@sanity/client": "^6.29.0",
+    "@sanity/image-url": "^1.1.0",
+    "@solidjs/router": "^0.15.3",
+    "@zenobia/ui-solid": "^0.0.32",
+    "get-it": "8.6.7",
+    "jose": "^6.0.10",
+    "solid-js": "^1.9.5"
+  }
+}
