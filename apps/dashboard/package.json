@@ -6,7 +6,7 @@
   "scripts": {
     "dev:vite": "vite --port 3000",
     "dev:worker": "wrangler dev src/worker.ts --local --port 8787",
-    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:worker\"",
+    "dev": "npm run build && npx wrangler dev",
     "build": "tsc && vite build",
     "deploy": "npm run build && wrangler deploy",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
