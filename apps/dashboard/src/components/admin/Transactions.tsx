@@ -1,0 +1,424 @@
+import {
+  Component,
+  For,
+  Show,
+  createMemo,
+  createSignal,
+  createEffect,
+} from "solid-js"
+import { TransferStatus, GetMerchantTransferResponse } from "../../types/api"
+import { useMerchant } from "../../context/MerchantContext"
+import { api } from "../../services/api"
+import { useLocation, useNavigate } from "@solidjs/router"
+
+const Transactions: Component = () => {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const merchant = useMerchant()
+  const [selectedTransaction, setSelectedTransaction] =
+    createSignal<GetMerchantTransferResponse | null>(null)
+  const [loadingTransaction, setLoadingTransaction] = createSignal(false)
+
+  const activeSubtab = () => {
+    const searchParams = new URLSearchParams(location.search)
+    const tab = searchParams.get("tab")
+    if (tab !== "transactions") return "list"
+
+    const subtab = searchParams.get("subtab")
+    if (subtab === "details") return "details"
+    return "list"
+  }
+
+  // Load transaction details when URL changes
+  createEffect(() => {
+    const searchParams = new URLSearchParams(location.search)
+    const transactionId = searchParams.get("transactionId")
+
+    if (transactionId && activeSubtab() === "details") {
+      setLoadingTransaction(true)
+      api
+        .getMerchantTransfer(transactionId)
+        .then((response) => {
+          setSelectedTransaction(response)
+        })
+        .catch((error) => {
+          console.error("Error loading transaction:", error)
+        })
+        .finally(() => {
+          setLoadingTransaction(false)
+        })
+    } else {
+      setSelectedTransaction(null)
+    }
+  })
+
+  // Convert cents to dollars
+  const centsToDollars = (cents: number) => {
+    return cents / 100
+  }
+
+  // Calculate stats from merchant transfers data
+  const stats = createMemo(() => {
+    if (
+      merchant.merchantTransfersLoading() ||
+      !merchant.merchantTransfers() ||
+      !merchant.merchantTransfers()?.items
+    ) {
+      return {
+        totalAmount: 0,
+        pendingAmount: 0,
+        completedAmount: 0,
+        pendingCount: 0,
+        completedCount: 0,
+      }
+    }
+
+    const transfers = merchant.merchantTransfers()!.items
+
+    // Calculate total amounts
+    let totalAmount = 0
+    let pendingAmount = 0
+    let completedAmount = 0
+    let pendingCount = 0
+    let completedCount = 0
+
+    transfers.forEach((transfer) => {
+      const amount = centsToDollars(transfer.amount || 0)
+      totalAmount += amount
+
+      if (transfer.status === TransferStatus.IN_FLIGHT) {
+        pendingAmount += amount
+        pendingCount++
+      } else if (transfer.status === TransferStatus.COMPLETED) {
+        completedAmount += amount
+        completedCount++
+      }
+    })
+
+    return {
+      totalAmount,
+      pendingAmount,
+      completedAmount,
+      pendingCount,
+      completedCount,
+    }
+  })
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+    }).format(amount)
+  }
+
+  return (
+    <div>
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">Transactions List</h1>
+        <button
+          onClick={() => merchant.refetchMerchantTransfers()}
+          class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          <svg
+            class="h-4 w-4 mr-2"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Refresh
+        </button>
+      </div>
+
+      {/* Transaction Details View */}
+      <Show when={activeSubtab() === "details"}>
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+          <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-medium text-gray-900">
+                Transaction Details
+              </h3>
+              <button
+                onClick={() => navigate("?tab=transactions")}
+                class="text-gray-400 hover:text-gray-500"
+              >
+                <svg
+                  class="h-6 w-6"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="px-4 py-5 sm:p-6">
+            <Show
+              when={!loadingTransaction()}
+              fallback={
+                <div class="flex justify-center items-center py-4">
+                  <svg
+                    class="animate-spin h-5 w-5 text-indigo-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                </div>
+              }
+            >
+              <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Transfer ID</dt>
+                  <dd class="mt-1 text-sm text-gray-900">
+                    {selectedTransaction()?.transferRequestId}
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Amount</dt>
+                  <dd class="mt-1 text-sm text-gray-900">
+                    {formatCurrency(
+                      centsToDollars(selectedTransaction()?.amount || 0)
+                    )}
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Status</dt>
+                  <dd class="mt-1">
+                    <span
+                      class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        selectedTransaction()?.status ===
+                        TransferStatus.COMPLETED
+                          ? "bg-green-100 text-green-800"
+                          : selectedTransaction()?.status ===
+                              TransferStatus.IN_FLIGHT
+                            ? "bg-yellow-100 text-yellow-800"
+                            : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {selectedTransaction()?.status}
+                    </span>
+                  </dd>
+                </div>
+              </dl>
+            </Show>
+          </div>
+        </div>
+      </Show>
+
+      {/* Transactions List View */}
+      <Show when={activeSubtab() === "list"}>
+        {/* Stats Overview */}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-5">
+              <h3 class="text-sm font-medium text-gray-500 mb-2">
+                Total Amount Requested
+              </h3>
+              <Show
+                when={!merchant.merchantTransfersLoading()}
+                fallback={
+                  <p class="text-2xl font-semibold text-gray-900">Loading...</p>
+                }
+              >
+                <p class="text-2xl font-semibold text-gray-900">
+                  {formatCurrency(stats().totalAmount)}
+                </p>
+                <p class="text-sm text-blue-600 mt-2">
+                  {merchant.merchantTransfers()?.items?.length || 0} total
+                  transfers
+                </p>
+              </Show>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-5">
+              <h3 class="text-sm font-medium text-gray-500 mb-2">Pending</h3>
+              <Show
+                when={!merchant.merchantTransfersLoading()}
+                fallback={
+                  <p class="text-2xl font-semibold text-gray-900">Loading...</p>
+                }
+              >
+                <p class="text-2xl font-semibold text-gray-900">
+                  {formatCurrency(stats().pendingAmount)}
+                </p>
+                <p class="text-sm text-yellow-600 mt-2">
+                  {stats().pendingCount}{" "}
+                  {stats().pendingCount === 1 ? "transfer" : "transfers"}{" "}
+                  pending
+                </p>
+              </Show>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="p-5">
+              <h3 class="text-sm font-medium text-gray-500 mb-2">Completed</h3>
+              <Show
+                when={!merchant.merchantTransfersLoading()}
+                fallback={
+                  <p class="text-2xl font-semibold text-gray-900">Loading...</p>
+                }
+              >
+                <p class="text-2xl font-semibold text-gray-900">
+                  {formatCurrency(stats().completedAmount)}
+                </p>
+                <p class="text-sm text-green-600 mt-2">
+                  {stats().completedCount}{" "}
+                  {stats().completedCount === 1 ? "transfer" : "transfers"}{" "}
+                  completed
+                </p>
+              </Show>
+            </div>
+          </div>
+        </div>
+
+        {/* Merchant Transactions Table */}
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Transfer ID
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Amount
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Date
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Status
+                </th>
+                <th
+                  scope="col"
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <Show
+                when={!merchant.merchantTransfersLoading()}
+                fallback={
+                  <tr>
+                    <td
+                      colSpan={5}
+                      class="px-6 py-4 text-center text-sm text-gray-500"
+                    >
+                      <div class="flex justify-center">
+                        <svg
+                          class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                          ></circle>
+                          <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Loading merchant transfers...</span>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              >
+                <For each={merchant.merchantTransfers()?.items || []}>
+                  {(transaction) => (
+                    <tr class="hover:bg-gray-50">
+                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {transaction.transferRequestId || "N/A"}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {formatCurrency(centsToDollars(transaction.amount))}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        N/A
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span
+                          class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            transaction.status === TransferStatus.COMPLETED
+                              ? "bg-green-100 text-green-800"
+                              : transaction.status === TransferStatus.IN_FLIGHT
+                                ? "bg-yellow-100 text-yellow-800"
+                                : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {transaction.status}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <button
+                          onClick={() =>
+                            navigate(
+                              `?tab=transactions&subtab=details&transactionId=${transaction.transferRequestId}`
+                            )
+                          }
+                          class="text-indigo-600 hover:text-indigo-900"
+                        >
+                          View Details
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                </For>
+              </Show>
+            </tbody>
+          </table>
+        </div>
+      </Show>
+    </div>
+  )
+}
+
+export default Transactions
