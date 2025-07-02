@@ -257,9 +257,9 @@ export const Home = () => {
       {/* Create Order Section */}
       <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-5 border-b border-gray-200">
-          <h2 class="text-lg font-medium text-gray-900">Create an Order</h2>
+          <h2 class="text-lg font-medium text-gray-900">Create manual order</h2>
           <p class="mt-1 text-sm text-gray-500">
-            Generate a payment link and QR code for your customers
+            Create a manual order for a customer to pay
           </p>
         </div>
 
