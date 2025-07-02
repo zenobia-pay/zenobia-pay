@@ -5,7 +5,7 @@
     "dev": "vinxi dev",
     "build": "vinxi build",
     "start": "vinxi start",
-    "deploy": "npm run build &&npx wrangler deploy",
+    "deploy": "npm run build && npx wrangler deploy",
     "deploy:staging": "npx wrangler deploy --env staging",
     "versions:upload": "npx wrangler versions upload"
   },

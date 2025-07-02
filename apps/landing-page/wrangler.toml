@@ -3,11 +3,16 @@ main = ".output/server/index.mjs"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat", "no_nodejs_compat_v2"]
 
-[site]
-bucket = ".output/public"
+[assets]
+directory = ".output/public"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
 
 [build]
 command = "npm run build"
+
+[observability.logs]
+enabled = true
 
 [env.production]
 name = "landing-page"
