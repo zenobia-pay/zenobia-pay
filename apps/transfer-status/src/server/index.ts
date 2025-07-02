@@ -474,6 +474,140 @@ export class TransferStatusServer {
     }
   }
 
+  // Broadcast scan/unscan messages to all WebSocket listeners
+  private broadcastScanMessage(
+    transferId: string,
+    scanType: "scanned" | "unscanned"
+  ) {
+    console.log(`Broadcasting ${scanType} message for transfer: ${transferId}`);
+
+    const message = {
+      type: "scan",
+      transferId,
+      scanType,
+      timestamp: Date.now(),
+    };
+
+    const messageStr = JSON.stringify(message);
+
+    if (this.isLocalDev) {
+      // In dev mode, broadcast using static socket map
+      this.broadcastScanToDevSockets(transferId, messageStr);
+    } else {
+      // In production mode, use instance-specific socket map
+      this.broadcastScanToSockets(transferId, messageStr);
+    }
+  }
+
+  // Broadcast scan message to production sockets
+  private broadcastScanToSockets(transferId: string, messageStr: string) {
+    const sockets = this.serverSockets.get(transferId);
+    if (!sockets || sockets.size === 0) {
+      console.log(
+        `No WebSocket connections for transfer ${transferId} - cannot broadcast scan message`
+      );
+      return;
+    }
+
+    console.log(
+      `Broadcasting scan message to ${sockets.size} connections for transfer ${transferId}`
+    );
+
+    const deadSockets: WebSocket[] = [];
+
+    for (const socket of sockets) {
+      try {
+        if (socket.readyState === 1) {
+          // OPEN
+          socket.send(messageStr);
+          console.log(`Scan message sent to socket for ${transferId}`);
+        } else {
+          console.log(
+            `Dead socket found for ${transferId}, readyState: ${socket.readyState}`
+          );
+          deadSockets.push(socket);
+        }
+      } catch (error) {
+        console.error("Error broadcasting scan message:", error);
+        deadSockets.push(socket);
+      }
+    }
+
+    // Clean up any dead sockets
+    if (deadSockets.length > 0) {
+      console.log(
+        `Cleaning up ${deadSockets.length} dead sockets for ${transferId}`
+      );
+      for (const socket of deadSockets) {
+        sockets.delete(socket);
+        try {
+          socket.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+      }
+
+      // Remove the transfer from tracking if no sockets are left
+      if (sockets.size === 0) {
+        console.log(
+          `No more active sockets for ${transferId}, removing from server tracking`
+        );
+        this.serverSockets.delete(transferId);
+      }
+    }
+  }
+
+  // Broadcast scan message to development sockets
+  private broadcastScanToDevSockets(transferId: string, messageStr: string) {
+    console.log(
+      `[DEV] Broadcasting scan message to all dev sockets for transfer: ${transferId}`
+    );
+
+    // Get sockets from static map
+    const sockets = TransferStatusServer.devLocalSockets.get(transferId);
+    if (!sockets || sockets.size === 0) {
+      console.log(`[DEV] No sockets found for transfer: ${transferId}`);
+      return;
+    }
+
+    console.log(
+      `[DEV] Found ${sockets.size} sockets for transfer: ${transferId}`
+    );
+
+    const deadSockets: WebSocket[] = [];
+
+    for (const socket of sockets) {
+      try {
+        if (socket.readyState === 1) {
+          // OPEN
+          socket.send(messageStr);
+          console.log(`[DEV] Scan message sent to socket for ${transferId}`);
+        } else {
+          console.log(
+            `[DEV] Dead socket found for ${transferId}, readyState: ${socket.readyState}`
+          );
+          deadSockets.push(socket);
+        }
+      } catch (error) {
+        console.error(`[DEV] Error broadcasting scan message:`, error);
+        deadSockets.push(socket);
+      }
+    }
+
+    // Clean up dead sockets
+    if (deadSockets.length > 0) {
+      console.log(`[DEV] Cleaning up ${deadSockets.length} dead sockets`);
+      for (const socket of deadSockets) {
+        sockets.delete(socket);
+        try {
+          socket.close();
+        } catch (e) {
+          // Ignore close errors
+        }
+      }
+    }
+  }
+
   // List all transfers in the system
   getAllTransfers(): TransferStatus[] {
     return Array.from(this.activeTransfers.values());
@@ -1369,6 +1503,90 @@ export class TransferStatusServer {
       }
     }
 
+    // Handle scan endpoint (unauthenticated)
+    if (path === "/scan" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { id?: string };
+        const { id } = body;
+
+        if (!id) {
+          return new Response(
+            JSON.stringify({
+              error: "Missing required field. Request must include 'id'.",
+            }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        console.log(`Broadcasting scan event for transfer: ${id}`);
+
+        // Broadcast scan message to all WebSocket listeners
+        this.broadcastScanMessage(id, "scanned");
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Scan event broadcasted for transfer: ${id}`,
+          }),
+          {
+            status: 200,
+            headers: responseHeaders,
+          }
+        );
+      } catch (error) {
+        console.error("Error broadcasting scan event:", error);
+        return new Response(JSON.stringify({ error: "Invalid request" }), {
+          status: 400,
+          headers: responseHeaders,
+        });
+      }
+    }
+
+    // Handle unscan endpoint (unauthenticated)
+    if (path === "/unscan" && request.method === "POST") {
+      try {
+        const body = (await request.json()) as { id?: string };
+        const { id } = body;
+
+        if (!id) {
+          return new Response(
+            JSON.stringify({
+              error: "Missing required field. Request must include 'id'.",
+            }),
+            {
+              status: 400,
+              headers: responseHeaders,
+            }
+          );
+        }
+
+        console.log(`Broadcasting unscan event for transfer: ${id}`);
+
+        // Broadcast unscan message to all WebSocket listeners
+        this.broadcastScanMessage(id, "unscanned");
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: `Unscan event broadcasted for transfer: ${id}`,
+          }),
+          {
+            status: 200,
+            headers: responseHeaders,
+          }
+        );
+      } catch (error) {
+        console.error("Error broadcasting unscan event:", error);
+        return new Response(JSON.stringify({ error: "Invalid request" }), {
+          status: 400,
+          headers: responseHeaders,
+        });
+      }
+    }
+
     // Default root endpoint to show available endpoints
     if (path === "/" && request.method === "GET") {
       return new Response(
@@ -1386,6 +1604,10 @@ export class TransferStatusServer {
               "GET - Limit number of transfers returned",
             "/transfers/:id/ws?token=<payload.signature>":
               "WebSocket - Connect for real-time updates (requires JWT-like token authentication)",
+            "/scan":
+              "POST - Broadcast scan event to all WebSocket listeners for a transfer",
+            "/unscan":
+              "POST - Broadcast unscan event to all WebSocket listeners for a transfer",
           },
           authentication: {
             description:
