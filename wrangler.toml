@@ -4,9 +4,6 @@ main = "src/worker.ts"
 
 routes = [{ pattern = "dashboard.zenobiapay.com", custom_domain = true }]
 
-[build]
-command = "vite build"
-
 [dev]
 port = 3000
 local_protocol = "http"

@@ -2,6 +2,7 @@ import type {
   Request as CFRequest,
   Response as CFResponse,
 } from "@cloudflare/workers-types"
+import type { Env as BaseEnv } from "../functions/types"
 import { onRequest as bigcommerceOAuth } from "../functions/bigcommerce/oauth"
 import { onRequest as bigcommerceLoad } from "../functions/bigcommerce/load"
 import { onRequest as bigcommerceCheckoutDetails } from "../functions/bigcommerce/checkout-details"
@@ -17,6 +18,11 @@ import { onRequest as shopifyShopErasure } from "../functions/shopify/shop-erasu
 import { onRequest as shopifyCustomerErasure } from "../functions/shopify/customer-erasure"
 import { onRequest as shopifyCustomerData } from "../functions/shopify/customer-data"
 import { onRequestPost as kybSubmit } from "../functions/kyb/submit"
+
+// Extend the Env interface to include ASSETS for the worker
+interface Env extends BaseEnv {
+  ASSETS: { fetch: (request: Request) => Promise<Response> }
+}
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 
@@ -101,7 +107,7 @@ export default {
     }
 
     console.log(`[Request] Assets - ${path}`)
-    const response = await env.ASSETS.fetch(request)
+    const response = await env.ASSETS.fetch(request as unknown as Request)
     console.log(`[Response] Assets - ${path} - Status: ${response.status}`)
     return response as unknown as CFResponse
   },

@@ -267,8 +267,9 @@ export const api = {
 
   createTransferRequest: async (params: {
     amount: number
-    bankAccountId: string
     statementItems?: StatementItem[]
+    expirySeconds?: number
+    transferMetadata?: Record<string, string>
   }): Promise<CreateTransferRequestResponse> => {
     return callApi(async (token) => {
       const response = await fetch(

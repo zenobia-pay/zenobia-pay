@@ -11,6 +11,21 @@ export const AdminTopBar: Component = () => {
   const adminLayout = useAdminLayout()
   const merchant = useMerchant()
 
+  // Function to extract initials from store name
+  const getStoreInitials = () => {
+    const displayName = merchant.merchantConfig()?.merchantDisplayName
+    if (!displayName) return "ZP"
+
+    // Split by spaces and take first letter of each word, up to 2 letters
+    const words = displayName.trim().split(/\s+/)
+    const initials = words
+      .map((word) => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join("")
+
+    return initials || "ZP"
+  }
+
   const handleSignOut = async () => {
     try {
       await authService.signOut()
@@ -135,7 +150,7 @@ export const AdminTopBar: Component = () => {
               >
                 <span class="sr-only">Open user menu</span>
                 <div class="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-medium">
-                  ZP
+                  {getStoreInitials()}
                 </div>
               </button>
 
