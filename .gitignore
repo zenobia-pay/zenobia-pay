@@ -1,0 +1,273 @@
+# ===== MONOREPO TOP-LEVEL GITIGNORE =====
+# This file covers all common patterns for Node.js, React, SolidJS, Cloudflare Workers, and build tools
+# It applies to all subdirectories and handles common monorepo patterns
+
+# ===== BUILD OUTPUTS =====
+# General build outputs
+dist/
+build/
+.output/
+out/
+.next/
+.nuxt/
+.svelte-kit/
+.vuepress/dist/
+.vuepress/.temp/
+.docusaurus/
+
+# Framework-specific build outputs
+.vinxi/
+.wrangler/
+.vercel/
+.netlify/
+.turbo/
+
+# Generated config files
+app.config.timestamp_*.js
+
+# ===== DEPENDENCIES =====
+# Node.js dependencies
+node_modules/
+jspm_packages/
+bower_components/
+web_modules/
+
+# Package manager files (keep lock files, ignore caches)
+.npm/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+
+# ===== ENVIRONMENT & CONFIGURATION =====
+# Environment variables
+.env
+.env.*
+!.env.example
+.dev.vars*
+
+# Runtime configuration
+.wrangler/
+.wrangler.toml.local
+
+# ===== LOGS & DEBUGGING =====
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# ===== TESTING & COVERAGE =====
+# Coverage reports
+coverage/
+*.lcov
+.nyc_output/
+lib-cov/
+
+# Test outputs
+.vscode-test/
+
+# ===== CACHES =====
+# TypeScript
+*.tsbuildinfo
+
+# ESLint
+.eslintcache
+
+# Stylelint
+.stylelintcache
+
+# Parcel
+.cache/
+.parcel-cache/
+
+# Microbundle
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Webpack
+.webpack/
+
+# FuseBox
+.fusebox/
+
+# ===== DEVELOPMENT TOOLS =====
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Eclipse
+.project
+.classpath
+*.launch
+.settings/
+
+# ===== PACKAGE MANAGER =====
+# Yarn integrity
+.yarn-integrity
+
+# NPM pack output
+*.tgz
+
+# REPL history
+.node_repl_history
+
+# ===== SERVERLESS & CLOUD =====
+# Serverless
+.serverless/
+
+# DynamoDB Local
+.dynamodb/
+
+# TernJS
+.tern-port
+
+# ===== TEMPORARY FILES =====
+# Temporary files
+*.tmp
+*.temp
+gitignore
+
+# ===== SYSTEM FILES =====
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ===== LOCK FILES =====
+# Ignore lock files in templates (if any)
+templates/**/*-lock.*
+templates/**/*.lock
+
+# ===== MONOREPO SPECIFIC =====
+# Turbo cache
+.turbo/
+
+# Changesets (if using)
+.changeset/
+
+# ===== ADDITIONAL FRAMEWORK PATTERNS =====
+# Gatsby
+.cache/
+public/
+
+# Next.js specific
+.next/
+out/
+
+# Nuxt.js specific
+.nuxt/
+dist/
+
+# VuePress specific
+.vuepress/dist/
+.vuepress/.temp/
+
+# Docusaurus specific
+.docusaurus/
+
+# SvelteKit specific
+.svelte-kit/
+
+# ===== CLOUDFLARE WORKERS SPECIFIC =====
+# Wrangler
+.wrangler/
+build/
+
+# ===== VINXI/SOLIDJS SPECIFIC =====
+# Vinxi
+.vinxi/
+.output/
+
+# ===== VERCEL/NETLIFY SPECIFIC =====
+# Vercel
+.vercel/
+
+# Netlify
+.netlify/
+
+# ===== ENSURE COMPREHENSIVE COVERAGE =====
+# Catch any remaining build artifacts
+**/dist/
+**/build/
+**/.output/
+**/out/
+**/.next/
+**/.nuxt/
+**/.svelte-kit/
+**/.vinxi/
+**/.wrangler/
+**/.vercel/
+**/.netlify/
+**/.turbo/
+
+# Catch any remaining node_modules
+**/node_modules/
+
+# Catch any remaining environment files
+**/.env
+**/.env.*
+**/!.env.example
+**/.dev.vars*
+
+# Catch any remaining cache directories
+**/.cache/
+**/.parcel-cache/
+**/.eslintcache/
+**/.stylelintcache/
+**/*.tsbuildinfo
