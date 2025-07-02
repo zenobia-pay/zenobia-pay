@@ -31,9 +31,6 @@
   },
   "upload_source_maps": true,
 
-  /**
-   * KV Namespace for storing transfer statuses
-   */
   "kv_namespaces": [
     {
       "binding": "TRANSFER_STATUS",
