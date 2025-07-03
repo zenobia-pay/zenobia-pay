@@ -9,6 +9,9 @@ import { api } from "../services/api"
 import type {
   GetMerchantConfigResponse,
   MerchantTransferResponse,
+  CheckManualOrdersConfigResponse,
+  SetupManualOrdersResponse,
+  ListOrdersResponse,
 } from "../types/api"
 
 // Define M2M credential type
@@ -24,14 +27,22 @@ interface MerchantContextValue {
   merchantTransfersLoading: () => boolean
   m2mCredentials: () => M2mCredential[]
   m2mCredentialsLoading: () => boolean
+  manualOrdersConfig: () => CheckManualOrdersConfigResponse | undefined
+  manualOrdersConfigLoading: () => boolean
+  orders: () => ListOrdersResponse | undefined
+  ordersLoading: () => boolean
+  ordersError: () => Error | undefined
   refetchMerchantConfig: () => Promise<void>
   refetchMerchantTransfers: () => Promise<void>
   refetchM2mCredentials: () => Promise<void>
+  refetchManualOrdersConfig: () => Promise<void>
+  refetchOrders: () => Promise<void>
   generateM2mCredentials: () => Promise<{
     clientId: string
     clientSecret: string
   } | null>
   deleteM2mCredentials: (clientId: string) => Promise<void>
+  setupManualOrders: () => Promise<SetupManualOrdersResponse>
 }
 
 const MerchantContext = createContext<MerchantContextValue>(
@@ -78,6 +89,28 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
     }
   })
 
+  // Manual orders config resource
+  const [manualOrdersConfig, { refetch: refetchManualOrdersConfig }] =
+    createResource<CheckManualOrdersConfigResponse>(async () => {
+      try {
+        return await api.checkManualOrdersConfig()
+      } catch (err) {
+        console.error("Error fetching manual orders config:", err)
+        return {} as CheckManualOrdersConfigResponse
+      }
+    })
+
+  // Orders resource
+  const [orders, { refetch: refetchOrders }] =
+    createResource<ListOrdersResponse>(async () => {
+      try {
+        return await api.listOrders()
+      } catch (err) {
+        console.error("Error fetching orders:", err)
+        return {} as ListOrdersResponse
+      }
+    })
+
   // Generate new M2M credentials
   const generateM2mCredentials = async () => {
     try {
@@ -101,6 +134,16 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
     }
   }
 
+  // Setup manual orders
+  const setupManualOrders = async () => {
+    try {
+      return await api.setupManualOrders()
+    } catch (err) {
+      console.error("Error setting up manual orders:", err)
+      throw err
+    }
+  }
+
   return (
     <MerchantContext.Provider
       value={{
@@ -110,6 +153,11 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         merchantTransfersLoading: () => merchantTransfers.loading,
         m2mCredentials: () => m2mCredentials() || [],
         m2mCredentialsLoading: () => m2mCredentials.loading,
+        manualOrdersConfig: () => manualOrdersConfig(),
+        manualOrdersConfigLoading: () => manualOrdersConfig.loading,
+        orders: () => orders(),
+        ordersLoading: () => orders.loading,
+        ordersError: () => orders.error,
         refetchMerchantConfig: async () => {
           await refetchMerchantConfig()
         },
@@ -119,8 +167,15 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         refetchM2mCredentials: async () => {
           await refetchM2mCredentials()
         },
+        refetchManualOrdersConfig: async () => {
+          await refetchManualOrdersConfig()
+        },
+        refetchOrders: async () => {
+          await refetchOrders()
+        },
         generateM2mCredentials,
         deleteM2mCredentials,
+        setupManualOrders,
       }}
     >
       {props.children}

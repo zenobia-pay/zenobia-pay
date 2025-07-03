@@ -1,4 +1,4 @@
-import { D1Database, KVNamespace } from "@cloudflare/workers-types"
+import { D1Database, KVNamespace, Fetcher } from "@cloudflare/workers-types"
 
 export interface Env {
   BIGCOMMERCE_CLIENT_ID: string
@@ -17,8 +17,11 @@ export interface Env {
   SHOPIFY_ENCRYPTION_KEY: string
   SHOPIFY_PROXY_SECRET: string
   SHOPIFY_CHECKOUT_SESSION_KV: KVNamespace
+  MERCHANT_DASHBOARD_TYPES: KVNamespace
   TESTMODE_API_BASE_URL: string
   SLACK_WEBHOOK_URL?: string
+  MANUAL_ORDERS_ENCRYPTION_KEY: string
+  ASSETS: Fetcher
 }
 
 export interface BigCommerceToken {

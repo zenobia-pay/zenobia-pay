@@ -16,6 +16,14 @@ import type {
   MerchantPayoutResponse,
   MerchantKYBRequest,
   MerchantKYBResponse,
+  CreateOrderRequest,
+  CreateOrderResponse,
+  ListOrdersResponse,
+  CheckManualOrdersConfigResponse,
+  SetupManualOrdersResponse,
+  UpdateOrderRequest,
+  UpdateOrderResponse,
+  DeleteOrderResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -573,5 +581,166 @@ export const api = {
     const json = await response.json()
     console.log("submit merchant KYB response", json)
     return json as MerchantKYBResponse
+  },
+
+  createOrder: async (
+    orderData: CreateOrderRequest
+  ): Promise<CreateOrderResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch("/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderData),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("create order response", json)
+      return json as CreateOrderResponse
+    })
+  },
+
+  listOrders: async (
+    continuationToken?: string
+  ): Promise<ListOrdersResponse> => {
+    return callApi(async (token) => {
+      let url = "/list-orders"
+      if (continuationToken) {
+        url += `?continuationToken=${encodeURIComponent(continuationToken)}`
+      }
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("orders response", json)
+      return json as ListOrdersResponse
+    })
+  },
+
+  updateOrder: async (
+    orderId: string,
+    orderData: UpdateOrderRequest
+  ): Promise<UpdateOrderResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(
+        `/update-order?orderId=${encodeURIComponent(orderId)}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(orderData),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("update order response", json)
+      return json as UpdateOrderResponse
+    })
+  },
+
+  deleteOrder: async (orderId: string): Promise<DeleteOrderResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(
+        `/delete-order?orderId=${encodeURIComponent(orderId)}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("delete order response", json)
+      return json as DeleteOrderResponse
+    })
+  },
+
+  checkManualOrdersConfig:
+    async (): Promise<CheckManualOrdersConfigResponse> => {
+      return callApi(async (token) => {
+        const response = await fetch("/check-manual-orders-config", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const json = await response.json()
+        console.log("check manual orders config response", json)
+        return json as CheckManualOrdersConfigResponse
+      })
+    },
+
+  setupManualOrders: async (): Promise<SetupManualOrdersResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch("/setup-manual-orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("setup manual orders response", json)
+      return json as SetupManualOrdersResponse
+    })
+  },
+
+  disableManualOrders: async (): Promise<{
+    success: boolean
+    message?: string
+  }> => {
+    return callApi(async (token) => {
+      const response = await fetch("/disable-manual-orders", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("disable manual orders response", json)
+      return json as { success: boolean; message?: string }
+    })
   },
 }

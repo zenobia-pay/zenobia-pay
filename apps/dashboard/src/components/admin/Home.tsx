@@ -1,25 +1,39 @@
 import { createMemo, createSignal } from "solid-js"
 import { Show } from "solid-js"
-import { TransferStatus } from "../../types/api"
+import { TransferStatus, CreateOrderResponse } from "../../types/api"
 import { useMerchant } from "../../context/MerchantContext"
 import { api } from "../../services/api"
-import QRCode from "qrcode"
+import { toast } from "solid-toast"
+
+// Add chevron icon SVG for collapse/expand
+const ChevronIcon = (props: { open: boolean }) => (
+  <svg
+    class={`w-5 h-5 ml-2 transition-transform duration-200 ${props.open ? "rotate-90" : ""}`}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M9 5l7 7-7 7"
+    />
+  </svg>
+)
 
 export const Home = () => {
   const merchant = useMerchant()
 
   // Create order section state
   const [orderAmount, setOrderAmount] = createSignal("")
+  const [orderDescription, setOrderDescription] = createSignal("")
+  const [orderSuccess, setOrderSuccess] = createSignal(false)
+  const [createdOrder, setCreatedOrder] =
+    createSignal<CreateOrderResponse | null>(null)
   const [isCreatingOrder, setIsCreatingOrder] = createSignal(false)
   const [orderError, setOrderError] = createSignal<string | null>(null)
-  const [qrCodeDataUrl, setQrCodeDataUrl] = createSignal<string | null>(null)
-  const [transferRequestId, setTransferRequestId] = createSignal<string | null>(
-    null
-  )
-  const [showQRCode, setShowQRCode] = createSignal(false)
-  const [createdOrderAmount, setCreatedOrderAmount] = createSignal<
-    number | null
-  >(null)
 
   // Create data resources used in the overview tab
   const [period, setPeriod] = createSignal("Last 30 days")
@@ -42,82 +56,42 @@ export const Home = () => {
     return Math.round(dollars * 100)
   }
 
-  // Create order function
-  const createOrder = async () => {
-    const amount = parseFloat(orderAmount())
-    if (!amount || amount <= 0) {
+  // Function to handle order creation
+  const handleCreateOrder = async () => {
+    if (!orderAmount() || parseFloat(orderAmount()) <= 0) {
       setOrderError("Please enter a valid amount")
       return
     }
 
+    setIsCreatingOrder(true)
+    setOrderError(null)
+
     try {
-      setIsCreatingOrder(true)
-      setOrderError(null)
-      setShowQRCode(false)
+      const orderData = {
+        amount: dollarsToCents(parseFloat(orderAmount())),
+        description: orderDescription() || undefined,
+      }
 
-      const response = await api.createTransferRequest({
-        amount: dollarsToCents(amount),
-        statementItems: [
-          {
-            name: "Payment",
-            amount: dollarsToCents(amount),
-          },
-        ],
-      })
-
-      setTransferRequestId(response.transferRequestId)
-
-      // Generate QR code with the payment link
-      const paymentUrl = `${window.location.origin}/pay/${response.transferRequestId}`
-      const qrDataUrl = await QRCode.toDataURL(paymentUrl, {
-        errorCorrectionLevel: "H",
-        margin: 1,
-        width: 200,
-      })
-
-      setQrCodeDataUrl(qrDataUrl)
-      setShowQRCode(true)
-      setOrderAmount("") // Clear the form
-      setCreatedOrderAmount(amount)
+      const response = await api.createOrder(orderData)
+      setCreatedOrder(response)
+      setOrderSuccess(true)
     } catch (error) {
       console.error("Error creating order:", error)
-      setOrderError("Failed to create order. Please try again.")
+      setOrderError(
+        error instanceof Error ? error.message : "Failed to create order"
+      )
     } finally {
       setIsCreatingOrder(false)
     }
   }
 
-  // Share function using navigator.share
-  const shareOrder = async () => {
-    if (!transferRequestId()) return
-
-    const paymentUrl = `${window.location.origin}/pay/${transferRequestId()}`
-    const config = merchant.merchantConfig()
-    const merchantName = config?.merchantDisplayName || "Zenobia Pay"
-
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `Payment Request - ${merchantName}`,
-          text: `Please complete your payment of $${createdOrderAmount()?.toFixed(2) || ""} using the link below:`,
-          url: paymentUrl,
-        })
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(paymentUrl)
-        alert("Payment link copied to clipboard!")
-      }
-    } catch (error) {
-      console.error("Error sharing:", error)
-      // Fallback: copy to clipboard
-      try {
-        await navigator.clipboard.writeText(paymentUrl)
-        alert("Payment link copied to clipboard!")
-      } catch (clipboardError) {
-        console.error("Error copying to clipboard:", clipboardError)
-        alert("Failed to share. Please copy the URL manually.")
-      }
-    }
+  // Function to reset the form
+  const resetForm = () => {
+    setOrderSuccess(false)
+    setCreatedOrder(null)
+    setOrderAmount("")
+    setOrderDescription("")
+    setOrderError(null)
   }
 
   // Filter transfers based on period for overview tab
@@ -252,139 +226,313 @@ export const Home = () => {
     })
   }
 
+  const [collapseManualOrder, setCollapseManualOrder] = createSignal(false)
+
   return (
     <div class="space-y-8">
-      {/* Create Order Section */}
-      <div class="bg-white rounded-lg shadow">
-        <div class="px-6 py-5 border-b border-gray-200">
-          <h2 class="text-lg font-medium text-gray-900">Create manual order</h2>
-          <p class="mt-1 text-sm text-gray-500">
-            Create a manual order for a customer to pay
-          </p>
-        </div>
-
-        <div class="p-6">
-          <Show when={!showQRCode()}>
-            <div class="space-y-4">
-              <div>
-                <label
-                  for="orderAmount"
-                  class="block text-sm font-medium text-gray-700"
+      {/* Create Order Section - Collapsible */}
+      <Show when={!merchant.manualOrdersConfigLoading()}>
+        <Show when={!merchant.manualOrdersConfig()?.isConfigured}>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+              <div class="flex-shrink-0">
+                <svg
+                  class="h-5 w-5 text-yellow-400"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
-                  Order Amount ($)
-                </label>
-                <div class="mt-1 relative rounded-md shadow-sm">
-                  <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span class="text-gray-500 sm:text-sm">$</span>
-                  </div>
-                  <input
-                    type="number"
-                    id="orderAmount"
-                    value={orderAmount()}
-                    onInput={(e) => setOrderAmount(e.currentTarget.value)}
-                    class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md"
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    disabled={isCreatingOrder()}
+                  <path
+                    fill-rule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clip-rule="evenodd"
                   />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-yellow-800">
+                  Manual Orders Not Configured
+                </h3>
+                <div class="mt-2 text-sm text-yellow-700">
+                  <p>
+                    You need to configure manual orders before you can create
+                    them. This will generate the necessary API credentials for
+                    processing payments.
+                  </p>
+                </div>
+                <div class="mt-4">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const result = await merchant.setupManualOrders()
+                        if (result.success) {
+                          toast.success(
+                            "Manual orders configured successfully!"
+                          )
+                          await merchant.refetchManualOrdersConfig()
+                        } else {
+                          toast.error(
+                            result.error || "Failed to configure manual orders"
+                          )
+                        }
+                      } catch (error) {
+                        console.error("Error setting up manual orders:", error)
+                        toast.error("Failed to configure manual orders")
+                      }
+                    }}
+                    class="bg-yellow-100 text-yellow-800 px-3 py-2 text-sm font-medium rounded-md hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+                  >
+                    Configure Manual Orders
+                  </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </Show>
+      </Show>
+      <Show when={merchant.manualOrdersConfig()?.isConfigured}>
+        <div class="bg-white rounded-lg shadow">
+          <div
+            class="px-6 py-5 border-b border-gray-200 flex items-center cursor-pointer select-none"
+            onClick={() => setCollapseManualOrder(!collapseManualOrder())}
+          >
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+              Create manual order
+              <ChevronIcon open={!collapseManualOrder()} />
+            </h2>
+            <span class="ml-4 text-sm text-gray-500 hidden sm:inline">
+              Create a manual order for a customer to pay
+            </span>
+          </div>
+          <Show when={!collapseManualOrder()}>
+            <div class="p-6">
+              <Show when={!orderSuccess()}>
+                <div class="space-y-6">
+                  <div>
+                    <label
+                      for="orderAmount"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Order Amount ($)
+                    </label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <span class="text-gray-500 sm:text-sm">$</span>
+                      </div>
+                      <input
+                        type="number"
+                        id="orderAmount"
+                        value={orderAmount()}
+                        onInput={(e) => setOrderAmount(e.currentTarget.value)}
+                        class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-8 pr-12 py-3 sm:text-sm border-gray-300 rounded-md"
+                        placeholder="0.00"
+                        min="0.01"
+                        step="0.01"
+                      />
+                    </div>
+                  </div>
 
-              <Show when={orderError()}>
-                <div class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
-                  {orderError()}
+                  <div>
+                    <label
+                      for="orderDescription"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Order Description
+                    </label>
+                    <input
+                      type="text"
+                      id="orderDescription"
+                      value={orderDescription()}
+                      onInput={(e) =>
+                        setOrderDescription(e.currentTarget.value)
+                      }
+                      class="mt-1 block w-full border-gray-300 rounded-md py-3 px-4 focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="Enter order description"
+                    />
+                  </div>
+
+                  <Show when={orderAmount() && parseFloat(orderAmount()) > 0}>
+                    <button
+                      onClick={handleCreateOrder}
+                      disabled={isCreatingOrder()}
+                      class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isCreatingOrder() ? (
+                        <div class="flex items-center justify-center">
+                          <svg
+                            class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              class="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              stroke-width="4"
+                            ></circle>
+                            <path
+                              class="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          Creating order...
+                        </div>
+                      ) : (
+                        "Create Order"
+                      )}
+                    </button>
+                  </Show>
+
+                  <Show when={orderError()}>
+                    <div class="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
+                      <p class="text-sm text-red-600">{orderError()}</p>
+                    </div>
+                  </Show>
                 </div>
               </Show>
-
-              <button
-                onClick={createOrder}
-                disabled={isCreatingOrder() || !orderAmount()}
-                class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Show when={isCreatingOrder()} fallback="Create Order">
-                  <svg
-                    class="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
+              <Show when={orderSuccess()}>
+                <div class="w-full max-w-lg bg-green-50 border border-green-200 rounded-xl p-8 flex flex-col gap-6 shadow-md relative">
+                  {/* Close button */}
+                  <button
+                    onClick={resetForm}
+                    class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
                   >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
+                    <svg
+                      class="h-6 w-6"
+                      fill="none"
                       stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Creating Order...
-                </Show>
-              </button>
-            </div>
-          </Show>
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
 
-          <Show when={showQRCode()}>
-            <div class="space-y-4">
-              <div class="flex flex-col items-center">
-                <div class="bg-white p-4 rounded-lg border">
-                  <img
-                    src={qrCodeDataUrl() || ""}
-                    alt="Payment QR Code"
-                    class="w-48 h-48"
-                  />
+                  <div class="flex items-center gap-4">
+                    <div class="flex-shrink-0">
+                      {/* Large modern checkmark icon */}
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-12 w-12 text-green-500"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2.5"
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                    </div>
+                    <div>
+                      <h3 class="text-2xl font-semibold text-green-900 mb-1">
+                        Order Created Successfully!
+                      </h3>
+                      <p class="text-gray-700">
+                        Your order for{" "}
+                        <span class="font-semibold">${orderAmount()}</span> has
+                        been created.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons in a grid */}
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        const shareUrl = `${window.location.origin}/pay/${createdOrder()?.id}`
+                        navigator.clipboard.writeText(shareUrl)
+                        toast.success("Payment link copied to clipboard")
+                      }}
+                      class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      {/* Heroicon: Clipboard */}
+                      <svg
+                        class="h-5 w-5 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m4 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h16z"
+                        />
+                      </svg>
+                      Copy Link
+                    </button>
+                    <button
+                      onClick={() => {
+                        const shareUrl = `${window.location.origin}/pay/${createdOrder()?.id}`
+                        if (navigator.share) {
+                          navigator.share({
+                            title: "Payment Request",
+                            text: `Please complete your payment of $${orderAmount()}`,
+                            url: shareUrl,
+                          })
+                        } else {
+                          navigator.clipboard.writeText(shareUrl)
+                          toast.success("Payment link copied to clipboard")
+                        }
+                      }}
+                      class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                      {/* Heroicon: Share */}
+                      <svg
+                        class="h-5 w-5 text-gray-500"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 8a3 3 0 11-6 0 3 3 0 016 0zm6 8a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      Share Link
+                    </button>
+                    <button
+                      onClick={() => {
+                        window.open(`/pay/${createdOrder()?.id}`, "_blank")
+                      }}
+                      class="flex items-center justify-center gap-2 px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 col-span-1 sm:col-span-2"
+                    >
+                      {/* Heroicon: Arrow Circle Right */}
+                      <svg
+                        class="h-5 w-5 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M17 8l4 4m0 0l-4 4m4-4H3"
+                        />
+                      </svg>
+                      Show Payment QR
+                    </button>
+                  </div>
                 </div>
-                <p class="mt-2 text-sm text-gray-500 text-center">
-                  Scan this QR code to complete payment
-                </p>
-              </div>
-
-              <div class="flex gap-3">
-                <button
-                  onClick={shareOrder}
-                  class="flex-1 flex justify-center items-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  <svg
-                    class="w-4 h-4 mr-2"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
-                    />
-                  </svg>
-                  Share Payment Link
-                </button>
-                <button
-                  onClick={() => {
-                    setShowQRCode(false)
-                    setQrCodeDataUrl(null)
-                    setTransferRequestId(null)
-                    setCreatedOrderAmount(null)
-                  }}
-                  class="flex-1 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  Create Another Order
-                </button>
-              </div>
-
-              <div class="text-xs text-gray-500 text-center">
-                Payment Link: {window.location.origin}/pay/{transferRequestId()}
-              </div>
+              </Show>
             </div>
           </Show>
         </div>
-      </div>
+      </Show>
 
       {/* Page Header */}
       <div>

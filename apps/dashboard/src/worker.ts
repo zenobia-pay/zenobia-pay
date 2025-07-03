@@ -18,6 +18,16 @@ import { onRequest as shopifyShopErasure } from "../functions/shopify/shop-erasu
 import { onRequest as shopifyCustomerErasure } from "../functions/shopify/customer-erasure"
 import { onRequest as shopifyCustomerData } from "../functions/shopify/customer-data"
 import { onRequestPost as kybSubmit } from "../functions/kyb/submit"
+import { onRequest as createTransfer } from "../functions/create-transfer"
+import { onRequest as createOrder } from "../functions/create-order"
+import { onRequest as listOrders } from "../functions/list-orders"
+import { onRequest as updateOrder } from "../functions/update-order"
+import { onRequest as deleteOrder } from "../functions/delete-order"
+import { onRequest as payOrder } from "../functions/pay/[orderId]"
+import { onRequest as payWebhook } from "../functions/pay/webhook"
+import { onRequest as checkManualOrdersConfig } from "../functions/check-manual-orders-config"
+import { onRequest as setupManualOrders } from "../functions/setup-manual-orders"
+import { onRequest as disableManualOrders } from "../functions/disable-manual-orders"
 
 // Extend the Env interface to include ASSETS for the worker
 interface Env extends BaseEnv {
@@ -49,6 +59,19 @@ const ROUTE_PATTERNS = [
   { pattern: /^\/shopify\/customer-erasure$/, handler: shopifyCustomerErasure },
   { pattern: /^\/shopify\/customer-data$/, handler: shopifyCustomerData },
   { pattern: /^\/kyb\/submit$/, handler: kybSubmit },
+  { pattern: /^\/create-transfer$/, handler: createTransfer },
+  { pattern: /^\/create-order$/, handler: createOrder },
+  { pattern: /^\/list-orders$/, handler: listOrders },
+  { pattern: /^\/update-order$/, handler: updateOrder },
+  { pattern: /^\/delete-order$/, handler: deleteOrder },
+  { pattern: /^\/pay\/[^/]+$/, handler: payOrder },
+  { pattern: /^\/pay\/webhook$/, handler: payWebhook },
+  {
+    pattern: /^\/check-manual-orders-config$/,
+    handler: checkManualOrdersConfig,
+  },
+  { pattern: /^\/setup-manual-orders$/, handler: setupManualOrders },
+  { pattern: /^\/disable-manual-orders$/, handler: disableManualOrders },
 ]
 
 export default {

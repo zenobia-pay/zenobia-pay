@@ -1,5 +1,4 @@
 import { Env } from "../../types"
-import { EventContext } from "@cloudflare/workers-types"
 import * as jose from "jose"
 
 interface WebhookPayload {

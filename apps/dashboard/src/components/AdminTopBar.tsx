@@ -1,4 +1,4 @@
-import { Component, createSignal } from "solid-js"
+import { Component, createSignal, onMount, onCleanup } from "solid-js"
 import { authService } from "../services/auth"
 import { GlobalSearch } from "./GlobalSearch"
 import { useAdminLayout } from "./AdminLayout"
@@ -25,6 +25,22 @@ export const AdminTopBar: Component = () => {
 
     return initials || "ZP"
   }
+
+  // Handle click outside to close profile menu
+  const handleClickOutside = (event: MouseEvent) => {
+    const target = event.target as Element
+    if (!target.closest("[data-profile-dropdown]")) {
+      setShowProfileMenu(false)
+    }
+  }
+
+  onMount(() => {
+    document.addEventListener("click", handleClickOutside)
+  })
+
+  onCleanup(() => {
+    document.removeEventListener("click", handleClickOutside)
+  })
 
   const handleSignOut = async () => {
     try {
@@ -103,46 +119,51 @@ export const AdminTopBar: Component = () => {
           </div>
 
           {/* Left side - Search */}
-          <div class="flex-1 px-2 ml-3">
+          <div class="flex-1 px-2 ml-3 lg:ml-0">
             <GlobalSearch />
           </div>
 
           {/* Right side - Actions */}
-          <div class="flex items-center space-x-4">
-            {/* Test Mode Toggle */}
-            <button
-              onClick={handleTestModeToggle}
-              class={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                isTestMode()
-                  ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300"
-                  : "bg-blue-100 text-blue-800 hover:bg-blue-200"
-              }`}
-            >
-              <div class="flex items-center space-x-1">
-                {isTestMode() && (
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    class="w-3 h-3"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    />
-                  </svg>
-                )}
-                <span>
-                  {isTestMode() ? "Disable Test Mode" : "Show Test Mode"}
-                </span>
-              </div>
-            </button>
+          <div class="flex items-center space-x-2 lg:space-x-4">
+            {/* Test Mode Toggle - Hidden on very small screens, compact on mobile */}
+            <div class="hidden sm:block">
+              <button
+                onClick={handleTestModeToggle}
+                class={`px-2 py-1 lg:px-3 lg:py-1 text-xs font-medium rounded-md transition-colors ${
+                  isTestMode()
+                    ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 border border-yellow-300"
+                    : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                }`}
+              >
+                <div class="flex items-center space-x-1">
+                  {isTestMode() && (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="w-3 h-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
+                    </svg>
+                  )}
+                  <span class="hidden lg:inline">
+                    {isTestMode() ? "Disable Test Mode" : "Show Test Mode"}
+                  </span>
+                  <span class="lg:hidden">
+                    {isTestMode() ? "Test" : "Test"}
+                  </span>
+                </div>
+              </button>
+            </div>
 
             {/* Profile Dropdown */}
-            <div class="relative ml-3">
+            <div class="relative" data-profile-dropdown>
               <button
                 type="button"
                 class="flex max-w-xs items-center rounded-full text-sm focus:outline-none"

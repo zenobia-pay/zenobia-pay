@@ -150,19 +150,24 @@ export const AdminLayout: Component<AdminLayoutProps> = (props) => {
             </div>
 
             {/* Mobile drawer - Only shown on mobile when open */}
+            {/* Overlay to close drawer */}
             <div
-              class={`lg:hidden fixed inset-0 z-40 flex ${drawerOpen() ? "translate-x-0" : "-translate-x-full"} transition-transform duration-300 ease-in-out`}
-            >
-              <div class="relative flex-1 flex flex-col max-w-xs w-full bg-white focus:outline-none">
-                <AdminNavigation />
-              </div>
+              class={`lg:hidden fixed inset-0 bg-gray-600 transition-opacity duration-300 ease-in-out z-40 ${
+                drawerOpen() ? "opacity-75" : "opacity-0 pointer-events-none"
+              }`}
+              onClick={() => setDrawerOpen(false)}
+              aria-hidden="true"
+            ></div>
 
-              {/* Overlay to close drawer */}
-              <div
-                class="fixed inset-0 bg-gray-600 bg-opacity-75"
-                onClick={() => setDrawerOpen(false)}
-                aria-hidden="true"
-              ></div>
+            {/* Mobile navigation drawer */}
+            <div
+              class="lg:hidden fixed inset-y-0 left-0 z-50 flex flex-col max-w-xs w-full bg-white focus:outline-none transform transition-transform duration-300 ease-out"
+              classList={{
+                "translate-x-0": drawerOpen(),
+                "-translate-x-full": !drawerOpen(),
+              }}
+            >
+              <AdminNavigation />
             </div>
 
             {/* Main content area */}

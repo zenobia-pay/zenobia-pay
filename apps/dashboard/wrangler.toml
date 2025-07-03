@@ -33,6 +33,10 @@ id = "a108119636444e439b3a821965f0d510"
 binding = "SHOPIFY_CHECKOUT_SESSION_KV"
 id = "ae8baf2ae18e4722be0338bffb10c314"
 
+[[kv_namespaces]]
+binding = "MERCHANT_DASHBOARD_TYPES"
+id = "624a442fbebb4b98943b7b33c9f8b081"
+
 [vars]
 # Auth0 related
 ACCOUNTS_DOMAIN = "https://accounts.zenobiapay.com"

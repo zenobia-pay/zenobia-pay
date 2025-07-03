@@ -5,11 +5,13 @@ import Transactions from "./admin/Transactions"
 import Settings from "./admin/Settings"
 import Developers from "./admin/Developers"
 import { Home } from "./admin/Home"
+import { ManualOrders } from "./admin/ManualOrders"
 
 // Tab definitions
 const TABS = {
   OVERVIEW: "overview",
   TRANSACTIONS: "transactions",
+  MANUAL_ORDERS: "manual-orders",
   DEVELOPERS: "developers",
   SETTINGS: "settings",
 }
@@ -26,6 +28,8 @@ export const Dashboard: Component = () => {
     switch (currentTab()) {
       case TABS.TRANSACTIONS:
         return <Transactions />
+      case TABS.MANUAL_ORDERS:
+        return <ManualOrders />
       case TABS.DEVELOPERS:
         return <Developers />
       case TABS.SETTINGS:

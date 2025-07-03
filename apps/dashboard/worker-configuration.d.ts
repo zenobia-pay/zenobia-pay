@@ -13,4 +13,5 @@ interface Env {
   VITE_API_BASE_URL: "https://api.zenobiapay.com"
   MERCHANTS_OAUTH: D1Database
   ASSETS: Fetcher
+  MANUAL_ORDERS_ENCRYPTION_KEY: string
 }
