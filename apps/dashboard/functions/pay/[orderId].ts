@@ -200,8 +200,8 @@ export async function onRequest(request: Request, env: Env) {
     currency: "USD",
     createdAt: new Date(order.created_at).getTime(),
     test: false, // You can make this configurable if needed
-    returnUrl: `${url.origin}/pay/success/${order.id}`, // Success page with order ID
-    cancelUrl: `${url.origin}/pay/cancel`, // Cancel page
+    returnUrl: `/payment-success/${order.id}`, // Success page with order ID
+    cancelUrl: `/cancel-payment`, // Cancel page
   }
 
   // Fetch the HTML template

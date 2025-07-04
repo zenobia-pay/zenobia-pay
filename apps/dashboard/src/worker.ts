@@ -25,6 +25,8 @@ import { onRequest as updateOrder } from "../functions/update-order"
 import { onRequest as deleteOrder } from "../functions/delete-order"
 import { onRequest as payOrder } from "../functions/pay/[orderId]"
 import { onRequest as payWebhook } from "../functions/pay/webhook"
+import { onRequest as payCancel } from "../functions/pay/cancel"
+import { onRequest as paySuccess } from "../functions/pay/payment-success/[orderId]"
 import { onRequest as checkManualOrdersConfig } from "../functions/check-manual-orders-config"
 import { onRequest as setupManualOrders } from "../functions/setup-manual-orders"
 import { onRequest as disableManualOrders } from "../functions/disable-manual-orders"
@@ -66,6 +68,8 @@ const ROUTE_PATTERNS = [
   { pattern: /^\/delete-order$/, handler: deleteOrder },
   { pattern: /^\/pay\/[^/]+$/, handler: payOrder },
   { pattern: /^\/pay\/webhook$/, handler: payWebhook },
+  { pattern: /^\/cancel-payment$/, handler: payCancel },
+  { pattern: /^\/payment-success\/[^/]+$/, handler: paySuccess },
   {
     pattern: /^\/check-manual-orders-config$/,
     handler: checkManualOrdersConfig,
