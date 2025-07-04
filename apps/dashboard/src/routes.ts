@@ -7,6 +7,7 @@ import Onboarding from "./pages/Onboarding"
 import WrongAccountType from "./pages/WrongAccountType"
 import Admin404 from "./pages/errors/Admin404"
 import MerchantKYB from "./pages/MerchantKYB"
+import { SingleOrderView } from "./components/admin/SingleOrderView"
 
 // Helper functions to wrap components with ProtectedRoute
 const ProtectedDashboard = () => ProtectedRoute({ children: Dashboard })
@@ -15,6 +16,8 @@ const ProtectedNotFound = () => ProtectedRoute({ children: Admin404 })
 const ProtectedWrongAccountType = () =>
   ProtectedRoute({ children: WrongAccountType })
 const ProtectedMerchantKYB = () => ProtectedRoute({ children: MerchantKYB })
+const ProtectedSingleOrderView = () =>
+  ProtectedRoute({ children: SingleOrderView })
 
 export const routes: RouteDefinition[] = [
   {
@@ -32,6 +35,10 @@ export const routes: RouteDefinition[] = [
   {
     path: "/wrong-account-type",
     component: ProtectedWrongAccountType,
+  },
+  {
+    path: "/admin/orders/:orderId",
+    component: ProtectedSingleOrderView,
   },
   {
     path: "/*",

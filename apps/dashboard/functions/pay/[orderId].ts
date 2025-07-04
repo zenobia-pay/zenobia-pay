@@ -8,6 +8,7 @@ interface ManualOrder {
   description: string | null
   status: string
   transfer_request_id: string | null
+  merchant_display_name: string | null
   created_at: string
   updated_at: string
 }
@@ -15,6 +16,29 @@ interface ManualOrder {
 interface MerchantConfig {
   merchantDisplayName?: string
   merchantDescription?: string
+}
+
+// Function to escape HTML entities to prevent XSS
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+    "/": "&#x2F;",
+  }
+  return text.replace(/[&<>"'/]/g, (m) => map[m])
+}
+
+// Function to safely escape JSON for embedding in HTML
+function escapeJsonForHtml(obj: Record<string, unknown>): string {
+  return JSON.stringify(obj)
+    .replace(/&/g, "\\u0026")
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/"/g, "\\u0022")
+    .replace(/'/g, "\\u0027")
 }
 
 async function getAccessToken(
@@ -95,7 +119,7 @@ export async function onRequest(request: Request, env: Env) {
 
   // Get order data from database
   const order = await env.MERCHANTS_OAUTH.prepare(
-    `SELECT id, merchant_id, amount, description, status, transfer_request_id, created_at, updated_at
+    `SELECT id, merchant_id, amount, description, status, transfer_request_id, merchant_display_name, created_at, updated_at
      FROM manual_orders
      WHERE id = ?`
   )
@@ -125,9 +149,12 @@ export async function onRequest(request: Request, env: Env) {
     return new Response("Merchant not found", { status: 404 })
   }
 
-  // Get merchant config to get display name
+  // Get merchant config to get display name (fallback if not stored in order)
   const merchantConfig = await getMerchantConfig(env, order.merchant_id)
-  const merchantDisplayName = merchantConfig?.merchantDisplayName || "Store"
+  const merchantDisplayName =
+    order.merchant_display_name ||
+    merchantConfig?.merchantDisplayName ||
+    "Store"
 
   // Get Auth0 access token using merchant-specific credentials
   const zenobiaAccessToken = await getAccessToken(
@@ -211,14 +238,20 @@ export async function onRequest(request: Request, env: Env) {
 
   // Replace placeholders in the template
   const template = html
-    .replace("{{shop}}", merchantDisplayName) // Use merchant display name
-    .replace("{{session}}", JSON.stringify(session))
-    .replace("{{sessionId}}", order.id)
-    .replace("{{transferRequestId}}", transferData.transferRequestId)
+    .replace("{{shop}}", escapeHtml(merchantDisplayName)) // Escape merchant display name
+    .replace("{{session}}", escapeJsonForHtml(session)) // Safely escape JSON
+    .replace("{{sessionId}}", escapeHtml(order.id))
+    .replace(
+      "{{transferRequestId}}",
+      escapeHtml(transferData.transferRequestId)
+    )
     .replace("{{amountCents}}", order.amount.toString())
-    .replace("{{transferSignature}}", transferData.signature || "")
+    .replace("{{transferSignature}}", escapeHtml(transferData.signature || ""))
     .replace("{{transferExpiry}}", transferData.expiry?.toString() || "")
-    .replace("{{transferMerchantId}}", transferData.merchantId || "")
+    .replace(
+      "{{transferMerchantId}}",
+      escapeHtml(transferData.merchantId || "")
+    )
 
   return new Response(template, {
     headers: {

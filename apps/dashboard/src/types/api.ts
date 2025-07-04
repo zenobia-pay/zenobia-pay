@@ -247,6 +247,7 @@ export interface Order {
   description?: string
   status: OrderStatus
   transferRequestId?: string
+  merchantDisplayName?: string
   createdAt: string
   updatedAt: string
 }
@@ -254,6 +255,7 @@ export interface Order {
 export interface CreateOrderRequest {
   amount: number // Amount in cents
   description?: string
+  merchantDisplayName?: string
 }
 
 export interface CreateOrderResponse {

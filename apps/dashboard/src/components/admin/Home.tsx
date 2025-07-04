@@ -2,6 +2,7 @@ import { createMemo, createSignal } from "solid-js"
 import { Show } from "solid-js"
 import { TransferStatus, CreateOrderResponse } from "../../types/api"
 import { useMerchant } from "../../context/MerchantContext"
+import { useAdminLayout } from "../AdminLayout"
 import { api } from "../../services/api"
 import { toast } from "solid-toast"
 
@@ -25,10 +26,11 @@ const ChevronIcon = (props: { open: boolean }) => (
 
 export const Home = () => {
   const merchant = useMerchant()
+  const adminLayout = useAdminLayout()
 
   // Create order section state
   const [orderAmount, setOrderAmount] = createSignal("")
-  const [orderDescription, setOrderDescription] = createSignal("")
+  const [orderTitle, setOrderTitle] = createSignal("")
   const [orderSuccess, setOrderSuccess] = createSignal(false)
   const [createdOrder, setCreatedOrder] =
     createSignal<CreateOrderResponse | null>(null)
@@ -63,13 +65,25 @@ export const Home = () => {
       return
     }
 
+    // Check if merchant config is loaded and has display name
+    if (
+      merchant.merchantConfigLoading() ||
+      !merchant.merchantConfig()?.merchantDisplayName
+    ) {
+      setOrderError(
+        "Merchant configuration not loaded. Please refresh the page and try again."
+      )
+      return
+    }
+
     setIsCreatingOrder(true)
     setOrderError(null)
 
     try {
       const orderData = {
         amount: dollarsToCents(parseFloat(orderAmount())),
-        description: orderDescription() || undefined,
+        description: orderTitle() || undefined,
+        merchantDisplayName: merchant.merchantConfig()?.merchantDisplayName,
       }
 
       const response = await api.createOrder(orderData)
@@ -90,7 +104,7 @@ export const Home = () => {
     setOrderSuccess(false)
     setCreatedOrder(null)
     setOrderAmount("")
-    setOrderDescription("")
+    setOrderTitle("")
     setOrderError(null)
   }
 
@@ -233,59 +247,32 @@ export const Home = () => {
       {/* Create Order Section - Collapsible */}
       <Show when={!merchant.manualOrdersConfigLoading()}>
         <Show when={!merchant.manualOrdersConfig()?.isConfigured}>
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
                 <svg
-                  class="h-5 w-5 text-yellow-400"
+                  class="h-5 w-5 text-gray-400 mr-3"
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
                   <path
                     fill-rule="evenodd"
-                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
                     clip-rule="evenodd"
                   />
                 </svg>
+                <span class="text-sm text-gray-600">
+                  Manual orders need to be configured before you can create
+                  them.
+                </span>
               </div>
-              <div class="ml-3">
-                <h3 class="text-sm font-medium text-yellow-800">
-                  Manual Orders Not Configured
-                </h3>
-                <div class="mt-2 text-sm text-yellow-700">
-                  <p>
-                    You need to configure manual orders before you can create
-                    them. This will generate the necessary API credentials for
-                    processing payments.
-                  </p>
-                </div>
-                <div class="mt-4">
-                  <button
-                    onClick={async () => {
-                      try {
-                        const result = await merchant.setupManualOrders()
-                        if (result.success) {
-                          toast.success(
-                            "Manual orders configured successfully!"
-                          )
-                          await merchant.refetchManualOrdersConfig()
-                        } else {
-                          toast.error(
-                            result.error || "Failed to configure manual orders"
-                          )
-                        }
-                      } catch (error) {
-                        console.error("Error setting up manual orders:", error)
-                        toast.error("Failed to configure manual orders")
-                      }
-                    }}
-                    class="bg-yellow-100 text-yellow-800 px-3 py-2 text-sm font-medium rounded-md hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
-                  >
-                    Configure Manual Orders
-                  </button>
-                </div>
-              </div>
+              <button
+                onClick={() => adminLayout.navigateToTab("manual-orders")}
+                class="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Configure now →
+              </button>
             </div>
           </div>
         </Show>
@@ -334,20 +321,18 @@ export const Home = () => {
 
                   <div>
                     <label
-                      for="orderDescription"
+                      for="orderTitle"
                       class="block text-sm font-medium text-gray-700 mb-2"
                     >
-                      Order Description
+                      Order Title
                     </label>
                     <input
                       type="text"
-                      id="orderDescription"
-                      value={orderDescription()}
-                      onInput={(e) =>
-                        setOrderDescription(e.currentTarget.value)
-                      }
+                      id="orderTitle"
+                      value={orderTitle()}
+                      onInput={(e) => setOrderTitle(e.currentTarget.value)}
                       class="mt-1 block w-full border-gray-300 rounded-md py-3 px-4 focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="Enter order description"
+                      placeholder="Enter order title"
                     />
                   </div>
 

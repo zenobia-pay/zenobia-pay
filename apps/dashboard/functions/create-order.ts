@@ -37,6 +37,17 @@ export async function onRequest(request: Request, env: Env) {
         })
       }
 
+      // Validate merchant display name
+      if (!body.merchantDisplayName) {
+        return new Response(
+          JSON.stringify({ error: "Merchant display name is required" }),
+          {
+            status: 400,
+            headers: { "Content-Type": "application/json" },
+          }
+        )
+      }
+
       const merchantId = context.user.sub
 
       // Debug logging
@@ -59,6 +70,7 @@ export async function onRequest(request: Request, env: Env) {
         merchantId,
         amount: body.amount,
         description: body.description,
+        merchantDisplayName: body.merchantDisplayName,
         status: "pending",
         now,
       })
@@ -71,10 +83,11 @@ export async function onRequest(request: Request, env: Env) {
           merchant_id,
           amount,
           description,
+          merchant_display_name,
           status,
           created_at,
           updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `
       )
         .bind(
@@ -82,6 +95,7 @@ export async function onRequest(request: Request, env: Env) {
           merchantId,
           body.amount,
           body.description || null,
+          body.merchantDisplayName,
           "pending",
           now,
           now

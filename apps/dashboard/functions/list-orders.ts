@@ -44,7 +44,7 @@ export async function onRequest(request: Request, env: Env) {
 
       // Build the query
       let query = `
-        SELECT id, merchant_id, amount, description, status, transfer_request_id, created_at, updated_at
+        SELECT id, merchant_id, amount, description, status, transfer_request_id, merchant_display_name, created_at, updated_at
         FROM manual_orders
         WHERE merchant_id = ?
         ORDER BY created_at DESC
@@ -91,6 +91,7 @@ export async function onRequest(request: Request, env: Env) {
         description: row.description as string | null,
         status: row.status as string,
         transferRequestId: row.transfer_request_id as string | null,
+        merchantDisplayName: row.merchant_display_name as string | null,
         createdAt: row.created_at as string,
         updatedAt: row.updated_at as string,
       }))

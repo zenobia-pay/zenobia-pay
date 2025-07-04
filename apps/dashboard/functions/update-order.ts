@@ -57,7 +57,7 @@ export async function onRequest(request: Request, env: Env) {
 
         // Check if order exists and belongs to the merchant
         const existingOrder = await env.MERCHANTS_OAUTH.prepare(
-          `SELECT id, merchant_id, amount, description, status, transfer_request_id, created_at, updated_at
+          `SELECT id, merchant_id, amount, description, status, transfer_request_id, merchant_display_name, created_at, updated_at
            FROM manual_orders
            WHERE id = ? AND merchant_id = ?`
         )
@@ -123,7 +123,7 @@ export async function onRequest(request: Request, env: Env) {
 
         // Fetch the updated order
         const updatedOrder = await env.MERCHANTS_OAUTH.prepare(
-          `SELECT id, merchant_id, amount, description, status, transfer_request_id, created_at, updated_at
+          `SELECT id, merchant_id, amount, description, status, transfer_request_id, merchant_display_name, created_at, updated_at
            FROM manual_orders
            WHERE id = ? AND merchant_id = ?`
         )
@@ -147,6 +147,9 @@ export async function onRequest(request: Request, env: Env) {
           description: updatedOrder.description as string | null,
           status: updatedOrder.status as string,
           transferRequestId: updatedOrder.transfer_request_id as string | null,
+          merchantDisplayName: updatedOrder.merchant_display_name as
+            | string
+            | null,
           createdAt: updatedOrder.created_at as string,
           updatedAt: updatedOrder.updated_at as string,
         }
