@@ -73,6 +73,7 @@ const Settings: Component = () => {
       if (result.success) {
         toast.success("Manual orders configured successfully!")
         await merchant.refetchManualOrdersConfig()
+        await merchant.refetchMerchantConfig()
       } else {
         toast.error(result.error || "Failed to configure manual orders")
       }

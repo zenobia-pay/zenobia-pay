@@ -85,13 +85,36 @@ export async function onRequest(request: Request, env: Env) {
         const clientId = createResult.clientId
         const clientSecret = createResult.clientSecret
 
-        // Step 5: Encrypt the client secret
+        // Step 5: Configure webhook URL
+        const webhookUrl = `https://dashboard.zenobiapay.com/pay/webhooks/webhook`
+
+        // Step 6: Update merchant config with webhook URL
+        const updateResponse = await fetch(
+          `${env.API_BASE_URL}/update-merchant-config`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              webhookUrl: webhookUrl,
+            }),
+          }
+        )
+
+        if (!updateResponse.ok) {
+          console.error("Failed to update merchant config with webhook URL")
+          // Continue anyway as this is not critical for the setup
+        }
+
+        // Step 7: Encrypt the client secret
         const encryptedSecret = await encrypt(
           clientSecret,
           env.MANUAL_ORDERS_ENCRYPTION_KEY || "default-key-change-in-production"
         )
 
-        // Step 6: Save to manual_stores table with encrypted secret
+        // Step 8: Save to manual_stores table with encrypted secret
         const now = Date.now()
         await env.MERCHANTS_OAUTH.prepare(
           `INSERT INTO manual_stores (
@@ -113,6 +136,7 @@ export async function onRequest(request: Request, env: Env) {
           success: true,
           clientId,
           clientSecret,
+          webhookUrl,
           message: "Manual orders configured successfully",
         }
 

@@ -24,17 +24,12 @@ import { onRequest as listOrders } from "../functions/list-orders"
 import { onRequest as updateOrder } from "../functions/update-order"
 import { onRequest as deleteOrder } from "../functions/delete-order"
 import { onRequest as payOrder } from "../functions/pay/[orderId]"
-import { onRequest as payWebhook } from "../functions/pay/webhook"
+import { onRequest as payWebhooksWebhook } from "../functions/pay/webhooks/webhook"
 import { onRequest as payCancel } from "../functions/pay/cancel"
 import { onRequest as paySuccess } from "../functions/pay/payment-success/[orderId]"
 import { onRequest as checkManualOrdersConfig } from "../functions/check-manual-orders-config"
 import { onRequest as setupManualOrders } from "../functions/setup-manual-orders"
 import { onRequest as disableManualOrders } from "../functions/disable-manual-orders"
-
-// Extend the Env interface to include ASSETS for the worker
-interface Env extends BaseEnv {
-  ASSETS: { fetch: (request: Request) => Promise<Response> }
-}
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 
@@ -67,7 +62,7 @@ const ROUTE_PATTERNS = [
   { pattern: /^\/update-order$/, handler: updateOrder },
   { pattern: /^\/delete-order$/, handler: deleteOrder },
   { pattern: /^\/pay\/[^/]+$/, handler: payOrder },
-  { pattern: /^\/pay\/webhook$/, handler: payWebhook },
+  { pattern: /^\/pay\/webhooks\/webhook$/, handler: payWebhooksWebhook },
   { pattern: /^\/cancel-payment$/, handler: payCancel },
   { pattern: /^\/payment-success\/[^/]+$/, handler: paySuccess },
   {
@@ -79,7 +74,7 @@ const ROUTE_PATTERNS = [
 ]
 
 export default {
-  async fetch(request: CFRequest, env: Env): Promise<CFResponse> {
+  async fetch(request: CFRequest, env: BaseEnv): Promise<CFResponse> {
     const url = new URL(request.url)
     const path = url.pathname
 
