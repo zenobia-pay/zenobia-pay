@@ -89,6 +89,9 @@ export const Home = () => {
       const response = await api.createOrder(orderData)
       setCreatedOrder(response)
       setOrderSuccess(true)
+
+      // Refresh the orders list after successful creation
+      await merchant.refetchOrders()
     } catch (error) {
       console.error("Error creating order:", error)
       setOrderError(

@@ -18,6 +18,7 @@ const Transactions: Component = () => {
   const [selectedTransaction, setSelectedTransaction] =
     createSignal<GetMerchantTransferResponse | null>(null)
   const [loadingTransaction, setLoadingTransaction] = createSignal(false)
+  const [includeNotStarted, setIncludeNotStarted] = createSignal(false)
 
   const activeSubtab = () => {
     const searchParams = new URLSearchParams(location.search)
@@ -57,7 +58,64 @@ const Transactions: Component = () => {
     return cents / 100
   }
 
-  // Calculate stats from merchant transfers data
+  // Get user-friendly status display
+  const getStatusDisplay = (status: TransferStatus) => {
+    switch (status) {
+      case TransferStatus.IN_FLIGHT:
+        return "PAID"
+      case TransferStatus.COMPLETED:
+        return "SETTLED"
+      case TransferStatus.FAILED:
+        return "FAILED"
+      case TransferStatus.CANCELLED:
+        return "CANCELLED"
+      case TransferStatus.NOT_STARTED:
+        return "NOT STARTED"
+      default:
+        return status
+    }
+  }
+
+  // Get status badge styling
+  const getStatusBadgeClass = (status: TransferStatus) => {
+    switch (status) {
+      case TransferStatus.IN_FLIGHT:
+        return "bg-green-100 text-green-800"
+      case TransferStatus.COMPLETED:
+        return "bg-blue-100 text-blue-800"
+      case TransferStatus.FAILED:
+        return "bg-red-100 text-red-800"
+      case TransferStatus.CANCELLED:
+        return "bg-gray-100 text-gray-800"
+      case TransferStatus.NOT_STARTED:
+        return "bg-yellow-100 text-yellow-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  // Filter transfers based on includeNotStarted setting
+  const filteredTransfers = createMemo(() => {
+    if (
+      merchant.merchantTransfersLoading() ||
+      !merchant.merchantTransfers() ||
+      !merchant.merchantTransfers()?.items
+    ) {
+      return []
+    }
+
+    const transfers = merchant.merchantTransfers()!.items
+
+    if (includeNotStarted()) {
+      return transfers
+    }
+
+    return transfers.filter(
+      (transfer) => transfer.status !== TransferStatus.NOT_STARTED
+    )
+  })
+
+  // Calculate stats from filtered transfers data
   const stats = createMemo(() => {
     if (
       merchant.merchantTransfersLoading() ||
@@ -73,7 +131,7 @@ const Transactions: Component = () => {
       }
     }
 
-    const transfers = merchant.merchantTransfers()!.items
+    const transfers = filteredTransfers()
 
     // Calculate total amounts
     let totalAmount = 0
@@ -201,28 +259,18 @@ const Transactions: Component = () => {
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-sm font-medium text-gray-500">Amount</dt>
-                  <dd class="mt-1 text-sm text-gray-900">
-                    {formatCurrency(
-                      centsToDollars(selectedTransaction()?.amount || 0)
-                    )}
-                  </dd>
-                </div>
-                <div>
                   <dt class="text-sm font-medium text-gray-500">Status</dt>
                   <dd class="mt-1">
                     <span
-                      class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        selectedTransaction()?.status ===
-                        TransferStatus.COMPLETED
-                          ? "bg-green-100 text-green-800"
-                          : selectedTransaction()?.status ===
-                              TransferStatus.IN_FLIGHT
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-red-100 text-red-800"
-                      }`}
+                      class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                        selectedTransaction()?.status ||
+                          TransferStatus.NOT_STARTED
+                      )}`}
                     >
-                      {selectedTransaction()?.status}
+                      {getStatusDisplay(
+                        selectedTransaction()?.status ||
+                          TransferStatus.NOT_STARTED
+                      )}
                     </span>
                   </dd>
                 </div>
@@ -234,6 +282,21 @@ const Transactions: Component = () => {
 
       {/* Transactions List View */}
       <Show when={activeSubtab() === "list"}>
+        {/* Include Not Started Checkbox */}
+        <div class="mb-6">
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              checked={includeNotStarted()}
+              onChange={(e) => setIncludeNotStarted(e.target.checked)}
+              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+            />
+            <span class="ml-2 text-sm text-gray-700">
+              Include "Not Started" transfers
+            </span>
+          </label>
+        </div>
+
         {/* Stats Overview */}
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -251,15 +314,14 @@ const Transactions: Component = () => {
                   {formatCurrency(stats().totalAmount)}
                 </p>
                 <p class="text-sm text-blue-600 mt-2">
-                  {merchant.merchantTransfers()?.items?.length || 0} total
-                  transfers
+                  {filteredTransfers().length} total transfers
                 </p>
               </Show>
             </div>
           </div>
           <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-5">
-              <h3 class="text-sm font-medium text-gray-500 mb-2">Pending</h3>
+              <h3 class="text-sm font-medium text-gray-500 mb-2">Paid</h3>
               <Show
                 when={!merchant.merchantTransfersLoading()}
                 fallback={
@@ -269,17 +331,16 @@ const Transactions: Component = () => {
                 <p class="text-2xl font-semibold text-gray-900">
                   {formatCurrency(stats().pendingAmount)}
                 </p>
-                <p class="text-sm text-yellow-600 mt-2">
+                <p class="text-sm text-green-600 mt-2">
                   {stats().pendingCount}{" "}
-                  {stats().pendingCount === 1 ? "transfer" : "transfers"}{" "}
-                  pending
+                  {stats().pendingCount === 1 ? "transfer" : "transfers"} paid
                 </p>
               </Show>
             </div>
           </div>
           <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-5">
-              <h3 class="text-sm font-medium text-gray-500 mb-2">Completed</h3>
+              <h3 class="text-sm font-medium text-gray-500 mb-2">Settled</h3>
               <Show
                 when={!merchant.merchantTransfersLoading()}
                 fallback={
@@ -289,10 +350,10 @@ const Transactions: Component = () => {
                 <p class="text-2xl font-semibold text-gray-900">
                   {formatCurrency(stats().completedAmount)}
                 </p>
-                <p class="text-sm text-green-600 mt-2">
+                <p class="text-sm text-blue-600 mt-2">
                   {stats().completedCount}{" "}
                   {stats().completedCount === 1 ? "transfer" : "transfers"}{" "}
-                  completed
+                  settled
                 </p>
               </Show>
             </div>
@@ -372,7 +433,7 @@ const Transactions: Component = () => {
                   </tr>
                 }
               >
-                <For each={merchant.merchantTransfers()?.items || []}>
+                <For each={filteredTransfers()}>
                   {(transaction) => (
                     <tr class="hover:bg-gray-50">
                       <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
@@ -386,15 +447,11 @@ const Transactions: Component = () => {
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap">
                         <span
-                          class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            transaction.status === TransferStatus.COMPLETED
-                              ? "bg-green-100 text-green-800"
-                              : transaction.status === TransferStatus.IN_FLIGHT
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                          }`}
+                          class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                            transaction.status
+                          )}`}
                         >
-                          {transaction.status}
+                          {getStatusDisplay(transaction.status)}
                         </span>
                       </td>
                       <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
