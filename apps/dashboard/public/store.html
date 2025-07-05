@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Checkout - {{shop}}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://zenobiapay.com/embed/0.0.33/zenobia-pay-modal.js"></script>
+    <script src="https://zenobiapay.com/embed/0.0.36/zenobia-pay-modal.js"></script>
   </head>
 
   <body class="min-h-screen bg-gray-100">
@@ -83,12 +83,14 @@
         },
         amount, // amount in cents
         target: "#zenobia-modal-root",
+        hideQrOnMobile: false,
+        showCashback: false,
         onSuccess: (response, status) => {
           console.log("Woohoo", response, status)
           window.location.href = session.returnUrl
         },
         onError: (error) => {
-          alert(error.message)
+          console.error("Error", error)
         },
         onStatusChange: (status) => {
           console.log("Payment status:", status)
