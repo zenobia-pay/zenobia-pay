@@ -11,6 +11,18 @@ import { useMerchant } from "../../context/MerchantContext"
 import { api } from "../../services/api"
 import { useLocation, useNavigate } from "@solidjs/router"
 
+interface OrderDetails {
+  orderId: string
+  merchantId: string
+  amount: number
+  description: string | null
+  status: string
+  transferRequestId: string | null
+  merchantDisplayName: string | null
+  createdAt: string
+  updatedAt: string
+}
+
 const Transactions: Component = () => {
   const location = useLocation()
   const navigate = useNavigate()
@@ -19,6 +31,10 @@ const Transactions: Component = () => {
     createSignal<GetMerchantTransferResponse | null>(null)
   const [loadingTransaction, setLoadingTransaction] = createSignal(false)
   const [includeNotStarted, setIncludeNotStarted] = createSignal(false)
+  const [orderDetails, setOrderDetails] = createSignal<OrderDetails | null>(
+    null
+  )
+  const [loadingOrderDetails, setLoadingOrderDetails] = createSignal(false)
 
   const activeSubtab = () => {
     const searchParams = new URLSearchParams(location.search)
@@ -37,6 +53,9 @@ const Transactions: Component = () => {
 
     if (transactionId && activeSubtab() === "details") {
       setLoadingTransaction(true)
+      setLoadingOrderDetails(true)
+
+      // Load transaction details
       api
         .getMerchantTransfer(transactionId)
         .then((response) => {
@@ -48,8 +67,23 @@ const Transactions: Component = () => {
         .finally(() => {
           setLoadingTransaction(false)
         })
+
+      // Load order details for this transaction
+      api
+        .getOrderDetailsForTransaction(transactionId)
+        .then((response) => {
+          setOrderDetails(response)
+        })
+        .catch((error) => {
+          console.error("Error loading order details:", error)
+          // Don't set error state if order details fail to load, as not all transactions have orders
+        })
+        .finally(() => {
+          setLoadingOrderDetails(false)
+        })
     } else {
       setSelectedTransaction(null)
+      setOrderDetails(null)
     }
   })
 
@@ -275,6 +309,148 @@ const Transactions: Component = () => {
                   </dd>
                 </div>
               </dl>
+
+              {/* Order Details Section */}
+              <Show when={orderDetails()}>
+                <div class="mt-8 border-t border-gray-200 pt-6">
+                  <h4 class="text-lg font-medium text-gray-900 mb-4">
+                    Associated Order
+                  </h4>
+                  <Show
+                    when={!loadingOrderDetails()}
+                    fallback={
+                      <div class="flex justify-center items-center py-4">
+                        <svg
+                          class="animate-spin h-5 w-5 text-indigo-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            class="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            stroke-width="4"
+                          ></circle>
+                          <path
+                            class="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span class="ml-2 text-sm text-gray-500">
+                          Loading order details...
+                        </span>
+                      </div>
+                    }
+                  >
+                    <div class="bg-gray-50 rounded-lg p-4">
+                      <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                        <div>
+                          <dt class="text-sm font-medium text-gray-500">
+                            Order ID
+                          </dt>
+                          <dd class="mt-1 text-sm text-gray-900">
+                            {orderDetails()?.orderId}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-sm font-medium text-gray-500">
+                            Order Status
+                          </dt>
+                          <dd class="mt-1">
+                            <span
+                              class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                orderDetails()?.status === "paid"
+                                  ? "bg-green-100 text-green-800"
+                                  : orderDetails()?.status === "pending"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : orderDetails()?.status === "cancelled"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {orderDetails()?.status?.toUpperCase()}
+                            </span>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-sm font-medium text-gray-500">
+                            Amount
+                          </dt>
+                          <dd class="mt-1 text-sm text-gray-900">
+                            {formatCurrency(
+                              centsToDollars(orderDetails()?.amount || 0)
+                            )}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-sm font-medium text-gray-500">
+                            Merchant
+                          </dt>
+                          <dd class="mt-1 text-sm text-gray-900">
+                            {orderDetails()?.merchantDisplayName || "N/A"}
+                          </dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                          <dt class="text-sm font-medium text-gray-500">
+                            Description
+                          </dt>
+                          <dd class="mt-1 text-sm text-gray-900">
+                            {orderDetails()?.description || "No description"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-sm font-medium text-gray-500">
+                            Created
+                          </dt>
+                          <dd class="mt-1 text-sm text-gray-900">
+                            {orderDetails()?.createdAt
+                              ? new Date(
+                                  orderDetails()!.createdAt
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt class="text-sm font-medium text-gray-500">
+                            Updated
+                          </dt>
+                          <dd class="mt-1 text-sm text-gray-900">
+                            {orderDetails()?.updatedAt
+                              ? new Date(
+                                  orderDetails()!.updatedAt
+                                ).toLocaleDateString()
+                              : "N/A"}
+                          </dd>
+                        </div>
+                      </dl>
+                      <div class="mt-4 pt-4 border-t border-gray-200">
+                        <a
+                          href={`/?tab=manual-orders&subtab=details&orderId=${orderDetails()?.orderId}`}
+                          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                        >
+                          View Order Details
+                          <svg
+                            class="ml-2 -mr-1 h-4 w-4"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fill-rule="evenodd"
+                              d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+                              clip-rule="evenodd"
+                            />
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  </Show>
+                </div>
+              </Show>
             </Show>
           </div>
         </div>

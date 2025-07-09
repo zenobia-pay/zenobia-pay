@@ -30,6 +30,7 @@ import { onRequest as paySuccess } from "../functions/pay/payment-success/[order
 import { onRequest as checkManualOrdersConfig } from "../functions/check-manual-orders-config"
 import { onRequest as setupManualOrders } from "../functions/setup-manual-orders"
 import { onRequest as disableManualOrders } from "../functions/disable-manual-orders"
+import { onRequest as getOrderDetailsForTransaction } from "../functions/get-order-details-for-transaction"
 
 const VITE_DEV_SERVER = "http://localhost:8787"
 
@@ -71,6 +72,10 @@ const ROUTE_PATTERNS = [
   },
   { pattern: /^\/setup-manual-orders$/, handler: setupManualOrders },
   { pattern: /^\/disable-manual-orders$/, handler: disableManualOrders },
+  {
+    pattern: /^\/get-order-details-for-transaction$/,
+    handler: getOrderDetailsForTransaction,
+  },
 ]
 
 export default {

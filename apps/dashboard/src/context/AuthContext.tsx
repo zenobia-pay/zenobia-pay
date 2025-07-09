@@ -86,8 +86,11 @@ export const AuthProvider: ParentComponent = (props) => {
               window.location.pathname !== "/login"
             ) {
               console.log("Auth check failed, redirecting to login")
-              // Save the current path
-              sessionStorage.setItem("redirectPath", window.location.pathname)
+              // Save the current path with search parameters
+              sessionStorage.setItem(
+                "redirectPath",
+                window.location.pathname + window.location.search
+              )
               // Redirect to login
               window.location.href = "/login"
             }

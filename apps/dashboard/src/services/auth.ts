@@ -86,7 +86,10 @@ export const authService = {
 
       // Get a fresh client to perform the logout
       const auth0 = await getAuth0Client()
-      sessionStorage.setItem("redirectPath", window.location.pathname)
+      sessionStorage.setItem(
+        "redirectPath",
+        window.location.pathname + window.location.search
+      )
 
       // Call Auth0 logout with proper parameters
       await auth0.logout({

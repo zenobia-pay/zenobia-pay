@@ -444,7 +444,7 @@ export const Home = () => {
                       }}
                       class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      {/* Heroicon: Clipboard */}
+                      {/* Copy icon */}
                       <svg
                         class="h-5 w-5 text-gray-500"
                         fill="none"
@@ -455,7 +455,7 @@ export const Home = () => {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m4 2v12a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2h16z"
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
                         />
                       </svg>
                       Copy Link
@@ -476,7 +476,7 @@ export const Home = () => {
                       }}
                       class="flex items-center justify-center gap-2 px-4 py-3 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                      {/* Heroicon: Share */}
+                      {/* Share icon */}
                       <svg
                         class="h-5 w-5 text-gray-500"
                         fill="none"
@@ -487,7 +487,7 @@ export const Home = () => {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M15 8a3 3 0 11-6 0 3 3 0 016 0zm6 8a9 9 0 11-18 0 9 9 0 0118 0z"
+                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z"
                         />
                       </svg>
                       Share Link
@@ -498,7 +498,7 @@ export const Home = () => {
                       }}
                       class="flex items-center justify-center gap-2 px-4 py-3 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 col-span-1 sm:col-span-2"
                     >
-                      {/* Heroicon: Arrow Circle Right */}
+                      {/* QR icon */}
                       <svg
                         class="h-5 w-5 text-white"
                         fill="none"
@@ -509,7 +509,7 @@ export const Home = () => {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M17 8l4 4m0 0l-4 4m4-4H3"
+                          d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
                         />
                       </svg>
                       Show Payment QR
@@ -596,23 +596,6 @@ export const Home = () => {
           <div class="p-6">
             <div class="flex items-center">
               <h3 class="text-sm font-medium text-gray-900">Total Revenue</h3>
-              <div
-                class="ml-2"
-                title="Estimated revenue from payment processing fees"
-              >
-                <svg
-                  class="w-4 h-4 text-gray-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </div>
               <Show when={metrics().revenueChange !== undefined}>
                 <div class="ml-auto">
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -667,23 +650,6 @@ export const Home = () => {
               <h3 class="text-sm font-medium text-gray-900">
                 Processing Volume
               </h3>
-              <div
-                class="ml-2"
-                title="Total volume of all transactions processed"
-              >
-                <svg
-                  class="w-4 h-4 text-gray-400"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fill-rule="evenodd"
-                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                    clip-rule="evenodd"
-                  />
-                </svg>
-              </div>
               <Show when={metrics().volumeChange !== undefined}>
                 <div class="ml-auto">
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -744,23 +710,6 @@ export const Home = () => {
                     <h3 class="text-sm font-medium text-gray-900">
                       Top Transactions
                     </h3>
-                    <div
-                      class="text-gray-400"
-                      title="Largest transactions in the selected period"
-                    >
-                      <svg
-                        class="w-4 h-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fill-rule="evenodd"
-                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
-                          clip-rule="evenodd"
-                        />
-                      </svg>
-                    </div>
                   </div>
                   <a
                     href="?tab=transactions"

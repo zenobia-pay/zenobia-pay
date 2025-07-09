@@ -1,9 +1,7 @@
 import { Component, createSignal, onMount, JSX, createEffect } from "solid-js"
-import { useLocation, useNavigate } from "@solidjs/router"
+import { useLocation } from "@solidjs/router"
 import { authService } from "../services/auth"
 import { useAuth } from "../context/AuthContext"
-import { api } from "../services/api"
-import { UserType } from "../types/api"
 
 interface ProtectedRouteProps {
   children: JSX.Element | Component
@@ -11,7 +9,6 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
   const location = useLocation()
-  const navigate = useNavigate()
   const [isAuthenticated, setIsAuthenticated] = createSignal(false)
   const [isLoading, setIsLoading] = createSignal(true)
   const auth = useAuth()
@@ -27,9 +24,6 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
         window.location.href = "/login" + window.location.search
         return
       }
-
-      // Don't redirect to onboarding if we're already on the onboarding page
-      const isOnboardingRoute = location.pathname === "/onboarding"
 
       // Use the checkAuthStatus function from AuthContext
       const isAuthValid = await auth.checkAuthStatus()
@@ -49,8 +43,9 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
           // }
         })
       } else {
-        // Store the current path so we can redirect back after login
-        sessionStorage.setItem("redirectPath", location.pathname)
+        // Store the current path with search parameters so we can redirect back after login
+        const fullPath = location.pathname + location.search
+        sessionStorage.setItem("redirectPath", fullPath)
 
         // Redirect directly to Auth0 for authentication
         await authService.signIn()
@@ -58,8 +53,9 @@ const ProtectedRoute: Component<ProtectedRouteProps> = (props) => {
       }
     } catch (error) {
       console.error("Auth error in protected route:", error)
-      // Store the current path and redirect to Auth0
-      sessionStorage.setItem("redirectPath", location.pathname)
+      // Store the current path with search parameters and redirect to Auth0
+      const fullPath = location.pathname + location.search
+      sessionStorage.setItem("redirectPath", fullPath)
       try {
         await authService.signIn()
       } catch (err) {
