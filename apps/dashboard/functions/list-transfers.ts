@@ -5,6 +5,7 @@ interface TransferWithOrder {
   transferRequestId: string
   amount: number
   status: string
+  customerName?: string
   orderId?: string
   orderDetails?: {
     orderId: string
@@ -184,6 +185,10 @@ export async function onRequest(request: Request, env: Env) {
               merchantDisplayName: order.merchant_display_name,
               createdAt: order.created_at,
               updatedAt: order.updated_at,
+            }
+            // Use the order description as customer name if available
+            if (order.description) {
+              enrichedTransfer.customerName = order.description
             }
           }
         }

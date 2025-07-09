@@ -16,8 +16,10 @@ export interface PaymentParticipantIdentity {
 }
 
 export interface StatementItem {
+  itemId?: string
   name: string
   amount: number
+  metadata?: Record<string, unknown>
 }
 
 export enum TransferStatus {
@@ -56,6 +58,7 @@ export interface MerchantTransfer {
   transferRequestId: string
   amount: number
   status: TransferStatus
+  customerName?: string
   createdAt: string
   updatedAt: string
 }

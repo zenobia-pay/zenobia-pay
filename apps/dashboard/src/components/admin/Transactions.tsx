@@ -92,20 +92,19 @@ const Transactions: Component = () => {
       setLoadingTransaction(true)
       setLoadingOrderDetails(true)
 
-      // Load transaction details
+      // Load transaction details first (this is the main content)
       api
         .getMerchantTransfer(transactionId)
         .then((response) => {
           setSelectedTransaction(response)
+          setLoadingTransaction(false)
         })
         .catch((error) => {
           console.error("Error loading transaction:", error)
-        })
-        .finally(() => {
           setLoadingTransaction(false)
         })
 
-      // Load order details for this transaction
+      // Load order details in parallel (this is supplementary information)
       api
         .getOrderDetailsForTransaction(transactionId)
         .then((response) => {
@@ -242,30 +241,19 @@ const Transactions: Component = () => {
     }).format(amount)
   }
 
+  // Format date
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  }
+
   return (
     <div>
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Transactions List</h1>
-        <button
-          onClick={() => merchant.refetchMerchantTransfers()}
-          class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        >
-          <svg
-            class="h-4 w-4 mr-2"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          Refresh
-        </button>
-      </div>
-
       {/* Transaction Details View */}
       <Show when={activeSubtab() === "details"}>
         <div class="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -276,21 +264,21 @@ const Transactions: Component = () => {
               </h3>
               <button
                 onClick={() => navigate("?tab=transactions")}
-                class="text-gray-400 hover:text-gray-500"
+                class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
               >
                 <svg
-                  class="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+                  class="h-4 w-4 mr-2"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
                 >
                   <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
+                    fill-rule="evenodd"
+                    d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+                    clip-rule="evenodd"
                   />
                 </svg>
+                Back to Transactions
               </button>
             </div>
           </div>
@@ -298,27 +286,32 @@ const Transactions: Component = () => {
             <Show
               when={!loadingTransaction()}
               fallback={
-                <div class="flex justify-center items-center py-4">
-                  <svg
-                    class="animate-spin h-5 w-5 text-indigo-600"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                <div class="flex justify-center items-center py-8">
+                  <div class="text-center">
+                    <svg
+                      class="animate-spin h-8 w-8 text-indigo-600 mx-auto"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      ></circle>
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    <p class="mt-2 text-sm text-gray-500">
+                      Loading transaction details...
+                    </p>
+                  </div>
                 </div>
               }
             >
@@ -345,7 +338,68 @@ const Transactions: Component = () => {
                     </span>
                   </dd>
                 </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">
+                    Total Amount
+                  </dt>
+                  <dd class="mt-1 text-sm text-gray-900">
+                    {selectedTransaction()?.statementItems &&
+                    selectedTransaction()!.statementItems.length > 0
+                      ? formatCurrency(
+                          centsToDollars(
+                            selectedTransaction()!.statementItems.reduce(
+                              (sum, item) => sum + item.amount,
+                              0
+                            )
+                          )
+                        )
+                      : "N/A"}
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-sm font-medium text-gray-500">Merchant</dt>
+                  <dd class="mt-1 text-sm text-gray-900">
+                    {selectedTransaction()?.merchant?.name || "N/A"}
+                  </dd>
+                </div>
               </dl>
+
+              {/* Statement Items Section */}
+              <Show
+                when={
+                  selectedTransaction()?.statementItems &&
+                  selectedTransaction()!.statementItems.length > 0
+                }
+              >
+                <div class="mt-8 border-t border-gray-200 pt-6">
+                  <h4 class="text-lg font-medium text-gray-900 mb-4">
+                    Statement Items
+                  </h4>
+                  <div class="bg-gray-50 rounded-lg p-4">
+                    <div class="space-y-3">
+                      <For each={selectedTransaction()?.statementItems}>
+                        {(item) => (
+                          <div class="flex items-center justify-between py-2 border-b border-gray-200 last:border-b-0">
+                            <div class="flex-1">
+                              <div class="text-sm font-medium text-gray-900">
+                                {item.name}
+                              </div>
+                              <Show when={item.itemId}>
+                                <div class="text-xs text-gray-500">
+                                  ID: {item.itemId}
+                                </div>
+                              </Show>
+                            </div>
+                            <div class="text-sm font-medium text-gray-900">
+                              {formatCurrency(centsToDollars(item.amount))}
+                            </div>
+                          </div>
+                        )}
+                      </For>
+                    </div>
+                  </div>
+                </div>
+              </Show>
 
               {/* Order Details Section */}
               <Show when={orderDetails()}>
@@ -357,34 +411,36 @@ const Transactions: Component = () => {
                     when={!loadingOrderDetails()}
                     fallback={
                       <div class="flex justify-center items-center py-4">
-                        <svg
-                          class="animate-spin h-5 w-5 text-indigo-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            class="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            stroke-width="4"
-                          ></circle>
-                          <path
-                            class="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span class="ml-2 text-sm text-gray-500">
-                          Loading order details...
-                        </span>
+                        <div class="text-center">
+                          <svg
+                            class="animate-spin h-5 w-5 text-indigo-600 mx-auto"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              class="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              stroke-width="4"
+                            ></circle>
+                            <path
+                              class="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          <p class="mt-1 text-sm text-gray-500">
+                            Loading order details...
+                          </p>
+                        </div>
                       </div>
                     }
                   >
                     <div class="bg-gray-50 rounded-lg p-4">
-                      <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
+                      <dl class="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 lg:grid-cols-2">
                         <div>
                           <dt class="text-sm font-medium text-gray-500">
                             Order ID
@@ -445,9 +501,7 @@ const Transactions: Component = () => {
                           </dt>
                           <dd class="mt-1 text-sm text-gray-900">
                             {orderDetails()?.createdAt
-                              ? new Date(
-                                  orderDetails()!.createdAt
-                                ).toLocaleDateString()
+                              ? formatDate(orderDetails()!.createdAt)
                               : "N/A"}
                           </dd>
                         </div>
@@ -457,9 +511,7 @@ const Transactions: Component = () => {
                           </dt>
                           <dd class="mt-1 text-sm text-gray-900">
                             {orderDetails()?.updatedAt
-                              ? new Date(
-                                  orderDetails()!.updatedAt
-                                ).toLocaleDateString()
+                              ? formatDate(orderDetails()!.updatedAt)
                               : "N/A"}
                           </dd>
                         </div>
@@ -495,239 +547,376 @@ const Transactions: Component = () => {
 
       {/* Transactions List View */}
       <Show when={activeSubtab() === "list"}>
-        {/* Include Not Started Checkbox */}
-        <div class="mb-6">
-          <label class="flex items-center">
-            <input
-              type="checkbox"
-              checked={includeNotStarted()}
-              onChange={(e) => setIncludeNotStarted(e.target.checked)}
-              class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-            />
-            <span class="ml-2 text-sm text-gray-700">
-              Include "Not Started" transfers
-            </span>
-          </label>
-        </div>
-
-        {/* Stats Overview */}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="p-5">
-              <h3 class="text-sm font-medium text-gray-500 mb-2">
-                Total Amount Requested
-              </h3>
-              <Show
-                when={!merchant.merchantTransfersLoading()}
-                fallback={
-                  <p class="text-2xl font-semibold text-gray-900">Loading...</p>
-                }
-              >
-                <p class="text-2xl font-semibold text-gray-900">
-                  {formatCurrency(stats().totalAmount)}
-                </p>
-                <p class="text-sm text-blue-600 mt-2">
-                  {filteredTransfers().length} total transfers
-                </p>
-              </Show>
+        <div class="pt-6 sm:pt-0">
+          {/* Header */}
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+            <div>
+              <h1 class="text-2xl font-semibold text-gray-900">Transactions</h1>
+              <p class="mt-1 text-sm text-gray-500">
+                View and manage your payment transactions
+              </p>
             </div>
-          </div>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="p-5">
-              <h3 class="text-sm font-medium text-gray-500 mb-2">Paid</h3>
-              <Show
-                when={!merchant.merchantTransfersLoading()}
-                fallback={
-                  <p class="text-2xl font-semibold text-gray-900">Loading...</p>
-                }
-              >
-                <p class="text-2xl font-semibold text-gray-900">
-                  {formatCurrency(stats().pendingAmount)}
-                </p>
-                <p class="text-sm text-green-600 mt-2">
-                  {stats().pendingCount}{" "}
-                  {stats().pendingCount === 1 ? "transfer" : "transfers"} paid
-                </p>
-              </Show>
-            </div>
-          </div>
-          <div class="bg-white rounded-lg shadow overflow-hidden">
-            <div class="p-5">
-              <h3 class="text-sm font-medium text-gray-500 mb-2">Settled</h3>
-              <Show
-                when={!merchant.merchantTransfersLoading()}
-                fallback={
-                  <p class="text-2xl font-semibold text-gray-900">Loading...</p>
-                }
-              >
-                <p class="text-2xl font-semibold text-gray-900">
-                  {formatCurrency(stats().completedAmount)}
-                </p>
-                <p class="text-sm text-blue-600 mt-2">
-                  {stats().completedCount}{" "}
-                  {stats().completedCount === 1 ? "transfer" : "transfers"}{" "}
-                  settled
-                </p>
-              </Show>
-            </div>
-          </div>
-        </div>
-
-        {/* Merchant Transactions Table */}
-        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Transfer ID
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Amount
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Date
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Status
-                </th>
-                <th
-                  scope="col"
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <Show
-                when={!merchant.merchantTransfersLoading()}
-                fallback={
-                  <tr>
-                    <td
-                      colSpan={5}
-                      class="px-6 py-4 text-center text-sm text-gray-500"
-                    >
-                      <div class="flex justify-center">
-                        <svg
-                          class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            class="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            stroke-width="4"
-                          ></circle>
-                          <path
-                            class="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        <span>Loading merchant transfers...</span>
-                      </div>
-                    </td>
-                  </tr>
-                }
-              >
-                <For each={filteredTransfers()}>
-                  {(transaction) => (
-                    <tr class="hover:bg-gray-50">
-                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {transaction.transferRequestId || "N/A"}
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {formatCurrency(centsToDollars(transaction.amount))}
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        N/A
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap">
-                        <span
-                          class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
-                            transaction.status
-                          )}`}
-                        >
-                          {getStatusDisplay(transaction.status)}
-                        </span>
-                      </td>
-                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <button
-                          onClick={() =>
-                            navigate(
-                              `?tab=transactions&subtab=details&transactionId=${transaction.transferRequestId}`
-                            )
-                          }
-                          class="text-indigo-600 hover:text-indigo-900"
-                        >
-                          View Details
-                        </button>
-                      </td>
-                    </tr>
-                  )}
-                </For>
-              </Show>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Loading indicator for auto-load */}
-        <Show
-          when={
-            merchant.merchantTransfersLoading() && merchant.hasMoreTransfers()
-          }
-        >
-          <div class="mt-6 flex justify-center">
-            <div class="inline-flex items-center px-4 py-2 text-sm text-gray-500">
+            <button
+              onClick={() => merchant.refetchMerchantTransfers()}
+              disabled={merchant.merchantTransfersLoading()}
+              class="inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+            >
               <svg
-                class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500"
+                class={`mr-2 h-4 w-4 ${merchant.merchantTransfersLoading() ? "animate-spin" : ""}`}
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
                 <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
-              Loading more transfers...
+              Refresh
+            </button>
+          </div>
+
+          {/* Include Not Started Checkbox */}
+          <div class="mb-6">
+            <label class="flex items-center">
+              <input
+                type="checkbox"
+                checked={includeNotStarted()}
+                onChange={(e) => setIncludeNotStarted(e.target.checked)}
+                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <span class="ml-2 text-sm text-gray-700">
+                Include "Not Started" transfers
+              </span>
+            </label>
+          </div>
+
+          {/* Stats Overview */}
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+              <div class="p-5">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">
+                  Total Amount Requested
+                </h3>
+                <Show
+                  when={!merchant.merchantTransfersLoading()}
+                  fallback={
+                    <p class="text-2xl font-semibold text-gray-900">
+                      Loading...
+                    </p>
+                  }
+                >
+                  <p class="text-2xl font-semibold text-gray-900">
+                    {formatCurrency(stats().totalAmount)}
+                  </p>
+                  <p class="text-sm text-blue-600 mt-2">
+                    {filteredTransfers().length} total transfers
+                  </p>
+                </Show>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+              <div class="p-5">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">Paid</h3>
+                <Show
+                  when={!merchant.merchantTransfersLoading()}
+                  fallback={
+                    <p class="text-2xl font-semibold text-gray-900">
+                      Loading...
+                    </p>
+                  }
+                >
+                  <p class="text-2xl font-semibold text-gray-900">
+                    {formatCurrency(stats().pendingAmount)}
+                  </p>
+                  <p class="text-sm text-green-600 mt-2">
+                    {stats().pendingCount}{" "}
+                    {stats().pendingCount === 1 ? "transfer" : "transfers"} paid
+                  </p>
+                </Show>
+              </div>
+            </div>
+            <div class="bg-white rounded-lg shadow overflow-hidden">
+              <div class="p-5">
+                <h3 class="text-sm font-medium text-gray-500 mb-2">Settled</h3>
+                <Show
+                  when={!merchant.merchantTransfersLoading()}
+                  fallback={
+                    <p class="text-2xl font-semibold text-gray-900">
+                      Loading...
+                    </p>
+                  }
+                >
+                  <p class="text-2xl font-semibold text-gray-900">
+                    {formatCurrency(stats().completedAmount)}
+                  </p>
+                  <p class="text-sm text-blue-600 mt-2">
+                    {stats().completedCount}{" "}
+                    {stats().completedCount === 1 ? "transfer" : "transfers"}{" "}
+                    settled
+                  </p>
+                </Show>
+              </div>
             </div>
           </div>
-        </Show>
 
-        {/* End of transfers indicator */}
-        <Show
-          when={!merchant.hasMoreTransfers() && filteredTransfers().length > 0}
-        >
-          <div class="mt-6 flex justify-center">
-            <div class="text-sm text-gray-500">No more transfers to load</div>
+          {/* Merchant Transactions Table */}
+          <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <Show
+              when={!merchant.merchantTransfersLoading()}
+              fallback={
+                <div class="flex justify-center items-center py-12">
+                  <svg
+                    class="animate-spin h-8 w-8 text-indigo-600"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                </div>
+              }
+            >
+              <Show
+                when={filteredTransfers().length > 0}
+                fallback={
+                  <div class="text-center py-12">
+                    <svg
+                      class="mx-auto h-12 w-12 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                      />
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">
+                      No transactions
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500">
+                      Transactions will appear here once payments are processed.
+                    </p>
+                  </div>
+                }
+              >
+                {/* Desktop Table View */}
+                <div class="hidden lg:block">
+                  <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    <table class="min-w-full divide-y divide-gray-300">
+                      <thead class="bg-gray-50">
+                        <tr>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Customer
+                          </th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody class="bg-white divide-y divide-gray-200">
+                        <For each={filteredTransfers()}>
+                          {(transaction) => (
+                            <tr class="hover:bg-gray-50">
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                  <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                                    <svg
+                                      class="h-6 w-6 text-indigo-600"
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                      />
+                                    </svg>
+                                  </div>
+                                  <div class="ml-4">
+                                    <div
+                                      class="text-sm font-medium text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline"
+                                      onClick={() =>
+                                        navigate(
+                                          `?tab=transactions&subtab=details&transactionId=${transaction.transferRequestId}`
+                                        )
+                                      }
+                                    >
+                                      {transaction.customerName ||
+                                        "Unknown Customer"}
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                      {transaction.transferRequestId}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap">
+                                <span
+                                  class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                                    transaction.status
+                                  )}`}
+                                >
+                                  {getStatusDisplay(transaction.status)}
+                                </span>
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {formatCurrency(
+                                  centsToDollars(transaction.amount)
+                                )}
+                              </td>
+                              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {transaction.createdAt
+                                  ? formatDate(transaction.createdAt)
+                                  : "N/A"}
+                              </td>
+                            </tr>
+                          )}
+                        </For>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Mobile Card View */}
+                <div class="lg:hidden space-y-4">
+                  <For each={filteredTransfers()}>
+                    {(transaction) => (
+                      <div class="bg-white border border-gray-200 rounded-lg p-4 hover:bg-gray-50">
+                        <div class="flex items-start justify-between">
+                          <div class="flex items-center flex-1 min-w-0">
+                            <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
+                              <svg
+                                class="h-6 w-6 text-indigo-600"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
+                              </svg>
+                            </div>
+                            <div class="ml-3 flex-1 min-w-0">
+                              <div
+                                class="text-sm font-medium text-gray-900 cursor-pointer hover:text-indigo-600 hover:underline truncate"
+                                onClick={() =>
+                                  navigate(
+                                    `?tab=transactions&subtab=details&transactionId=${transaction.transferRequestId}`
+                                  )
+                                }
+                              >
+                                {transaction.customerName || "Unknown Customer"}
+                              </div>
+                              <div class="text-xs text-gray-400 truncate">
+                                {transaction.transferRequestId}
+                              </div>
+                            </div>
+                          </div>
+                          <div class="ml-4 flex flex-col items-end">
+                            <span
+                              class={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
+                                transaction.status
+                              )}`}
+                            >
+                              {getStatusDisplay(transaction.status)}
+                            </span>
+                            <div class="mt-1 text-sm font-medium text-gray-900">
+                              {formatCurrency(
+                                centsToDollars(transaction.amount)
+                              )}
+                            </div>
+                            <div class="text-xs text-gray-500">
+                              {transaction.createdAt
+                                ? formatDate(transaction.createdAt)
+                                : "N/A"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </For>
+                </div>
+              </Show>
+            </Show>
           </div>
-        </Show>
+
+          {/* Loading indicator for auto-load */}
+          <Show
+            when={
+              merchant.merchantTransfersLoading() && merchant.hasMoreTransfers()
+            }
+          >
+            <div class="mt-6 flex justify-center">
+              <div class="inline-flex items-center px-4 py-2 text-sm text-gray-500">
+                <svg
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Loading more transfers...
+              </div>
+            </div>
+          </Show>
+
+          {/* End of transfers indicator */}
+          <Show
+            when={
+              !merchant.hasMoreTransfers() && filteredTransfers().length > 0
+            }
+          >
+            <div class="mt-6 flex justify-center">
+              <div class="text-sm text-gray-500">No more transfers to load</div>
+            </div>
+          </Show>
+        </div>
       </Show>
     </div>
   )
