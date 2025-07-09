@@ -355,19 +355,17 @@ export const api = {
     continuationToken?: string
   ): Promise<MerchantTransferResponse> => {
     return callApi(async (token) => {
-      const url = new URL(`${getApiBaseUrl()}/list-merchant-transfers`)
-      if (continuationToken) {
-        url.searchParams.append("continuationToken", continuationToken)
-      }
-
-      const response = await fetch(url.toString(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      })
+      const response = await fetch(
+        `${getApiBaseUrl()}/list-merchant-transfers`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(continuationToken ? { continuationToken } : {}),
+        }
+      )
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

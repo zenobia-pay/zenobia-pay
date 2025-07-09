@@ -4,6 +4,8 @@ import {
   useContext,
   createResource,
   JSX,
+  createSignal,
+  createMemo,
 } from "solid-js"
 import { api } from "../services/api"
 import type {
@@ -12,6 +14,7 @@ import type {
   CheckManualOrdersConfigResponse,
   SetupManualOrdersResponse,
   ListOrdersResponse,
+  MerchantTransfer,
 } from "../types/api"
 
 // Define M2M credential type
@@ -25,6 +28,8 @@ interface MerchantContextValue {
   merchantConfigLoading: () => boolean
   merchantTransfers: () => MerchantTransferResponse | undefined
   merchantTransfersLoading: () => boolean
+  allMerchantTransfers: () => MerchantTransfer[]
+  hasMoreTransfers: () => boolean
   m2mCredentials: () => M2mCredential[]
   m2mCredentialsLoading: () => boolean
   manualOrdersConfig: () => CheckManualOrdersConfigResponse | undefined
@@ -34,6 +39,7 @@ interface MerchantContextValue {
   ordersError: () => Error | undefined
   refetchMerchantConfig: () => Promise<void>
   refetchMerchantTransfers: () => Promise<void>
+  loadMoreTransfers: () => Promise<void>
   refetchM2mCredentials: () => Promise<void>
   refetchManualOrdersConfig: () => Promise<void>
   refetchOrders: () => Promise<void>
@@ -54,6 +60,13 @@ export const useMerchant = () => useContext(MerchantContext)
 export const MerchantProvider: Component<{ children: JSX.Element }> = (
   props
 ) => {
+  // State for paginated merchant transfers
+  const [allTransfers, setAllTransfers] = createSignal<MerchantTransfer[]>([])
+  const [currentContinuationToken, setCurrentContinuationToken] = createSignal<
+    string | undefined
+  >(undefined)
+  const [isLoadingMore, setIsLoadingMore] = createSignal(false)
+
   // Merchant config resource
   const [merchantConfig, { refetch: refetchMerchantConfig }] =
     createResource<GetMerchantConfigResponse>(async () => {
@@ -65,16 +78,25 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
       }
     })
 
-  // Merchant transfers resource
+  // Merchant transfers resource (first page only)
   const [merchantTransfers, { refetch: refetchMerchantTransfers }] =
     createResource<MerchantTransferResponse>(async () => {
       try {
-        return await api.listMerchantTransfers()
+        const response = await api.listMerchantTransfers()
+        // Initialize allTransfers with the first page
+        setAllTransfers(response.items || [])
+        setCurrentContinuationToken(response.continuationToken)
+        return response
       } catch (err) {
         console.error("Error fetching merchant transfers:", err)
         return {} as MerchantTransferResponse
       }
     })
+
+  // Computed values for pagination
+  const hasMoreTransfers = createMemo(() => {
+    return !!currentContinuationToken()
+  })
 
   // M2M credentials resource
   const [m2mCredentials, { refetch: refetchM2mCredentials }] = createResource<
@@ -110,6 +132,28 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         return {} as ListOrdersResponse
       }
     })
+
+  // Load more transfers function
+  const loadMoreTransfers = async () => {
+    if (isLoadingMore() || !hasMoreTransfers()) return
+    console.log("Loading more transfers")
+
+    setIsLoadingMore(true)
+    try {
+      const continuationToken = currentContinuationToken()
+      if (!continuationToken) return
+
+      const nextPage = await api.listMerchantTransfers(continuationToken)
+
+      // Add new transfers to the existing list
+      setAllTransfers((prev) => [...prev, ...(nextPage.items || [])])
+      setCurrentContinuationToken(nextPage.continuationToken)
+    } catch (err) {
+      console.error("Error loading more transfers:", err)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   // Generate new M2M credentials
   const generateM2mCredentials = async () => {
@@ -151,6 +195,8 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         merchantConfigLoading: () => merchantConfig.loading,
         merchantTransfers: () => merchantTransfers(),
         merchantTransfersLoading: () => merchantTransfers.loading,
+        allMerchantTransfers: () => allTransfers(),
+        hasMoreTransfers,
         m2mCredentials: () => m2mCredentials() || [],
         m2mCredentialsLoading: () => m2mCredentials.loading,
         manualOrdersConfig: () => manualOrdersConfig(),
@@ -164,6 +210,7 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         refetchMerchantTransfers: async () => {
           await refetchMerchantTransfers()
         },
+        loadMoreTransfers,
         refetchM2mCredentials: async () => {
           await refetchM2mCredentials()
         },

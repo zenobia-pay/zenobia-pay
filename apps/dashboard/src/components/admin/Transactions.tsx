@@ -5,6 +5,8 @@ import {
   createMemo,
   createSignal,
   createEffect,
+  onMount,
+  onCleanup,
 } from "solid-js"
 import { TransferStatus, GetMerchantTransferResponse } from "../../types/api"
 import { useMerchant } from "../../context/MerchantContext"
@@ -35,6 +37,41 @@ const Transactions: Component = () => {
     null
   )
   const [loadingOrderDetails, setLoadingOrderDetails] = createSignal(false)
+
+  // Auto-load more on scroll
+  const handleScroll = (event: Event) => {
+    const target = event.target as HTMLElement
+    if (
+      merchant.hasMoreTransfers() &&
+      !merchant.merchantTransfersLoading() &&
+      activeSubtab() === "list"
+    ) {
+      const scrollTop = target.scrollTop
+      const clientHeight = target.clientHeight
+      const scrollHeight = target.scrollHeight
+
+      // Load more when user is within 200px of the bottom
+      if (scrollTop + clientHeight >= scrollHeight - 200) {
+        merchant.loadMoreTransfers()
+      }
+    }
+  }
+
+  // Add scroll listener on mount, remove on cleanup
+  onMount(() => {
+    // Find the main content element that has overflow-y-auto
+    const mainElement = document.querySelector('main[class*="overflow-y-auto"]')
+    if (mainElement) {
+      mainElement.addEventListener("scroll", handleScroll)
+    }
+  })
+
+  onCleanup(() => {
+    const mainElement = document.querySelector('main[class*="overflow-y-auto"]')
+    if (mainElement) {
+      mainElement.removeEventListener("scroll", handleScroll)
+    }
+  })
 
   const activeSubtab = () => {
     const searchParams = new URLSearchParams(location.search)
@@ -132,13 +169,13 @@ const Transactions: Component = () => {
   const filteredTransfers = createMemo(() => {
     if (
       merchant.merchantTransfersLoading() ||
-      !merchant.merchantTransfers() ||
-      !merchant.merchantTransfers()?.items
+      !merchant.allMerchantTransfers() ||
+      merchant.allMerchantTransfers().length === 0
     ) {
       return []
     }
 
-    const transfers = merchant.merchantTransfers()!.items
+    const transfers = merchant.allMerchantTransfers()
 
     if (includeNotStarted()) {
       return transfers
@@ -153,8 +190,8 @@ const Transactions: Component = () => {
   const stats = createMemo(() => {
     if (
       merchant.merchantTransfersLoading() ||
-      !merchant.merchantTransfers() ||
-      !merchant.merchantTransfers()?.items
+      !merchant.allMerchantTransfers() ||
+      merchant.allMerchantTransfers().length === 0
     ) {
       return {
         totalAmount: 0,
@@ -649,6 +686,48 @@ const Transactions: Component = () => {
             </tbody>
           </table>
         </div>
+
+        {/* Loading indicator for auto-load */}
+        <Show
+          when={
+            merchant.merchantTransfersLoading() && merchant.hasMoreTransfers()
+          }
+        >
+          <div class="mt-6 flex justify-center">
+            <div class="inline-flex items-center px-4 py-2 text-sm text-gray-500">
+              <svg
+                class="animate-spin -ml-1 mr-3 h-5 w-5 text-gray-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Loading more transfers...
+            </div>
+          </div>
+        </Show>
+
+        {/* End of transfers indicator */}
+        <Show
+          when={!merchant.hasMoreTransfers() && filteredTransfers().length > 0}
+        >
+          <div class="mt-6 flex justify-center">
+            <div class="text-sm text-gray-500">No more transfers to load</div>
+          </div>
+        </Show>
       </Show>
     </div>
   )
