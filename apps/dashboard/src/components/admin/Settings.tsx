@@ -19,6 +19,9 @@ const Settings: Component = () => {
   const [webhookUrl, setWebhookUrl] = createSignal("")
   const [editingWebhook, setEditingWebhook] = createSignal(false)
   const [merchantDisplayName, setMerchantDisplayName] = createSignal("")
+  const [notificationEmail, setNotificationEmail] = createSignal("")
+  const [editingNotificationEmail, setEditingNotificationEmail] =
+    createSignal(false)
 
   // Update form state when merchant config changes
   const updateFormState = () => {
@@ -29,6 +32,8 @@ const Settings: Component = () => {
       if (config.webhookUrl) setWebhookUrl(config.webhookUrl)
       if (config.merchantDisplayName)
         setMerchantDisplayName(config.merchantDisplayName)
+      if (config.notificationEmail)
+        setNotificationEmail(config.notificationEmail)
     }
   }
 
@@ -39,14 +44,44 @@ const Settings: Component = () => {
     }
   })
 
-  const handleWebhookSave = () => {
-    setEditingWebhook(false)
+  const handleWebhookSave = async () => {
+    try {
+      const updateRequest: UpdateMerchantRequest = {
+        webhookUrl: webhookUrl(),
+      }
+
+      await api.updateMerchantConfig(updateRequest)
+      toast.success("Webhook URL updated successfully")
+      setEditingWebhook(false)
+      // Refetch merchant config to get latest data
+      await merchant.refetchMerchantConfig()
+    } catch (error) {
+      console.error("Error updating webhook URL:", error)
+      toast.error("Failed to update webhook URL")
+    }
+  }
+
+  const handleNotificationEmailSave = async () => {
+    try {
+      const updateRequest: UpdateMerchantRequest = {
+        notificationEmail: notificationEmail(),
+      }
+
+      await api.updateMerchantConfig(updateRequest)
+      toast.success("Notification email updated successfully")
+      setEditingNotificationEmail(false)
+      // Refetch merchant config to get latest data
+      await merchant.refetchMerchantConfig()
+    } catch (error) {
+      console.error("Error updating notification email:", error)
+      toast.error("Failed to update notification email")
+    }
   }
 
   const handleDisableManualOrders = async () => {
     if (
       !confirm(
-        "Are you sure you want to disable manual orders? This will remove your API credentials and you'll need to reconfigure them to use manual orders again."
+        "Are you sure you want to disable manual orders? This will disable all existing payment links, and you'll need to reconfigure to use manual orders again."
       )
     ) {
       return
@@ -97,6 +132,8 @@ const Settings: Component = () => {
       if (merchantDescription())
         updateRequest.merchantDescription = merchantDescription()
       if (webhookUrl()) updateRequest.webhookUrl = webhookUrl()
+      if (notificationEmail())
+        updateRequest.notificationEmail = notificationEmail()
 
       // Only make the API call if there's at least one field to update
       if (Object.keys(updateRequest).length > 0) {
@@ -188,12 +225,75 @@ const Settings: Component = () => {
 
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <div class="flex items-center">
-                          <span>Webhook URL</span>
-                          <span class="ml-2 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-                            Developer
-                          </span>
+                        Notification Email
+                      </label>
+                      <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg
+                            class="h-5 w-5 text-gray-400"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"
+                            />
+                          </svg>
                         </div>
+                        {editingNotificationEmail() ? (
+                          <div class="flex">
+                            <input
+                              type="email"
+                              class="pl-10 form-input shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 block w-full px-4 py-2 border border-gray-300 rounded-l-md text-gray-700 transition duration-150"
+                              value={notificationEmail()}
+                              onInput={(e) =>
+                                setNotificationEmail(e.currentTarget.value)
+                              }
+                              placeholder="notifications@yourdomain.com"
+                            />
+                            <button
+                              onClick={handleNotificationEmailSave}
+                              class="px-4 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 transition duration-150"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        ) : (
+                          <div
+                            onClick={() => setEditingNotificationEmail(true)}
+                            class="pl-10 flex items-center w-full px-4 py-2 border border-gray-200 bg-gray-50 rounded-md text-gray-500 cursor-pointer hover:bg-gray-100 transition duration-150"
+                          >
+                            {notificationEmail() ||
+                              "Click to set notification email"}
+                            <svg
+                              class="ml-auto h-4 w-4 text-gray-400"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <p class="mt-1 text-xs text-gray-500">
+                        Receive email notifications for payment status updates
+                      </p>
+                    </div>
+
+                    <div class="form-group">
+                      <label class="block text-sm font-medium text-gray-700 mb-2">
+                        Webhook URL
                       </label>
                       <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -261,12 +361,7 @@ const Settings: Component = () => {
                     {/* Manual Orders Configuration Section */}
                     <div class="form-group">
                       <label class="block text-sm font-medium text-gray-700 mb-2">
-                        <div class="flex items-center">
-                          <span>Manual Orders</span>
-                          <span class="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                            API
-                          </span>
-                        </div>
+                        Manual Orders
                       </label>
                       <div class="bg-gray-50 border border-gray-200 rounded-md p-4">
                         <Show when={!merchant.manualOrdersConfigLoading()}>

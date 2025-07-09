@@ -743,4 +743,40 @@ export const api = {
       return json as { success: boolean; message?: string }
     })
   },
+
+  getOrderDetailsForTransaction: async (
+    transactionId: string
+  ): Promise<{
+    orderId: string
+    merchantId: string
+    amount: number
+    description: string | null
+    status: string
+    transferRequestId: string | null
+    merchantDisplayName: string | null
+    createdAt: string
+    updatedAt: string
+  }> => {
+    return callApi(async (token) => {
+      const response = await fetch(
+        `/get-order-details-for-transaction?transactionId=${encodeURIComponent(
+          transactionId
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("get order details for transaction response", json)
+      return json
+    })
+  },
 }

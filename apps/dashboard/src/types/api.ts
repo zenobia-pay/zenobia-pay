@@ -32,6 +32,7 @@ export interface UpdateMerchantRequest {
   merchantDescription?: string
   merchantLocation?: Location
   webhookUrl?: string
+  notificationEmail?: string
 }
 
 export interface WaitlistEntry {
@@ -119,6 +120,7 @@ export interface GetMerchantConfigResponse {
   merchantDescription?: string
   webhookUrl?: string
   merchantLocation?: Location
+  notificationEmail?: string
 }
 
 // Define GraphQL operation types
