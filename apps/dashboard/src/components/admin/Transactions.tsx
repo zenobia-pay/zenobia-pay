@@ -131,9 +131,9 @@ const Transactions: Component = () => {
   // Get user-friendly status display
   const getStatusDisplay = (status: TransferStatus) => {
     switch (status) {
-      case TransferStatus.IN_FLIGHT:
+      case TransferStatus.PAID:
         return "PAID"
-      case TransferStatus.COMPLETED:
+      case TransferStatus.SETTLED:
         return "SETTLED"
       case TransferStatus.FAILED:
         return "FAILED"
@@ -149,9 +149,9 @@ const Transactions: Component = () => {
   // Get status badge styling
   const getStatusBadgeClass = (status: TransferStatus) => {
     switch (status) {
-      case TransferStatus.IN_FLIGHT:
+      case TransferStatus.PAID:
         return "bg-green-100 text-green-800"
-      case TransferStatus.COMPLETED:
+      case TransferStatus.SETTLED:
         return "bg-blue-100 text-blue-800"
       case TransferStatus.FAILED:
         return "bg-red-100 text-red-800"
@@ -214,10 +214,10 @@ const Transactions: Component = () => {
       const amount = centsToDollars(transfer.amount || 0)
       totalAmount += amount
 
-      if (transfer.status === TransferStatus.IN_FLIGHT) {
+      if (transfer.status === TransferStatus.PAID) {
         pendingAmount += amount
         pendingCount++
-      } else if (transfer.status === TransferStatus.COMPLETED) {
+      } else if (transfer.status === TransferStatus.SETTLED) {
         completedAmount += amount
         completedCount++
       }

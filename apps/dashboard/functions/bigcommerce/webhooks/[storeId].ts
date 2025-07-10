@@ -178,7 +178,7 @@ async function handleWebhook(
     }
 
     // In flight means to create the order in BigCommerce
-    if (body.status === "IN_FLIGHT") {
+    if (body.status === "PAID") {
       // Get the checkout ID from KV storage
       const checkoutId = await env.TRANSFER_MAPPINGS.get(body.transferRequestId)
       if (!checkoutId) {

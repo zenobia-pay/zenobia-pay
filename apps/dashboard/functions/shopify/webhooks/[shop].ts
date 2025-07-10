@@ -213,7 +213,7 @@ async function handleWebhook(
 
     console.log("sessionId:", sessionId)
 
-    if (body.status === "IN_FLIGHT" || body.status === "COMPLETED") {
+    if (body.status === "PAID" || body.status === "SETTLED") {
       try {
         const result = await resolvePaymentSession({
           shop,

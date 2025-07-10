@@ -60,6 +60,13 @@ export const GlobalSearch: Component = () => {
       category: "Payments",
     },
     {
+      id: "manual-orders",
+      name: "Manual Orders",
+      description: "Create and manage manual payment orders",
+      path: "?tab=manual-orders",
+      category: "Payments",
+    },
+    {
       id: "settings",
       name: "Settings",
       description: "Manage account settings and preferences",

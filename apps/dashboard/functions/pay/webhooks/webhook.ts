@@ -187,8 +187,8 @@ async function handleWebhook(request: Request, env: Env): Promise<Response> {
     let orderStatus = "pending"
 
     switch (body.status) {
-      case "COMPLETED":
-      case "IN_FLIGHT":
+      case "SETTLED":
+      case "PAID":
         orderStatus = "paid"
         break
       case "FAILED":

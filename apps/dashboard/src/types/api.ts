@@ -24,8 +24,8 @@ export interface StatementItem {
 
 export enum TransferStatus {
   NOT_STARTED = "NOT_STARTED",
-  IN_FLIGHT = "IN_FLIGHT",
-  COMPLETED = "COMPLETED",
+  PAID = "PAID",
+  SETTLED = "SETTLED",
   FAILED = "FAILED",
   CANCELLED = "CANCELLED",
 }

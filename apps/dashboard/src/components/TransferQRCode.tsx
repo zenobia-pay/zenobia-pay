@@ -105,12 +105,12 @@ const TransferQRCode: Component<TransferQRCodeProps> = (props) => {
   // Function to get badge color based on status
   const getBadgeClass = () => {
     switch (transferStatus()) {
-      case TransferStatus.COMPLETED:
+      case TransferStatus.SETTLED:
         return "badge-success"
       case TransferStatus.FAILED:
       case TransferStatus.CANCELLED:
         return "badge-error"
-      case TransferStatus.IN_FLIGHT:
+      case TransferStatus.PAID:
         return "badge-info"
       default:
         return "badge-ghost"
