@@ -1,0 +1,24 @@
+name = "admin-console"
+compatibility_date = "2025-01-01"
+main = ".output/server/index.mjs"
+
+# Update this to your desired domain
+# routes = [{ pattern = "admin.zenobiapay.com", custom_domain = true }]
+
+[dev]
+port = 3001
+local_protocol = "http"
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+
+[site]
+bucket = ".output/public"
+
+# Auth0 environment variables
+[vars]
+ACCOUNTS_DOMAIN = "https://accounts.zenobiapay.com"
+ACCOUNTS_AUDIENCE = "https://admin-console.zenobiapay.com"
+VITE_AUTH0_DOMAIN = "accounts.zenobiapay.com"
+VITE_AUTH0_CLIENT_ID = "AAW7JSFJDiyrDOPQErOvxySNp4p3Vriw"
