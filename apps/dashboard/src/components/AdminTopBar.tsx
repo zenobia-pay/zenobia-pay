@@ -2,12 +2,12 @@ import { Component, createSignal, onMount, onCleanup } from "solid-js"
 import { authService } from "../services/auth"
 import { GlobalSearch } from "./GlobalSearch"
 import { useAdminLayout } from "./AdminLayout"
-import { toggleTestMode, getTestMode } from "../services/api"
+// import { toggleTestMode, getTestMode } from "../services/api"
 import { useMerchant } from "../context/MerchantContext"
 
 export const AdminTopBar: Component = () => {
   const [showProfileMenu, setShowProfileMenu] = createSignal(false)
-  const [isTestMode, setIsTestMode] = createSignal(getTestMode())
+  // const [isTestMode, setIsTestMode] = createSignal(getTestMode())
   const adminLayout = useAdminLayout()
   const merchant = useMerchant()
 
@@ -51,21 +51,21 @@ export const AdminTopBar: Component = () => {
     }
   }
 
-  const handleTestModeToggle = async () => {
-    toggleTestMode()
-    setIsTestMode(getTestMode())
-    // Refresh all merchant data
-    await Promise.all([
-      merchant.refetchMerchantConfig(),
-      merchant.refetchMerchantTransfers(),
-      merchant.refetchM2mCredentials(),
-    ])
-  }
+  // const handleTestModeToggle = async () => {
+  //   toggleTestMode()
+  //   setIsTestMode(getTestMode())
+  //   // Refresh all merchant data
+  //   await Promise.all([
+  //     merchant.refetchMerchantConfig(),
+  //     merchant.refetchMerchantTransfers(),
+  //     merchant.refetchM2mCredentials(),
+  //   ])
+  // }
 
   return (
     <div class="sticky top-0 z-30 w-full shadow-sm">
-      {/* Test Mode Banner - Only visible when in test mode */}
-      {isTestMode() && (
+      {/* Test Mode Banner - Hidden for now */}
+      {/* {isTestMode() && (
         <div class="bg-yellow-400 border-b border-yellow-500 px-4 py-2">
           <div class="max-w-screen-2xl mx-auto flex items-center justify-center">
             <div class="flex items-center space-x-2">
@@ -89,7 +89,7 @@ export const AdminTopBar: Component = () => {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Main Navigation */}
       <div class="bg-white border-b h-14 border-gray-200">
@@ -125,8 +125,8 @@ export const AdminTopBar: Component = () => {
 
           {/* Right side - Actions */}
           <div class="flex items-center space-x-2 lg:space-x-4">
-            {/* Test Mode Toggle - Hidden on very small screens, compact on mobile */}
-            <div class="hidden sm:block">
+            {/* Test Mode Toggle - Hidden for now */}
+            {/* <div class="hidden sm:block">
               <button
                 onClick={handleTestModeToggle}
                 class={`px-2 py-1 lg:px-3 lg:py-1 text-xs font-medium rounded-md transition-colors ${
@@ -160,7 +160,7 @@ export const AdminTopBar: Component = () => {
                   </span>
                 </div>
               </button>
-            </div>
+            </div> */}
 
             {/* Profile Dropdown */}
             <div class="relative" data-profile-dropdown>

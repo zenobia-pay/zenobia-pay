@@ -61,6 +61,9 @@ export interface MerchantTransfer {
   customerName?: string
   createdAt: string
   updatedAt: string
+  creationTime: string
+  fee?: number | null
+  payoutTime?: string | null
 }
 
 export interface MerchantTransferResponse {
@@ -95,6 +98,9 @@ export interface GetMerchantTransferResponse {
   status: TransferStatus
   statementItems: StatementItem[]
   statusMessage?: string
+  creationTime: string
+  fee?: number | null
+  payoutTime?: string | null
 }
 
 export interface CreateM2mCredentialsResponse {
