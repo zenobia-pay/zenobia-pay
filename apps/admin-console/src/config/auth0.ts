@@ -11,7 +11,7 @@ export const auth0Config = {
   domain: "accounts.zenobiapay.com",
   clientId: "AAW7JSFJDiyrDOPQErOvxySNp4p3Vriw",
   redirectUri: getRedirectUri(),
-  audience: `https://dashboard.zenobiapay.com`, // Using the same audience as dashboard
+  audience: `https://admin.zenobiapay.com`,
   scope: "openid profile email",
 };
 
