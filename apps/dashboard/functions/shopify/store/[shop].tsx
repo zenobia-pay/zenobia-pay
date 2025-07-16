@@ -1,5 +1,4 @@
 import { Env } from "../../types"
-import { decrypt } from "../../utils/encryption"
 
 interface CheckoutSession {
   shop: string
@@ -17,6 +16,29 @@ interface ShopifyStore {
   access_token: string
   zenobia_client_id: string
   zenobia_client_secret: string
+}
+
+// Function to escape HTML entities to prevent XSS
+function escapeHtml(text: string): string {
+  const map: { [key: string]: string } = {
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#x27;",
+    "/": "&#x2F;",
+  }
+  return text.replace(/[&<>"'/]/g, (m) => map[m])
+}
+
+// Function to safely escape JSON for embedding in HTML
+function escapeJsonForHtml(obj: Record<string, unknown>): string {
+  return JSON.stringify(obj)
+    .replace(/&/g, "\\u0026")
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/"/g, "\\u0022")
+    .replace(/'/g, "\\u0027")
 }
 
 async function getAccessToken(
@@ -151,14 +173,23 @@ export async function onRequest(request: Request, env: Env) {
   console.log("transferData", transferData)
   // Replace placeholders in the template
   const template = html
-    .replace("{{shop}}", shop)
-    .replace("{{session}}", JSON.stringify(session))
-    .replace("{{sessionId}}", id)
-    .replace("{{transferRequestId}}", transferData.transferRequestId)
+    .replace("{{shop}}", escapeHtml(shop))
+    .replace(
+      "{{session}}",
+      escapeJsonForHtml(session as unknown as Record<string, unknown>)
+    )
+    .replace("{{sessionId}}", escapeHtml(id))
+    .replace(
+      "{{transferRequestId}}",
+      escapeHtml(transferData.transferRequestId)
+    )
     .replace("{{amountCents}}", amountCents.toString())
-    .replace("{{transferSignature}}", transferData.signature || "")
+    .replace("{{transferSignature}}", escapeHtml(transferData.signature || ""))
     .replace("{{transferExpiry}}", transferData.expiry?.toString() || "")
-    .replace("{{transferMerchantId}}", transferData.merchantId || "")
+    .replace(
+      "{{transferMerchantId}}",
+      escapeHtml(transferData.merchantId || "")
+    )
 
   return new Response(template, {
     headers: {
