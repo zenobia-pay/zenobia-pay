@@ -24,6 +24,8 @@ import type {
   UpdateOrderRequest,
   UpdateOrderResponse,
   DeleteOrderResponse,
+  TransferStatisticsRequest,
+  TransferStatisticsResponse,
 } from "../types/api"
 import type {
   CreateLinkTokenResponse,
@@ -775,6 +777,32 @@ export const api = {
       const json = await response.json()
       console.log("get order details for transaction response", json)
       return json
+    })
+  },
+
+  getTransferStatistics: async (
+    params: TransferStatisticsRequest
+  ): Promise<TransferStatisticsResponse> => {
+    return callApi(async (token) => {
+      const response = await fetch(
+        `${getApiBaseUrl()}/get-transfer-statistics`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(params),
+        }
+      )
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      console.log("transfer statistics response", json)
+      return json as TransferStatisticsResponse
     })
   },
 }

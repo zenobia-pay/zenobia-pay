@@ -7,6 +7,7 @@ import {
   createEffect,
   onMount,
   onCleanup,
+  on,
 } from "solid-js"
 import { TransferStatus, GetMerchantTransferResponse } from "../../types/api"
 import { useMerchant } from "../../context/MerchantContext"
@@ -201,135 +202,22 @@ const Transactions: Component = () => {
     )
   })
 
-  // Get date range based on filter
-  const getDateRange = () => {
-    const now = new Date()
-    const startDate = new Date()
-
-    switch (dateFilter()) {
-      case "today": {
-        startDate.setHours(0, 0, 0, 0)
-        return { start: startDate, end: now }
+  // Fetch transfer statistics when date filter changes
+  createEffect(
+    on(
+      () => [dateFilter(), customStartDate(), customEndDate()],
+      () => {
+        const filterParams = {
+          filterType: dateFilter(),
+          customStartDate:
+            dateFilter() === "custom" ? customStartDate() : undefined,
+          customEndDate:
+            dateFilter() === "custom" ? customEndDate() : undefined,
+        }
+        merchant.fetchTransferStatistics(filterParams)
       }
-      case "yesterday": {
-        startDate.setDate(startDate.getDate() - 1)
-        startDate.setHours(0, 0, 0, 0)
-        const endDate = new Date(startDate)
-        endDate.setHours(23, 59, 59, 999)
-        return { start: startDate, end: endDate }
-      }
-      case "last7days": {
-        startDate.setDate(startDate.getDate() - 7)
-        return { start: startDate, end: now }
-      }
-      case "last30days": {
-        startDate.setDate(startDate.getDate() - 30)
-        return { start: startDate, end: now }
-      }
-      case "last90days": {
-        startDate.setDate(startDate.getDate() - 90)
-        return { start: startDate, end: now }
-      }
-      case "custom": {
-        const customStart = customStartDate()
-          ? new Date(customStartDate())
-          : null
-        const customEnd = customEndDate() ? new Date(customEndDate()) : null
-        return { start: customStart, end: customEnd }
-      }
-      default:
-        return { start: null, end: null }
-    }
-  }
-
-  // Filter transfers based on date range
-  const dateFilteredTransfers = createMemo(() => {
-    const transfers = filteredTransfers()
-    const { start, end } = getDateRange()
-
-    if (!start && !end) return transfers
-
-    return transfers.filter(() => {
-      // For now, we'll use a simple approach since we don't have creation dates
-      // In a real implementation, you'd filter by actual transfer creation dates
-      // This is a placeholder that shows all transfers when date filtering is applied
-      return true
-    })
-  })
-
-  // Calculate stats from filtered transfers data
-  const stats = createMemo(() => {
-    if (
-      merchant.merchantTransfersLoading() ||
-      !merchant.allMerchantTransfers() ||
-      merchant.allMerchantTransfers().length === 0
-    ) {
-      return {
-        totalGrossAmount: 0,
-        totalNetAmount: 0,
-        pendingGrossAmount: 0,
-        pendingNetAmount: 0,
-        completedGrossAmount: 0,
-        completedNetAmount: 0,
-        pendingCount: 0,
-        completedCount: 0,
-        totalFees: 0,
-      }
-    }
-
-    const transfers = dateFilteredTransfers()
-
-    // Calculate amounts
-    let totalGrossAmount = 0
-    let totalNetAmount = 0
-    let pendingGrossAmount = 0
-    let pendingNetAmount = 0
-    let completedGrossAmount = 0
-    let completedNetAmount = 0
-    let pendingCount = 0
-    let completedCount = 0
-    let totalFees = 0
-
-    transfers.forEach((transfer) => {
-      const grossAmount = centsToDollars(transfer.amount || 0)
-      const fee =
-        transfer.fee !== null && transfer.fee !== undefined
-          ? centsToDollars(transfer.fee)
-          : 0
-      const netAmount = grossAmount - fee
-
-      // Add to totals
-      totalGrossAmount += grossAmount
-      totalNetAmount += netAmount
-
-      // Add fees if they exist
-      if (transfer.fee !== null && transfer.fee !== undefined) {
-        totalFees += fee
-      }
-
-      if (transfer.status === TransferStatus.PAID) {
-        pendingGrossAmount += grossAmount
-        pendingNetAmount += netAmount
-        pendingCount++
-      } else if (transfer.status === TransferStatus.SETTLED) {
-        completedGrossAmount += grossAmount
-        completedNetAmount += netAmount
-        completedCount++
-      }
-    })
-
-    return {
-      totalGrossAmount,
-      totalNetAmount,
-      pendingGrossAmount,
-      pendingNetAmount,
-      completedGrossAmount,
-      completedNetAmount,
-      pendingCount,
-      completedCount,
-      totalFees,
-    }
-  })
+    )
+  )
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -350,6 +238,59 @@ const Transactions: Component = () => {
       minute: "2-digit",
     })
   }
+
+  // Calculate stats from transfer statistics API
+  const stats = createMemo(() => {
+    if (
+      merchant.transferStatisticsLoading() ||
+      !merchant.transferStatistics()
+    ) {
+      return {
+        totalGrossAmount: 0,
+        totalNetAmount: 0,
+        pendingGrossAmount: 0,
+        pendingNetAmount: 0,
+        completedGrossAmount: 0,
+        completedNetAmount: 0,
+        totalFees: 0,
+      }
+    }
+
+    const stats = merchant.transferStatistics()!
+
+    // Calculate metrics from API statistics
+    // amountPaid = total amount that has been paid (includes settled + pending)
+    // amountSettled = total amount that has been settled
+    // fee = total fees across all transfers
+
+    const totalGrossAmount = centsToDollars(stats.amountPaid) // Total amount paid
+    const totalNetAmount = centsToDollars(stats.amountPaid - stats.fee) // Total net after fees
+    const pendingGrossAmount = centsToDollars(
+      stats.amountPaid - stats.amountSettled
+    ) // Pending = paid - settled
+    const pendingNetAmount = centsToDollars(
+      stats.amountPaid -
+        stats.amountSettled -
+        (stats.fee * (stats.amountPaid - stats.amountSettled)) /
+          stats.amountPaid
+    )
+    const completedGrossAmount = centsToDollars(stats.amountSettled) // Settled amount
+    const completedNetAmount = centsToDollars(
+      stats.amountSettled - (stats.fee * stats.amountSettled) / stats.amountPaid
+    )
+
+    const totalFees = centsToDollars(stats.fee)
+
+    return {
+      totalGrossAmount,
+      totalNetAmount,
+      pendingGrossAmount,
+      pendingNetAmount,
+      completedGrossAmount,
+      completedNetAmount,
+      totalFees,
+    }
+  })
 
   return (
     <div>
@@ -826,9 +767,11 @@ const Transactions: Component = () => {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
             <div class="bg-white rounded-lg shadow overflow-hidden">
               <div class="p-5">
-                <h3 class="text-sm font-medium text-gray-500 mb-2">Settled</h3>
+                <h3 class="text-sm font-medium text-gray-500 mb-2">
+                  Settled Amount
+                </h3>
                 <Show
-                  when={!merchant.merchantTransfersLoading()}
+                  when={!merchant.transferStatisticsLoading()}
                   fallback={
                     <p class="text-2xl font-semibold text-gray-900">
                       Loading...
@@ -836,26 +779,19 @@ const Transactions: Component = () => {
                   }
                 >
                   <p class="text-2xl font-semibold text-gray-900">
-                    {formatCurrency(stats().completedNetAmount)}
+                    {formatCurrency(stats().completedGrossAmount)}
                   </p>
-                  <p class="text-sm text-blue-600 mt-2">
-                    {stats().completedCount}{" "}
-                    {stats().completedCount === 1 ? "transfer" : "transfers"}{" "}
-                    settled
-                  </p>
-                  <p class="text-xs text-gray-500 mt-1">
-                    Gross: {formatCurrency(stats().completedGrossAmount)}
-                  </p>
+                  <p class="text-sm text-blue-600 mt-2">Settled amount</p>
                 </Show>
               </div>
             </div>
             <div class="bg-white rounded-lg shadow overflow-hidden">
               <div class="p-5">
                 <h3 class="text-sm font-medium text-gray-500 mb-2">
-                  Pending Payout
+                  Pending Amount
                 </h3>
                 <Show
-                  when={!merchant.merchantTransfersLoading()}
+                  when={!merchant.transferStatisticsLoading()}
                   fallback={
                     <p class="text-2xl font-semibold text-gray-900">
                       Loading...
@@ -863,16 +799,9 @@ const Transactions: Component = () => {
                   }
                 >
                   <p class="text-2xl font-semibold text-gray-900">
-                    {formatCurrency(stats().pendingNetAmount)}
+                    {formatCurrency(stats().pendingGrossAmount)}
                   </p>
-                  <p class="text-sm text-green-600 mt-2">
-                    {stats().pendingCount}{" "}
-                    {stats().pendingCount === 1 ? "transfer" : "transfers"}{" "}
-                    pending
-                  </p>
-                  <p class="text-xs text-gray-500 mt-1">
-                    Gross: {formatCurrency(stats().pendingGrossAmount)}
-                  </p>
+                  <p class="text-sm text-green-600 mt-2">Pending amount</p>
                 </Show>
               </div>
             </div>
@@ -882,7 +811,7 @@ const Transactions: Component = () => {
                   Total Net
                 </h3>
                 <Show
-                  when={!merchant.merchantTransfersLoading()}
+                  when={!merchant.transferStatisticsLoading()}
                   fallback={
                     <p class="text-2xl font-semibold text-gray-900">
                       Loading...
@@ -895,9 +824,6 @@ const Transactions: Component = () => {
                   <p class="text-sm text-indigo-600 mt-2">
                     Net amount after fees
                   </p>
-                  <p class="text-xs text-gray-500 mt-1">
-                    Gross: {formatCurrency(stats().totalGrossAmount)}
-                  </p>
                 </Show>
               </div>
             </div>
@@ -907,7 +833,7 @@ const Transactions: Component = () => {
                   Total Fees
                 </h3>
                 <Show
-                  when={!merchant.merchantTransfersLoading()}
+                  when={!merchant.transferStatisticsLoading()}
                   fallback={
                     <p class="text-2xl font-semibold text-gray-900">
                       Loading...

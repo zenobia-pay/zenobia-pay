@@ -316,3 +316,15 @@ export interface SetupManualOrdersResponse {
   message?: string
   error?: string
 }
+
+export interface TransferStatisticsRequest {
+  startTime?: string
+  endTime?: string
+}
+
+export interface TransferStatisticsResponse {
+  amountPaid: number
+  amountSettled: number
+  fee: number
+  transferCount: number
+}

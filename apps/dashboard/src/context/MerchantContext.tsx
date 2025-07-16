@@ -15,6 +15,8 @@ import type {
   SetupManualOrdersResponse,
   ListOrdersResponse,
   MerchantTransfer,
+  TransferStatisticsResponse,
+  TransferStatisticsRequest,
 } from "../types/api"
 
 // Define M2M credential type
@@ -37,12 +39,20 @@ interface MerchantContextValue {
   orders: () => ListOrdersResponse | undefined
   ordersLoading: () => boolean
   ordersError: () => Error | undefined
+  transferStatistics: () => TransferStatisticsResponse | undefined
+  transferStatisticsLoading: () => boolean
   refetchMerchantConfig: () => Promise<void>
   refetchMerchantTransfers: () => Promise<void>
   loadMoreTransfers: () => Promise<void>
   refetchM2mCredentials: () => Promise<void>
   refetchManualOrdersConfig: () => Promise<void>
   refetchOrders: () => Promise<void>
+  fetchTransferStatistics: (filterParams: {
+    filterType: string
+    customStartDate?: string
+    customEndDate?: string
+  }) => Promise<void>
+  clearTransferStatisticsCache: () => void
   generateM2mCredentials: () => Promise<{
     clientId: string
     clientSecret: string
@@ -133,6 +143,118 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
       }
     })
 
+  // Transfer statistics state with memoization
+  const [transferStatisticsCache, setTransferStatisticsCache] = createSignal<
+    Map<string, TransferStatisticsResponse>
+  >(new Map())
+  const [transferStatisticsLoading, setTransferStatisticsLoading] =
+    createSignal(false)
+  const [currentFilterParams, setCurrentFilterParams] = createSignal<
+    | {
+        filterType: string
+        customStartDate?: string
+        customEndDate?: string
+      }
+    | undefined
+  >(undefined)
+
+  // Helper function to create cache key from filter parameters
+  const createCacheKey = (filterParams: {
+    filterType: string
+    customStartDate?: string
+    customEndDate?: string
+  }): string => {
+    return JSON.stringify(filterParams)
+  }
+
+  // Helper function to convert filter params to API params
+  const convertFilterToApiParams = (filterParams: {
+    filterType: string
+    customStartDate?: string
+    customEndDate?: string
+  }): TransferStatisticsRequest => {
+    const now = new Date()
+    const beginningOfTime = new Date(2025, 0, 1) // January 1st, 2025
+    let startDate: Date
+    let endDate: Date
+
+    switch (filterParams.filterType) {
+      case "today":
+        startDate = new Date(now)
+        startDate.setHours(0, 0, 0, 0)
+        endDate = now
+        break
+      case "yesterday":
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 1)
+        startDate.setHours(0, 0, 0, 0)
+        endDate = new Date(startDate)
+        endDate.setHours(23, 59, 59, 999)
+        break
+      case "last7days":
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 7)
+        endDate = now
+        break
+      case "last30days":
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 30)
+        endDate = now
+        break
+      case "last90days":
+        startDate = new Date(now)
+        startDate.setDate(startDate.getDate() - 90)
+        endDate = now
+        break
+      case "yeartodate":
+        startDate = new Date(now.getFullYear(), 0, 1) // January 1st of current year
+        endDate = now
+        break
+      case "custom":
+        // For custom dates, validate and provide defaults
+        if (filterParams.customStartDate) {
+          startDate = new Date(filterParams.customStartDate)
+          if (isNaN(startDate.getTime())) {
+            startDate = beginningOfTime
+          }
+        } else {
+          startDate = beginningOfTime
+        }
+
+        if (filterParams.customEndDate) {
+          endDate = new Date(filterParams.customEndDate)
+          if (isNaN(endDate.getTime())) {
+            endDate = now
+          }
+        } else {
+          endDate = now
+        }
+        break
+      case "all":
+      default:
+        // For "all time", use beginning of time to now
+        startDate = beginningOfTime
+        endDate = now
+        break
+    }
+
+    return {
+      startTime: startDate.toISOString(),
+      endTime: endDate.toISOString(),
+    }
+  }
+
+  // Get transfer statistics from cache or current state
+  const transferStatistics = createMemo(() => {
+    const filterParams = currentFilterParams()
+    if (!filterParams) return undefined
+
+    const cacheKey = createCacheKey(filterParams)
+    const cached = transferStatisticsCache().get(cacheKey)
+    console.log("Cache lookup:", { filterParams, cacheKey, cached: !!cached })
+    return cached
+  })
+
   // Load more transfers function
   const loadMoreTransfers = async () => {
     if (isLoadingMore() || !hasMoreTransfers()) return
@@ -153,6 +275,47 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
     } finally {
       setIsLoadingMore(false)
     }
+  }
+
+  // Fetch transfer statistics function with memoization
+  const fetchTransferStatistics = async (filterParams: {
+    filterType: string
+    customStartDate?: string
+    customEndDate?: string
+  }) => {
+    console.log("Fetching transfer statistics for filter", filterParams)
+    const cacheKey = createCacheKey(filterParams)
+
+    // Check if we already have this data in cache
+    if (transferStatisticsCache().has(cacheKey)) {
+      setCurrentFilterParams(filterParams)
+      return
+    }
+
+    setTransferStatisticsLoading(true)
+    setCurrentFilterParams(filterParams)
+
+    try {
+      const apiParams = convertFilterToApiParams(filterParams)
+      console.log("API params", apiParams)
+      const stats = await api.getTransferStatistics(apiParams)
+      setTransferStatisticsCache((prev) => {
+        const newCache = new Map(prev)
+        newCache.set(cacheKey, stats)
+        return newCache
+      })
+    } catch (err) {
+      console.error("Error fetching transfer statistics:", err)
+    } finally {
+      setTransferStatisticsLoading(false)
+    }
+  }
+
+  // Clear transfer statistics cache
+  const clearTransferStatisticsCache = () => {
+    console.log("Clearing transfer statistics cache")
+    setTransferStatisticsCache(new Map())
+    setCurrentFilterParams(undefined)
   }
 
   // Generate new M2M credentials
@@ -204,11 +367,14 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         orders: () => orders(),
         ordersLoading: () => orders.loading,
         ordersError: () => orders.error,
+        transferStatistics: () => transferStatistics(),
+        transferStatisticsLoading: () => transferStatisticsLoading(),
         refetchMerchantConfig: async () => {
           await refetchMerchantConfig()
         },
         refetchMerchantTransfers: async () => {
           await refetchMerchantTransfers()
+          clearTransferStatisticsCache()
         },
         loadMoreTransfers,
         refetchM2mCredentials: async () => {
@@ -219,7 +385,10 @@ export const MerchantProvider: Component<{ children: JSX.Element }> = (
         },
         refetchOrders: async () => {
           await refetchOrders()
+          clearTransferStatisticsCache()
         },
+        fetchTransferStatistics,
+        clearTransferStatisticsCache,
         generateM2mCredentials,
         deleteM2mCredentials,
         setupManualOrders,

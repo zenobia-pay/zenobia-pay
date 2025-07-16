@@ -1,10 +1,6 @@
-import { createMemo, createSignal } from "solid-js"
+import { createMemo, createSignal, createEffect, on } from "solid-js"
 import { Show } from "solid-js"
-import {
-  TransferStatus,
-  CreateOrderResponse,
-  OrderStatus,
-} from "../../types/api"
+import { CreateOrderResponse, OrderStatus } from "../../types/api"
 import { useMerchant } from "../../context/MerchantContext"
 import { api } from "../../services/api"
 import { toast } from "solid-toast"
@@ -60,6 +56,42 @@ export const Home = () => {
     return Math.round(dollars * 100)
   }
 
+  // Fetch transfer statistics when period changes
+  createEffect(
+    on(
+      () => period(),
+      () => {
+        // Map period names to filter types
+        let filterType: string
+        switch (period()) {
+          case "Last 7 days":
+            filterType = "last7days"
+            break
+          case "Last 30 days":
+            filterType = "last30days"
+            break
+          case "Last 90 days":
+            filterType = "last90days"
+            break
+          case "Year to date":
+            filterType = "yeartodate"
+            break
+          case "All time":
+          default:
+            filterType = "all"
+            break
+        }
+
+        const filterParams = {
+          filterType,
+          customStartDate: undefined,
+          customEndDate: undefined,
+        }
+        merchant.fetchTransferStatistics(filterParams)
+      }
+    )
+  )
+
   // Function to handle order creation
   const handleCreateOrder = async () => {
     if (!orderAmount() || parseFloat(orderAmount()) <= 0) {
@@ -113,59 +145,12 @@ export const Home = () => {
     setOrderError(null)
   }
 
-  // Filter transfers based on period for overview tab
-  const filteredTransfers = createMemo(() => {
-    if (!merchant.merchantTransfers() || !merchant.merchantTransfers()?.items) {
-      return []
-    }
-
-    const transfers = merchant.merchantTransfers()?.items ?? []
-
-    // If "All time" is selected, return all transfers
-    if (period() === "All time") {
-      return transfers
-    }
-
-    // For other period options, apply client-side filtering based on creation date
-    // Since we don't have direct creation dates in the MerchantTransfer objects,
-    // we'll use a date estimate based on the transferRequestId
-    // In a real implementation, you would fetch full transfer details or ensure the API returns creation dates
-
-    const today = new Date()
-    let startDate: Date
-
-    switch (period()) {
-      case "Last 7 days":
-        startDate = new Date(today)
-        startDate.setDate(today.getDate() - 7)
-        break
-      case "Last 90 days":
-        startDate = new Date(today)
-        startDate.setDate(today.getDate() - 90)
-        break
-      case "Year to date":
-        startDate = new Date(today.getFullYear(), 0, 1) // January 1st of current year
-        break
-      case "Last 30 days":
-      default:
-        startDate = new Date(today)
-        startDate.setDate(today.getDate() - 30)
-        break
-    }
-
-    // For demo/simulation purposes, we'll use the index of the array as a rough time indicator
-    // In a real app, you would use actual transfer creation dates
-    return transfers.filter((_, index) => {
-      // Simulate dates - newer items are at the start of the array
-      const estimatedCreationDate = new Date()
-      estimatedCreationDate.setDate(today.getDate() - index * 2) // Each transfer is ~2 days apart
-      return estimatedCreationDate >= startDate
-    })
-  })
-
   // Metrics calculations for overview tab
   const metrics = createMemo(() => {
-    if (merchant.merchantTransfersLoading() || !merchant.merchantTransfers()) {
+    if (
+      merchant.transferStatisticsLoading() ||
+      !merchant.transferStatistics()
+    ) {
       return {
         totalRevenue: 0,
         processingVolume: 0,
@@ -178,38 +163,18 @@ export const Home = () => {
       }
     }
 
-    const transfers = filteredTransfers()
+    const stats = merchant.transferStatistics()!
 
-    // Calculate total revenue (just a simplified example)
-    // In a real app, you'd calculate based on fee structure
-    const totalRevenue = transfers.reduce(
-      (sum: number, transfer) => sum + centsToDollars(transfer.amount), // 1% of transaction amount as revenue
-      0
-    )
+    // Calculate metrics from API statistics
+    const totalRevenue = centsToDollars(stats.amountSettled) // Revenue from settled transfers
+    const processingVolume = centsToDollars(stats.amountPaid) // Total processing volume (total amount paid)
+    const successfulTransactions = stats.transferCount // Total transfer count from API
+    const failedTransactions = 0 // API doesn't provide failed count yet, could be added later
 
-    // Calculate processing volume
-    const processingVolume = transfers.reduce(
-      (sum: number, transfer) => sum + centsToDollars(transfer.amount),
-      0
-    )
-
-    // Calculate transaction counts
-    const successfulTransactions = transfers.filter(
-      (transfer) => transfer.status === TransferStatus.COMPLETED
-    ).length
-    const failedTransactions = transfers.filter(
-      (transfer) => transfer.status === TransferStatus.FAILED
-    ).length
-
-    // Get top 5 largest transactions
-    const topTransactions = [...transfers]
-      .sort((a, b) => centsToDollars(b.amount) - centsToDollars(a.amount))
-      .slice(0, 5)
-
-    // Get failed payments
-    const failedPayments = transfers.filter(
-      (transfer) => transfer.status === TransferStatus.FAILED
-    )
+    // For now, we'll use empty arrays for top transactions and failed payments
+    // These could be enhanced with additional API endpoints if needed
+    const topTransactions: Array<{ amount: number; id: string }> = []
+    const failedPayments: Array<{ amount: number; id: string }> = []
 
     // Calculate changes - only show if we have data
     const revenueChange = undefined as number | undefined // We don't have previous period data yet
@@ -756,7 +721,7 @@ export const Home = () => {
 
                 <div class="mt-2">
                   <Show
-                    when={!merchant.merchantTransfersLoading()}
+                    when={!merchant.transferStatisticsLoading()}
                     fallback={
                       <div class="flex items-center">
                         <svg
@@ -813,7 +778,7 @@ export const Home = () => {
 
                 <div class="mt-2">
                   <Show
-                    when={!merchant.merchantTransfersLoading()}
+                    when={!merchant.transferStatisticsLoading()}
                     fallback={
                       <div class="flex items-center">
                         <svg
