@@ -1,10 +1,21 @@
+import { useSearchParams } from "@solidjs/router";
 import { Show } from "solid-js";
 import { useAuth } from "../context/AuthContext";
-import MerchantsList from "../components/MerchantsList";
+import { useEnvironment } from "../context/EnvironmentContext";
+import TransferDetails from "../components/TransferDetails";
 import EnvironmentToggle from "../components/EnvironmentToggle";
 
-export default function Home() {
+export default function TransferPage() {
   const auth = useAuth();
+  const { environment } = useEnvironment();
+  const [searchParams] = useSearchParams();
+  const transferId = searchParams.id;
+  const merchantSub = searchParams.sub;
+
+  const getHomeUrl = () => {
+    const envParam = environment() === "BETA" ? "?env=beta" : "";
+    return `/${envParam}`;
+  };
 
   return (
     <Show
@@ -36,13 +47,18 @@ export default function Home() {
         <div class="mb-6 sm:mb-12">
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-8 space-y-3 sm:space-y-0">
             <div>
-              <h1 class="text-2xl sm:text-5xl font-light tracking-wider text-white mb-2">
-                ZENOBIA PAY
-              </h1>
-              <div class="w-12 sm:w-16 h-0.5 bg-white mb-2 sm:mb-4"></div>
-              <p class="text-gray-400 font-light tracking-wide uppercase text-xs sm:text-sm">
-                Admin Console
-              </p>
+              <a
+                href={getHomeUrl()}
+                class="block hover:opacity-80 transition-opacity duration-300"
+              >
+                <h1 class="text-2xl sm:text-5xl font-light tracking-wider text-white mb-2 cursor-pointer">
+                  ZENOBIA PAY
+                </h1>
+                <div class="w-12 sm:w-16 h-0.5 bg-white mb-2 sm:mb-4"></div>
+                <p class="text-gray-400 font-light tracking-wide uppercase text-xs sm:text-sm">
+                  Admin Console
+                </p>
+              </a>
             </div>
             <div class="text-center sm:text-right">
               <p class="text-gray-400 text-xs sm:text-sm font-light uppercase tracking-wide truncate">
@@ -65,7 +81,30 @@ export default function Home() {
         </div>
 
         {/* Main Content */}
-        <MerchantsList />
+        <Show
+          when={
+            transferId &&
+            merchantSub &&
+            typeof transferId === "string" &&
+            typeof merchantSub === "string"
+          }
+          fallback={
+            <div class="text-center py-8">
+              <p class="text-gray-400 text-sm">No transfer selected.</p>
+              <a
+                href="/"
+                class="text-blue-400 hover:text-blue-300 mt-2 inline-block"
+              >
+                Back to Merchants
+              </a>
+            </div>
+          }
+        >
+          <TransferDetails
+            transferId={transferId as string}
+            merchantSub={merchantSub as string}
+          />
+        </Show>
       </div>
     </Show>
   );
