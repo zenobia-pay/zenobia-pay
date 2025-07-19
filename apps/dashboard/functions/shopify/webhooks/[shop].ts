@@ -199,8 +199,6 @@ async function handleWebhook(
       env.SHOPIFY_ENCRYPTION_KEY
     )
 
-    console.log("accessToken:", accessToken)
-
     // Get the session ID from KV storage
     const sessionId = await env.TRANSFER_MAPPINGS.get(body.transferRequestId)
     if (!sessionId) {
@@ -208,7 +206,20 @@ async function handleWebhook(
         "No session ID found for transfer request:",
         body.transferRequestId
       )
-      return new Response("Session ID not found", { status: 400 })
+      // Return 200 to acknowledge receipt and prevent retries
+      // The session ID might have expired or been cleaned up
+      const response = new Response(
+        JSON.stringify({
+          status: "success",
+          message:
+            "Webhook received but session ID not found - may have expired",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+      return addCorsHeaders(response)
     }
 
     console.log("sessionId:", sessionId)
