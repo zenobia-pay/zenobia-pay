@@ -1,18 +1,23 @@
 import { Title } from "@solidjs/meta";
-import { Show, ErrorBoundary } from "solid-js";
+import { Show, ErrorBoundary, createResource } from "solid-js";
 import { useParams } from "@solidjs/router";
 
 interface Item {
-  id: string;
+  itemId: string;
   name: string;
+  brandName?: string;
+  size?: string;
+  color?: string | null;
+  material?: string | null;
+  year?: string | null;
+  imageUrls?: string[];
   description?: string;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
   metadata?: Record<string, any>;
 }
 
 async function fetchItem(id: string): Promise<Item> {
+  "use server";
+
   const response = await fetch("https://api.zenobiapay.com/get-item", {
     method: "POST",
     headers: {
@@ -28,7 +33,7 @@ async function fetchItem(id: string): Promise<Item> {
     );
   }
 
-  return response.json();
+  return await response.json();
 }
 
 // Server-side rendering with caching
@@ -59,8 +64,10 @@ export const route = {
 
 export default function ItemPage(props: any) {
   const params = useParams();
-  // Access the server-loaded data from props
-  const item = () => props.data;
+  const [item] = createResource(async () => {
+    const result = await props.data;
+    return result?.data ?? result;
+  });
 
   return (
     <main class="min-h-screen bg-gray-50 pt-16">
@@ -101,31 +108,12 @@ export default function ItemPage(props: any) {
                 {/* Header */}
                 <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4">
                   <h1 class="text-2xl font-bold text-white">
-                    {item()?.name || `Item ${params.id}`}
+                    {item()?.name || `Item`}
                   </h1>
-                  <p class="text-blue-100 mt-1">ID: {params.id}</p>
                 </div>
 
                 {/* Content */}
                 <div class="p-6 space-y-6">
-                  {/* Status */}
-                  <div>
-                    <h2 class="text-lg font-semibold text-gray-900 mb-2">
-                      Status
-                    </h2>
-                    <span
-                      class={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                        item()?.status === "verified"
-                          ? "bg-green-100 text-green-800"
-                          : item()?.status === "pending"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {item()?.status}
-                    </span>
-                  </div>
-
                   {/* Description */}
                   <Show when={item()?.description}>
                     <div>
@@ -155,23 +143,80 @@ export default function ItemPage(props: any) {
                     </div>
                   </Show>
 
-                  {/* Timestamps */}
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                  {/* Image Gallery */}
+                  <Show
+                    when={
+                      item()?.imageUrls &&
+                      Array.isArray(item()?.imageUrls) &&
+                      (item()?.imageUrls?.length || 0) > 0
+                    }
+                  >
                     <div>
-                      <h3 class="text-sm font-medium text-gray-500">Created</h3>
-                      <p class="text-sm text-gray-900">
-                        {new Date(item()?.createdAt || "").toLocaleString()}
-                      </p>
+                      <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                        Images
+                      </h2>
+                      <div class="flex flex-wrap gap-4">
+                        {item()?.imageUrls?.map((url: string) => (
+                          <img
+                            src={url}
+                            alt={item()?.name || `Item image`}
+                            class="w-40 h-40 object-cover rounded border shadow-sm bg-gray-100"
+                            loading="lazy"
+                          />
+                        ))}
+                      </div>
                     </div>
+                  </Show>
+
+                  {/* Brand Name */}
+                  <Show when={item()?.brandName}>
                     <div>
-                      <h3 class="text-sm font-medium text-gray-500">
-                        Last Updated
-                      </h3>
-                      <p class="text-sm text-gray-900">
-                        {new Date(item()?.updatedAt || "").toLocaleString()}
-                      </p>
+                      <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                        Brand
+                      </h2>
+                      <p class="text-gray-700">{item()?.brandName}</p>
                     </div>
-                  </div>
+                  </Show>
+
+                  {/* Size */}
+                  <Show when={item()?.size}>
+                    <div>
+                      <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                        Size
+                      </h2>
+                      <p class="text-gray-700">{item()?.size}</p>
+                    </div>
+                  </Show>
+
+                  {/* Color */}
+                  <Show when={item()?.color}>
+                    <div>
+                      <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                        Color
+                      </h2>
+                      <p class="text-gray-700">{item()?.color}</p>
+                    </div>
+                  </Show>
+
+                  {/* Material */}
+                  <Show when={item()?.material}>
+                    <div>
+                      <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                        Material
+                      </h2>
+                      <p class="text-gray-700">{item()?.material}</p>
+                    </div>
+                  </Show>
+
+                  {/* Year */}
+                  <Show when={item()?.year}>
+                    <div>
+                      <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                        Year
+                      </h2>
+                      <p class="text-gray-700">{item()?.year}</p>
+                    </div>
+                  </Show>
                 </div>
               </div>
             </div>
