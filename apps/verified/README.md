@@ -1,55 +1,9 @@
 # Verified
 
-A SolidStart application for verification services, deployed on Cloudflare Workers.
+Never got around to this.
 
-## Features
+The idea is that the core repo collects product metadata- see statementItems.
 
-- Built with SolidStart
-- Tailwind CSS for styling
-- Cloudflare Workers deployment
-- Smooth scrolling with Lenis
-- Responsive navigation
+That means we know who bought what, and can create public "verified" links that Person A bought XYZ.
 
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Start production server
-npm run start
-```
-
-## Deployment
-
-```bash
-# Deploy to Cloudflare Workers
-npm run deploy
-
-# Deploy to staging
-npm run deploy:staging
-```
-
-## Project Structure
-
-```
-src/
-├── components/     # Reusable components
-├── routes/         # Page routes
-├── app.tsx         # Main app component
-├── app.css         # Global styles
-└── entry-*.tsx     # Entry points
-```
-
-## Configuration
-
-- `app.config.ts` - SolidStart configuration
-- `wrangler.toml` - Cloudflare Workers configuration
-- `tailwind.config.js` - Tailwind CSS configuration
-- `tsconfig.json` - TypeScript configuration
+Later, can expose that as a service via API to resale services (digital proof of purchase) in exchange for royalties

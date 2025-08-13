@@ -57,6 +57,25 @@ const resetAuth0Client = (): void => {
   auth0Client = null;
 };
 
+// Clear Auth0 cache from localStorage
+const clearAuth0Cache = (): void => {
+  if (!isBrowser) return;
+
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith("auth0.") || key.includes("auth0"))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+    console.log("Cleared Auth0 cached data");
+  } catch (error) {
+    console.error("Error clearing Auth0 cache:", error);
+  }
+};
+
 export const authService = {
   async signIn(): Promise<void> {
     if (!isBrowser) {
@@ -162,8 +181,44 @@ export const authService = {
       );
     }
 
-    const auth0 = await getAuth0Client();
-    return auth0.getTokenSilently(options);
+    try {
+      const auth0 = await getAuth0Client();
+      return await auth0.getTokenSilently(options);
+    } catch (error) {
+      console.error("Error in getTokenSilently:", error);
+
+      // Check if this is an authentication error (400, 403, etc.)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isAuthError =
+        errorMessage.includes("400") ||
+        errorMessage.includes("403") ||
+        errorMessage.includes("401") ||
+        errorMessage.includes("invalid_grant") ||
+        errorMessage.includes("missing_refresh_token") ||
+        errorMessage.includes("expired");
+
+      if (isAuthError) {
+        console.log(
+          "Authentication error detected in getTokenSilently, clearing cache and redirecting to login"
+        );
+
+        // Clear Auth0 cache
+        clearAuth0Cache();
+        resetAuth0Client();
+
+        // Save current path for redirect after login
+        sessionStorage.setItem(
+          "redirectPath",
+          window.location.pathname + window.location.search
+        );
+
+        // Redirect to login
+        window.location.href = "/login";
+      }
+
+      throw error;
+    }
   },
 
   async handleAuthCallback(): Promise<void> {
@@ -299,5 +354,10 @@ export const authService = {
       console.error("Error resending verification email:", error);
       return false;
     }
+  },
+
+  clearCache(): void {
+    clearAuth0Cache();
+    resetAuth0Client();
   },
 };

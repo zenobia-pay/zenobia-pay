@@ -1,32 +1,94 @@
-# SolidStart
+# Admin Console
 
-Everything you need to build a Solid project, powered by [`solid-start`](https://start.solidjs.com);
+## Overview
 
-## Creating a project
+The Admin Console is the "God mode" administrative interface for Zenobia Pay.
+
+## Features
+
+- **Merchant Management**: View and manage all registered merchants
+- **Transaction Overview**: Monitor all platform transactions in real-time
+- **Transfer Management**: View, edit, and manage payment transfers
+- **Dispute Resolution**: Mark transfers as disputed and manage resolution
+- **Environment Switching**: Toggle between production and test environments
+
+## Tech Stack
+
+- **Framework**: SolidStart (Solid.js meta-framework)
+- **Styling**: Tailwind CSS v4
+- **Authentication**: Auth0
+- **Deployment**: Cloudflare Workers
+- **Runtime**: Node.js 22+
+
+## Prerequisites
+
+- Node.js >= 22
+- npm or pnpm
+- Cloudflare Workers account (for deployment)
+- Auth0 tenant configured
+
+## Installation
 
 ```bash
-# create a new project in the current directory
-npm init solid@latest
-
-# create a new project in my-app
-npm init solid@latest my-app
+npm install
 ```
 
-## Developing
+## Development
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Run the development server:
 
 ```bash
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
+
+This starts the Vinxi development server with hot module replacement.
 
 ## Building
 
-Solid apps are built with _presets_, which optimise your project for deployment to different environments.
+Build for production:
 
-By default, `npm run build` will generate a Node app that you can run with `npm start`. To use a different preset, add it to the `devDependencies` in `package.json` and specify in your `app.config.js`.
+```bash
+npm run build
+```
 
-## This project was created with the [Solid CLI](https://github.com/solidjs-community/solid-cli)
+## Deployment
+
+Deploy to Cloudflare Workers:
+
+```bash
+npm run deploy
+```
+
+For local testing with Wrangler:
+
+```bash
+npm run dev:worker
+```
+
+## Project Structure
+
+```
+admin-console/
+├── src/
+│   ├── components/       # Reusable UI components
+│   │   ├── Nav.tsx
+│   │   ├── TransferDetails.tsx
+│   │   ├── MerchantsList.tsx
+│   │   └── ...
+│   ├── context/         # Context providers
+│   │   ├── AuthContext.tsx
+│   │   └── EnvironmentContext.tsx
+│   ├── routes/          # Application routes
+│   │   ├── index.tsx
+│   │   ├── merchant.tsx
+│   │   ├── transfer.tsx
+│   │   └── login.tsx
+│   ├── services/        # API and auth services
+│   │   ├── api.ts
+│   │   └── auth.ts
+│   └── config/          # Configuration files
+│       └── auth0.ts
+├── public/              # Static assets
+├── wrangler.toml        # Cloudflare Workers config
+└── app.config.ts        # App configuration
+```

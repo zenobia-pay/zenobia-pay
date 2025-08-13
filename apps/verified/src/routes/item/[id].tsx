@@ -68,10 +68,11 @@ export default function ItemPage(props: any) {
     const result = await props.data;
     return result?.data ?? result;
   });
+  console.log("item", item());
 
   return (
     <main class="min-h-screen bg-gray-50 pt-16">
-      <Title>Item {params.id} - Verified</Title>
+      <Title>Verified by Zenobia</Title>
 
       <div class="container mx-auto px-4 py-8">
         <ErrorBoundary
@@ -89,16 +90,13 @@ export default function ItemPage(props: any) {
           )}
         >
           <Show
-            when={item()}
+            when={item() && item()?.itemId}
             fallback={
               <div class="max-w-2xl mx-auto">
-                <div class="bg-white rounded-lg shadow-sm border p-6">
-                  <div class="animate-pulse">
-                    <div class="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-                    <div class="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div class="h-6 bg-gray-200 rounded w-1/4"></div>
-                  </div>
+                <div class="bg-white rounded-lg shadow-sm border p-6 text-center">
+                  <h1 class="text-2xl font-bold text-gray-800 mb-2">
+                    Not found
+                  </h1>
                 </div>
               </div>
             }

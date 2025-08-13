@@ -1,205 +1,231 @@
-# Zenobia Pay Dashboard
+# Merchant Dashboard
 
-Welcome to the Zenobia Pay Dashboard codebase! This is a Cloudflare Worker application that serves as both a merchant dashboard web UI and the backend API for our POS integrations.
+## Overview
 
-## What This Does
+The Merchant Dashboard is a Solid.js SPA for merchants to manage their payments. It also hosts the backend API for e-commerce platform integrations.
 
-This app handles:
+## Features
 
-- **Merchant Dashboard**: Web interface where merchants manage their Zenobia Pay account, view transactions, and configure integrations
-- **BigCommerce Integration**: OAuth flow, checkout processing, and webhook handling for BigCommerce stores
-- **Shopify Integration**: Payment app integration, session management, and webhook processing for Shopify stores
-- **Hosted Checkout**: Backend logic for processing payments from various POS platforms
+### Merchant Portal
+
+- **Transaction Management**: View and track all payment transactions
+- **Manual Orders**: Create and manage manual payment orders
+- **QR Code Generation**: Generate payment QR codes for in-person transactions
+- **KYB Verification**: Complete Know Your Business verification process
+- **Settings & Configuration**: Manage account settings and payment preferences
+
+### E-commerce Integrations
+
+- **BigCommerce**: Full OAuth integration with checkout processing
+- **Shopify**: Payment app integration with session management
+- **Manual Stores**: Support for custom POS integrations
+- **Webhook Processing**: Real-time payment status updates
+
+## Tech Stack
+
+- **Frontend**: Solid.js with TypeScript
+- **Styling**: Tailwind CSS
+- **Authentication**: Auth0
+- **Backend**: Cloudflare Workers
+- **Database**: Cloudflare D1 (SQLite)
+- **Storage**: Cloudflare KV
+- **API**: GraphQL with code generation
+- **Build Tools**: Vite, Wrangler
+
+## Prerequisites
+
+- Node.js 18+
+- npm or pnpm
+- Cloudflare account with Workers, D1, and KV access
+- Auth0 account for authentication
+
+## Installation
+
+```bash
+npm install
+```
+
+## Development
+
+### Quick Start
+
+```bash
+# Run both frontend and backend locally
+npm run dev
+```
+
+This starts:
+
+- Vite dev server on http://localhost:3000 (frontend)
+- Wrangler dev server on http://localhost:8787 (backend API)
+
+### Individual Commands
+
+```bash
+# Frontend only
+npm run dev:vite
+
+# Backend only
+npm run dev:worker
+
+# Build for production
+npm run build
+
+# Deploy to Cloudflare
+npm run deploy
+```
 
 ## Project Structure
 
 ```
-apps/dashboard/
-├── src/                    # Frontend SolidJS application
+dashboard/
+├── src/                    # Frontend application
 │   ├── components/         # Reusable UI components
-│   ├── pages/             # Main application pages
-│   ├── context/           # React-like context providers
-│   ├── services/          # API service layer
-│   └── types/             # TypeScript type definitions
-├── functions/             # Cloudflare Worker API functions
-│   ├── bigcommerce/       # BigCommerce integration endpoints
-│   ├── shopify/           # Shopify integration endpoints
-│   ├── kyb/               # Know Your Business verification
-│   └── utils/             # Shared utility functions
-├── migrations/            # D1 database migrations
-└── dist/                  # Built frontend assets
+│   │   ├── admin/         # Dashboard tab components
+│   │   ├── Dashboard.tsx  # Main dashboard layout
+│   │   └── ...
+│   ├── pages/             # Application pages
+│   │   ├── MerchantKYB.tsx
+│   │   ├── Onboarding.tsx
+│   │   └── auth/
+│   ├── context/           # State management
+│   │   ├── AuthContext.tsx
+│   │   └── MerchantContext.tsx
+│   ├── services/          # API integration
+│   │   ├── api.ts
+│   │   ├── auth.ts
+│   │   └── navigation.ts
+│   └── types/             # TypeScript definitions
+├── functions/             # Cloudflare Worker endpoints
+│   ├── bigcommerce/       # BigCommerce integration
+│   ├── shopify/           # Shopify integration
+│   ├── kyb/              # KYB verification
+│   └── utils/            # Shared utilities
+├── migrations/           # D1 database migrations
+├── utils/                # Build and dev utilities
+└── public/              # Static assets
 ```
 
-## Key Concepts
+## Key Features
 
-### Frontend (SolidJS)
+### Manual Orders System
 
-- **SolidJS**: Modern reactive framework (similar to React but with better performance)
-- **Tailwind CSS**: Utility-first CSS framework for styling
-- **DaisyUI**: Component library built on top of Tailwind
-- **Auth0**: Authentication provider for merchant login
+Merchants can create manual payment orders with:
 
-### Backend (Cloudflare Workers)
+- Custom amounts and descriptions
+- QR code generation for payment collection
+- Real-time status tracking
+- Order management (edit, delete)
 
-- **Functions**: Serverless API endpoints that handle specific routes
-- **D1 Database**: SQLite database for storing merchant and store data
-- **KV Storage**: Key-value storage for session management and temporary data
-- **JWT Verification**: Secure token validation for API requests
+### Transaction Dashboard
 
-### Integration Patterns
+- Real-time transaction monitoring
+- Detailed transaction history
+- Export capabilities
+- Search and filtering
 
-- **OAuth Flow**: Standard OAuth 2.0 for connecting to BigCommerce/Shopify
-- **Webhook Handling**: Real-time updates from payment processing
-- **Session Management**: Temporary storage for checkout sessions
-- **Order Synchronization**: Keeping POS orders in sync with payment status
+### Platform Integrations
 
-## Getting Started
+#### BigCommerce
 
-### Prerequisites
+- OAuth-based app installation
+- Checkout integration
+- Webhook processing for order updates
+- Store configuration management
 
-- Node.js 18+
-- Wrangler CLI (`npm install -g wrangler`)
-- Cloudflare account with D1 and KV access
+#### Shopify
 
-### Local Development
-
-1. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Set up environment variables**
-
-   ```bash
-   cp .dev.vars.example .dev.vars
-   # Edit .dev.vars with your local development values
-   ```
-
-3. **Run the development server**
-
-   ```bash
-   npm run dev
-   ```
-
-   This starts both the Vite dev server (frontend) and Wrangler dev server (backend) concurrently.
-
-4. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8787
-
-### Environment Variables
-
-You'll need these in your `.dev.vars` file:
-
-```bash
-# Auth0 (for merchant authentication)
-ACCOUNTS_DOMAIN=https://accounts.zenobiapay.com
-ACCOUNTS_AUDIENCE=https://dashboard.zenobiapay.com
-VITE_AUTH0_DOMAIN=accounts.zenobiapay.com
-VITE_AUTH0_CLIENT_ID=your_auth0_client_id
-
-# API endpoints
-API_BASE_URL=https://api.zenobiapay.com
-TESTMODE_API_BASE_URL=https://test-api.zenobiapay.com
-
-# BigCommerce app credentials
-BIGCOMMERCE_CLIENT_ID=your_bigcommerce_client_id
-BIGCOMMERCE_CLIENT_SECRET=your_bigcommerce_client_secret
-
-# Shopify app credentials
-SHOPIFY_CLIENT_ID=your_shopify_client_id
-SHOPIFY_CLIENT_SECRET=your_shopify_client_secret
-SHOPIFY_ENCRYPTION_KEY=your_encryption_key
-SHOPIFY_PROXY_SECRET=your_proxy_secret
-
-# Cloudflare bindings (these are configured in wrangler.toml)
-# MERCHANTS_OAUTH, TRANSFER_MAPPINGS, SHOPIFY_CHECKOUT_SESSION_KV
-```
-
-## Development Workflow
-
-### Frontend Development
-
-- **Components**: Located in `src/components/` - reusable UI pieces
-- **Pages**: Located in `src/pages/` - main application views
-- **State Management**: Uses SolidJS signals and context providers
-- **Styling**: Tailwind CSS with DaisyUI components
-
-### Backend Development
-
-- **API Functions**: Located in `functions/` - each file handles a specific route
-- **Database**: D1 SQLite database with migrations in `migrations/`
-- **Storage**: KV namespaces for temporary data and sessions
-
-### Key Files to Understand
-
-#### Frontend
-
-- `src/worker.ts` - Main Cloudflare Worker entry point
-- `src/routes.ts` - Application routing configuration
-- `src/components/Dashboard.tsx` - Main dashboard layout
-- `src/components/admin/` - Dashboard tab components
-
-#### Backend
-
-- `functions/bigcommerce/oauth.ts` - BigCommerce OAuth callback
-- `functions/bigcommerce/load.ts` - BigCommerce app configuration UI
-- `functions/shopify/index.ts` - Shopify OAuth initiation
-- `functions/shopify/checkout.ts` - Shopify payment session handling
+- Embedded app support
+- Payment session handling
+- Customer data management
+- GDPR compliance endpoints
 
 ## Database Schema
 
-### Main Tables
+The app uses Cloudflare D1 with the following main tables:
 
-- `bigcommerce_stores` - BigCommerce store configurations and OAuth tokens
-- `shopify_stores` - Shopify store configurations and encrypted access tokens
-- Additional tables for merchant data and KYB information
+- `bigcommerce_stores` - BigCommerce store configurations
+- `shopify_stores` - Shopify store configurations
+- `merchant_kyb` - KYB verification data
+- `orders` - Manual order records
+- `manual_stores` - Custom integration configurations
 
-### Migrations
-
-Run database migrations with:
+Run migrations:
 
 ```bash
+# Local development
 wrangler d1 migrations apply MERCHANTS_OAUTH --local
+
+# Production
+wrangler d1 migrations apply MERCHANTS_OAUTH
 ```
 
-## Testing Integrations
+## Environment Variables
 
-### BigCommerce Testing
+Create a `.dev.vars` file for local development:
 
-1. Install the Zenobia app in a BigCommerce development store
-2. Complete the OAuth flow
-3. Configure Zenobia credentials in the app load interface
-4. Test checkout integration
+```bash
+BIGCOMMERCE_CLIENT_ID: string
+BIGCOMMERCE_CLIENT_SECRET: string
+MERCHANTS_OAUTH: D1Database
+ACCOUNTS_DOMAIN: string
+ZENOBIA_CLIENT_ID: string
+ZENOBIA_CLIENT_SECRET: string
+ACCOUNTS_AUDIENCE: string
+API_DOMAIN: string
+API_BASE_URL: string
+TRANSFER_MAPPINGS: KVNamespace
+SUBSCRIBE_HMAC: string
+SHOPIFY_CLIENT_ID: string
+SHOPIFY_CLIENT_SECRET: string
+SHOPIFY_ENCRYPTION_KEY: string
+SHOPIFY_PROXY_SECRET: string
+SHOPIFY_CHECKOUT_SESSION_KV: KVNamespace
+MERCHANT_DASHBOARD_TYPES: KVNamespace
+TESTMODE_API_BASE_URL: string
+SLACK_WEBHOOK_URL?: string
+MANUAL_ORDERS_ENCRYPTION_KEY: string
+ASSETS: Fetcher
+```
 
-### Shopify Testing
+## API Development
 
-1. Install the Zenobia payment app in a Shopify development store
-2. Complete the OAuth flow
-3. Test payment session creation and processing
+### Adding New Endpoints
 
-## Common Development Tasks
+1. Create a function file in `functions/`
+2. Export an `onRequest` handler
+3. Add authentication/validation as needed
+4. Test locally with Wrangler
 
-### Adding a New API Endpoint
+Example:
 
-1. Create a new function file in `functions/`
-2. Export an `onRequest` function
-3. Add the route pattern to `src/worker.ts`
-4. Test locally with `npm run dev`
+```typescript
+export async function onRequest(context) {
+  // Your endpoint logic
+}
+```
 
-### Modifying the Frontend
+### GraphQL Code Generation
 
-1. Edit components in `src/components/`
-2. Update pages in `src/pages/`
-3. Add new routes in `src/routes.ts`
-4. Hot reload should work automatically
+```bash
+npm run codegen
+```
 
-### Database Changes
+This generates TypeScript types from your GraphQL schema.
 
-1. Create a new migration file in `migrations/`
-2. Run migrations locally: `wrangler d1 migrations apply MERCHANTS_OAUTH --local`
-3. Deploy migrations: `wrangler d1 migrations apply MERCHANTS_OAUTH`
+## Testing
+
+### Manual Testing
+
+1. Use the local dev environment
+2. Test with real e-commerce platform dev stores
+3. Verify webhook processing
+
+### Integration Testing
+
+- BigCommerce: Use development stores
+- Shopify: Use development/partner stores
+- Manual orders: Test QR code generation and payment flow
 
 ## Deployment
 
@@ -213,38 +239,24 @@ wrangler deploy --env staging
 ### Production
 
 ```bash
-npm run build
-wrangler deploy
+npm run deploy
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-- **CORS errors**: Check origin validation in API functions
-- **JWT verification failures**: Verify Auth0 configuration
-- **Database connection issues**: Check D1 binding configuration
-- **Webhook failures**: Verify HMAC signatures and payload validation
+1. **CORS Errors**: Check allowed origins in worker configuration
+2. **Auth Failures**: Verify Auth0 configuration and JWT settings
+3. **Database Issues**: Check D1 bindings in wrangler.toml
+4. **Build Errors**: Clear node_modules and dist folders
 
-### Debugging
+### Debug Commands
 
-- Check Cloudflare Workers logs in the dashboard
-- Use `console.log()` in functions for debugging
-- Monitor network requests in browser dev tools
-- Check D1 database directly with `wrangler d1 execute`
+```bash
+# Check D1 database
+wrangler d1 execute MERCHANTS_OAUTH --command "SELECT * FROM orders"
 
-## Code Style
-
-- **TypeScript**: Strict mode enabled, prefer explicit types
-- **SolidJS**: Use signals for reactive state, avoid unnecessary re-renders
-- **Functions**: Keep functions small and focused, use proper error handling
-- **Security**: Always validate inputs, use JWT/HMAC verification
-
-## Getting Help
-
-- Check the existing code for patterns and examples
-- Review the Cloudflare Workers documentation
-- Ask the team for guidance on integration-specific questions
-- Use the development Slack channel for quick questions
-
-Welcome to the team! 🚀
+# View worker logs
+wrangler tail
+```

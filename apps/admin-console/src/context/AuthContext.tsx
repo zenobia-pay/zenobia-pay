@@ -44,6 +44,13 @@ export const AuthProvider: ParentComponent = (props) => {
       }
     } catch (error) {
       console.error("Error checking auth status:", error);
+
+      // If we get an error, it might be due to expired tokens
+      // Clear any cached Auth0 data and reset the client
+      if (isBrowser) {
+        authService.clearCache();
+      }
+
       setUser(null);
       return false;
     }
@@ -84,7 +91,19 @@ export const AuthProvider: ParentComponent = (props) => {
     }
 
     try {
-      await checkAuthStatus();
+      const isAuthenticated = await checkAuthStatus();
+
+      // If we're not authenticated and not on the login page, redirect to login
+      if (!isAuthenticated && window.location.pathname !== "/login") {
+        console.log("Not authenticated, redirecting to login");
+        // Save the current path with search parameters
+        sessionStorage.setItem(
+          "redirectPath",
+          window.location.pathname + window.location.search
+        );
+        // Redirect to login
+        window.location.href = "/login";
+      }
     } finally {
       setIsLoading(false);
     }

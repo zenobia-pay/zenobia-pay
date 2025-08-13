@@ -123,6 +123,46 @@ export const authService = {
     }
   },
 
+  async getTokenSilently(): Promise<string> {
+    try {
+      const auth0 = await getAuth0Client()
+      return await auth0.getTokenSilently()
+    } catch (error) {
+      console.error("Error in getTokenSilently:", error)
+
+      // Check if this is an authentication error (400, 403, etc.)
+      const errorMessage =
+        error instanceof Error ? error.message : String(error)
+      const isAuthError =
+        errorMessage.includes("400") ||
+        errorMessage.includes("403") ||
+        errorMessage.includes("401") ||
+        errorMessage.includes("invalid_grant") ||
+        errorMessage.includes("missing_refresh_token") ||
+        errorMessage.includes("expired")
+
+      if (isAuthError) {
+        console.log(
+          "Authentication error detected in getTokenSilently, clearing cache and redirecting to login"
+        )
+
+        // Clear Auth0 cache
+        resetAuth0Client()
+
+        // Save current path for redirect after login
+        sessionStorage.setItem(
+          "redirectPath",
+          window.location.pathname + window.location.search
+        )
+
+        // Redirect to login
+        window.location.href = "/login"
+      }
+
+      throw error
+    }
+  },
+
   async silentlyRefreshToken(): Promise<void> {
     const auth0 = await getAuth0Client()
     try {
@@ -280,5 +320,9 @@ export const authService = {
       console.error("Error resending verification email:", error)
       return false
     }
+  },
+
+  clearCache(): void {
+    resetAuth0Client()
   },
 }

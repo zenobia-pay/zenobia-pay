@@ -35,14 +35,6 @@ import { createAuth0Client } from "@auth0/auth0-spa-js"
 import type { Auth0Client } from "@auth0/auth0-spa-js"
 import { authService } from "./auth"
 
-// Define Auth0Error interface
-interface Auth0Error extends Error {
-  error: string
-  error_description: string
-  audience?: string
-  scope?: string
-}
-
 const PROD_API_BASE_URL = "https://api.zenobiapay.com"
 const TEST_API_BASE_URL =
   "https://mm24mwlpnd.execute-api.us-east-1.amazonaws.com/Prod"
@@ -104,49 +96,18 @@ const resetAuth0Client = () => {
 // Helper to get the Auth0 token
 const getAuthToken = async (): Promise<string> => {
   try {
-    const auth0Client = await getAuth0Client()
-    const isAuthenticated = await auth0Client.isAuthenticated()
-
-    if (!isAuthenticated) {
-      throw new Error("User is not authenticated")
+    const token = await authService.getTokenSilently()
+    if (!token) {
+      throw new Error("No authentication token available")
     }
-
-    try {
-      const token = await auth0Client.getTokenSilently()
-      if (!token) {
-        throw new Error("No authentication token available")
-      }
-      return token
-    } catch (tokenError) {
-      console.error("Token error:", tokenError)
-
-      // Check if this is a refresh token error
-      const authError = tokenError as Auth0Error
-      if (
-        authError.error === "missing_refresh_token" ||
-        authError.error === "invalid_grant" ||
-        authError.error === "expired" ||
-        (tokenError instanceof Error &&
-          (tokenError.message.includes("missing refresh token") ||
-            tokenError.message.includes("invalid_grant") ||
-            tokenError.message.includes("expired")))
-      ) {
-        console.log(
-          "Auth token expired or refresh token missing, redirecting to login"
-        )
-
-        await authService.signOut()
-      }
-
-      throw tokenError
-    }
+    return token
   } catch (error) {
     console.error("Error in getAuthToken:", error)
     throw error
   }
 }
 
-// A wrapper for API calls that handles authentication errors
+// A wrapper for API calls that handles authentication
 const callApi = async <T>(
   apiCall: (token: string) => Promise<T>
 ): Promise<T> => {
@@ -155,48 +116,6 @@ const callApi = async <T>(
     return await apiCall(token)
   } catch (error) {
     console.error("API call error:", error)
-
-    // Handle different error types
-    if (error instanceof Error) {
-      // Try to extract more info from HTTP errors
-      if (error.message.includes("HTTP error! status:")) {
-        const statusMatch = error.message.match(/status: (\d+)/)
-        if (statusMatch) {
-          const status = parseInt(statusMatch[1])
-
-          // Handle auth-related errors
-          if (status === 401 || status === 403) {
-            console.log("API call returned auth error (status: " + status + ")")
-          }
-        }
-      }
-
-      // Check for Auth0 token error object
-      const authError = error as Auth0Error
-      if (
-        authError.error === "missing_refresh_token" ||
-        authError.error === "invalid_grant" ||
-        authError.error === "expired"
-      ) {
-        console.log(
-          "Auth token error detected from error object, redirecting to login"
-        )
-        await authService.signOut()
-      }
-      // Also check for token-related errors in the message for backward compatibility
-      else if (
-        error.message.includes("missing refresh token") ||
-        error.message.includes("invalid_grant") ||
-        error.message.includes("expired")
-      ) {
-        console.log(
-          "Auth token error detected from message, redirecting to login"
-        )
-
-        await authService.signOut()
-      }
-    }
-
     throw error
   }
 }
@@ -205,6 +124,7 @@ const callApi = async <T>(
 export const auth0Utils = {
   getAuth0Client,
   resetAuth0Client,
+  clearCache: resetAuth0Client, // Alias for consistency with admin-console
 }
 
 export const api = {
