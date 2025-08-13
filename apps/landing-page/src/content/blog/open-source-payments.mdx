@@ -12,7 +12,7 @@ recommendedPosts: []
 
 Since Februray, Teddy and I have worked tirelessly on Zenobia Pay. Our mission: build an alternative to high-fee card networks (Visa, Mastercard) using bank transfers as payments. We were super excited by FedNow, the Federal Reserve's instant transfer rail, which inspired us to quit our jobs and do this full time. We thought, let's build QR code payments, like Pix or UPI or AliPay, but for the US. And we did! We built an instant clearing, mobile first, pay-by-bank network.
 
-However, we failed to get any adoption besides thieves and mobsters. We tried cold outreach, door to door sales, and meeting with every friend of a friend in our lives. But after months of zero growth and $20,000 stolen, we've decided we are not the right people to make this happen. Too young, too unconnected to drive any adoption. That said, this is not an impossible task, just a difficult one. We are open sourcing Zenobia Pay with the hope that it will time for somebody else who wants to pick up this mission.
+However, we failed to get any adoption besides thieves and mobsters. We tried cold outreach, door to door sales, and meeting with every friend of a friend in our lives. But after months of zero growth and $20,000 stolen, we've decided we are not the right people to make this happen. Too young, too unconnected to drive any adoption. That said, this is not an impossible task, just a difficult one. We are open sourcing Zenobia Pay with the hope that it will save time for somebody else who wants to pick up this mission.
 
 If this sounds like you: great. Here is all the code. That said, with payments, you need more than just code to go live. You need a licensed banking partner. We purchased a SaaS solution through the fintech Orum.io, which has a partnership with another fintech, which has a partership with a bank. Orum was acquired by Stripe, though, and is shutting down its service. You will need to migrate to a different banking provider, like Trice or Column.
 
@@ -28,11 +28,11 @@ Over the course of building this, we went through three iterations of who we tar
 
 First iteration is the obvious one: give this service to small businesses who have low net margins. If you have a 3% net margin, saving 2% on interchange nearly doubles your profits! However, this has a few problems:
 
-Problem 1: integration. In person sales means you need a POS or POS partner. This dramatically increases your deployment times. Deployment times are what killed Kash, who tried this same idea in the 2010s (https://jessicafurseth.com/2016/01/30/meet-kash-the-most-exciting-payment-startup-in-town/)
+- **Problem 1: Integration.** In person sales means you need a POS or POS partner. This dramatically increases your deployment times. Deployment times are what killed Kash, who tried this same idea in the 2010s (https://jessicafurseth.com/2016/01/30/meet-kash-the-most-exciting-payment-startup-in-town/)
 
-Problem 2: Support. SMBs are difficult customers because they have high support needs, but (by nature of being small) bring in very little revenue. You might make $30/month in fees from a small business that needs 10 hours a week of white glove support.
+- **Problem 2: Support.** SMBs are difficult customers because they have high support needs, but (by nature of being small) bring in very little revenue. You might make $30/month in fees from a small business that needs 10 hours a week of white glove support.
 
-Problem 3: Adoption. Merchants told us they want this! But when we showed them the system their customers would need to use (since we didn't have a POS, it would be QRs on the merchant's phone), they dragged their feet. Their stated preferences were different from their revealed preferences. When it came down to it: they don't actually care about saving 2% on fees.
+- **Problem 3: Adoption.** Merchants told us they want this! But when we showed them the system their customers would need to use (since we didn't have a POS, it would be QRs on the merchant's phone), they dragged their feet. Their stated preferences were different from their revealed preferences. When it came down to it: they don't actually care about saving 2% on fees.
 
 ## Iteration 2: High ticket items + fraud insurance
 
@@ -42,11 +42,11 @@ Mobile QR payments do not have the issue of being swiped / stolen, because the m
 
 With this iteration, we went to YCombinator as payments for selling high ticket items online. We enable jewelers and luxury brands to accept pay-by-bank to avoid credit card fees and fraud chargebacks. However, we ran into a few problems:
 
-Problem 1: Reg E and ACH return risk. There is no API accessible "pull request" for money besides ACH. FedNow is push only from an account you control. FedNow does have RfPs but they have basically no adoption. So for now, you have to build ACH return risk models. PayPal notoriously lost half their investor money to ACH fraud as they built up their risk model. Fortunately, ACH return risk has been commodified with Plaid Signal, so you can get at-scale return risk profiling from day 1. That said, we have shifted to high ticket purchases, where the risk of fraud is high. With every purchase, you underwrite a 60 day tail risk of losing the entire cost of merchandise, in exchange for a fee of 1% of value. Can we at scale keep a return rate low enough to profit?
+- **Problem 1: Reg E and ACH return risk.** There is no API accessible "pull request" for money besides ACH. FedNow is push only from an account you control. FedNow does have RfPs but they have basically no adoption. So for now, you have to build ACH return risk models. PayPal notoriously lost half their investor money to ACH fraud as they built up their risk model. Fortunately, ACH return risk has been commodified with Plaid Signal, so you can get at-scale return risk profiling from day 1. That said, we have shifted to high ticket purchases, where the risk of fraud is high. With every purchase, you underwrite a 60 day tail risk of losing the entire cost of merchandise, in exchange for a fee of 1% of value. Can we at scale keep a return rate low enough to profit?
 
-Problem 2: Merchants don't care. Same as iteration 1. Merchants said they were interested with them, we met with them, and they dragged their feet. Not a pressing problem. Stated preferences vs revealed preferences.
+- **Problem 2: Merchants don't care.** Same as iteration 1. Merchants said they were interested; we met with them, and they dragged their feet. Not a pressing problem. Stated preferences vs revealed preferences.
 
-Problem 3: Checkout conversion. We are a new "Pay with" button at checkout. Why would customers convert when they have rewards points on credit cards? We proposed merchants "split the difference" in fee savings with their customer, giving customers ~1% in at-checkout "cashback". But this is just a worse version of credit card rewards.
+- **Problem 3: Checkout conversion.** We are a new "Pay with" button at checkout. Why would customers convert when they have rewards points on credit cards? We proposed merchants "split the difference" in fee savings with their customer, giving customers ~1% in at-checkout "cashback". But this is just a worse version of credit card rewards.
 
 ## Iteration 3: Luxury proof of purchase + resale
 
@@ -68,16 +68,15 @@ Now merchants are more interested, because we promise to bring in NEW revenue, i
 
 It also solves the customer conversion problem. You don't convert anyone by being a worse version of an existing thing. And to customers, our split-the-difference fees are just a worse version of credit cards. You have to make a new category: Buy-to-resell, buy-it-for-life, buy-to-flex. Customers who buy and resell things and want proof of purchase. Customers who want to show off what they buy on social media with some provenance that it's real.
 
-All that said, we still had problems:
-Problem 1: Europe. We had a tough time getting in the room with anyone. When we met with luxury brands, they told us they were highly protective of their brand experience. It was very clear that we were NOT insiders. Unlike California, where people respond to cold outreach in earnest and good faith, we faced nothing but cold shoulders.
+All that said, we still had one big problem: **Europe**
+
+We had a tough time getting in the room with anyone. When we met with luxury brands, they told us they were highly protective of their brand experience. It was very clear that we were NOT insiders. Unlike California, where people respond to cold outreach in earnest and good faith, we faced nothing but cold shoulders.
 
 It was clear to us that it would take months, even years to get adoption by luxury houses. So, in the meantime we continued to pursue online jewelers who cared more about Iteration 1 and Iteration 2 than Iteration 3.
 
 ## How I would continue
 
-That brings us up to the present.
-
-1. Abandon jewelry and iteration 2. We were defrauded by "custom jewelers" who were Russian mobsters using stolen SSNs.
+1. Abandon jewelry and iteration 2 entirely. What finally killed us was being defrauded by "custom jewelers" who were Russian mobsters using stolen SSNs to commit ACH fraud.
 2. Focus on Iteration 3 if you are well connected in luxury. Verticalize the whole payments experience- you are the card network AND the card processor, Visa + Stripe. Run it like a CPG or a luxury brand. Focus on the post payment experience.
 
-I hope somebody takes this up!
+That brings us up to the present. We realized that we were back at square one, and with our product so far ahead of our sales, decided to pivot away from payments entirely. I learned a lot about payments and startups and had a lot of fun. While I'm disappointed it failed, I hope somebody else reads this and is inspired to take up the cause.
