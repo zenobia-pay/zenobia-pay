@@ -1,9 +1,9 @@
-# Zenobia Pay
+# Kodwa Pay
 
 ## Overview
 
-Open source payments! Like pix or UPI or wechat, for the US.
-Zenobia Pay is an open-source payment platform that enables merchants to accept payments through bank transfers, eliminating traditional credit card processing fees.
+Open source payments! Like pix or UPI or wechat, for the Europe and Africa.
+Kodwa Pay is an open-source payment platform that enables merchants to accept payments through bank transfers, eliminating traditional credit card processing fees.
 
 ## Architecture
 
@@ -24,14 +24,14 @@ This is a monorepo containing all the web apps used in Zenobia Pay. For the core
 
 #### Examples & Demos
 
-- **[Merchant Solid](./apps/merchant-solid/)** - Sample e-commerce site demonstrating Zenobia Pay integration
+- **[Merchant Solid](./apps/merchant-solid/)** - Sample e-commerce site demonstrating Kodwa Pay integration
 
 ### Packages
 
 #### Public NPM Packages
 
 - **[@zenobia/client](./packages/client/)** - Core JavaScript SDK for payment integration
-- **[@zenobia/ui-solid](./packages/ui-solid/)** - Solid.js UI components including the "Pay with Zenobia" button
+- **[@zenobia/ui-solid](./packages/ui-solid/)** - Solid.js UI components including the "Pay with Kodwa" button
 
 ## Key Features
 
@@ -66,8 +66,8 @@ This is a monorepo containing all the web apps used in Zenobia Pay. For the core
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/zenobia-pay/zenobia-pay.git
-cd zenobia-pay
+git clone https://github.com/teopeurt/Kodwa-pay.git
+cd Kodwa-pay
 ```
 
 2. **Install dependencies**
@@ -129,9 +129,9 @@ npm install @zenobia/ui-solid
 ```
 
 ```jsx
-import { ZenobiaPayButton } from "@zenobia/ui-solid";
+import { KodwaPayButton } from "@zenobia/ui-solid";
 
-<ZenobiaPayButton
+<KodwaPayButton
   amount={100.0}
   orderId="order-123"
   merchantId="your-merchant-id"
@@ -142,9 +142,9 @@ import { ZenobiaPayButton } from "@zenobia/ui-solid";
 #### 2. Using Script Tags
 
 ```html
-<script src="https://zenobiapay.com/embed/latest/zenobia-pay.js"></script>
+<script src="https://kodwapay.com/embed/latest/zenobia-pay.js"></script>
 <script>
-  ZenobiaPay.mount("#payment-button", {
+  KodwaPay.mount("#payment-button", {
     amount: 100.0,
     orderId: "order-123",
     merchantId: "your-merchant-id",
@@ -154,8 +154,8 @@ import { ZenobiaPayButton } from "@zenobia/ui-solid";
 
 #### 3. E-commerce Platform Apps
 
-- Install the Zenobia Pay app from Shopify App Store
-- Install the Zenobia Pay app from BigCommerce Marketplace
+- Install the Kodwa Pay app from Shopify App Store
+- Install the Kodwa Pay app from BigCommerce Marketplace
 
 ### For Developers
 
